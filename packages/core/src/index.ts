@@ -23,6 +23,8 @@ import {
 } from "nostr-tools/nip49";
 import type { Ncryptsec } from "nostr-tools/nip19";
 
+export * from "./api";
+
 /**
  * The keystone passphrase feeds NIP-49 scrypt.
  *
