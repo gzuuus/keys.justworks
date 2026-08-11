@@ -25,7 +25,7 @@ plaintext keys and cannot link accounts to Nostr identities. Four components:
 A key-management project. These are invariant — do not violate without explicit
 approval, and push back if a request seems to:
 
-1. **Server stores exactly** `{ H(identifier), argon2(password), ncryptsec }`. No
+1. **Server stores exactly** `{ H(identifier), argon2(scrypt(password)), ncryptsec }`. No
    plaintext identifier, no npub, no email, no metadata. If you're adding a column,
    stop and confirm.
 2. **Server never decrypts, never signs.** All crypto is client-side.

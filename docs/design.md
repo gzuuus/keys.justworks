@@ -8,7 +8,7 @@ account to a Nostr identity.
 ## TL;DR
 
 - The encrypted blob is a **[NIP-49] `ncryptsec`** — don't invent a format.
-- The server is a **keyless locker**: it stores `{ H(identifier), argon2(password), ncryptsec }` and nothing more.
+- The server is a **keyless locker**: it stores `{ H(identifier), argon2(scrypt(password)), ncryptsec }` and nothing more. The raw password never reaches it — the client sends a memory-hard `scrypt(password)` for auth, which the server re-hashes with argon2.
 - The `ncryptsec` passphrase is **`identifier ‖ password`**, derived client-side. The identifier is the **keystone**: it is only ever sent to the server as `H(identifier)`, so the server is blind to it.
 - Three components: a **Rust server** (sqlite + REST), a **browser extension** (NIP-07 signer), and a **website** (onboarding + login + NIP-46 remote signer).
 - **No recovery**, by design. The value proposition is *availability everywhere*, not *reset*. Both identifier and password are user-held; losing either loses the account.
@@ -51,8 +51,8 @@ Two distinct adversaries, with distinct defenses:
 
 | Adversary | What they get | Defense |
 |---|---|---|
-| **Static breach** (DB leak) | `H(identifier)`, `argon2(password)`, `ncryptsec` | Strong password + scrypt KDF cost. The identifier-in-passphrase adds a second secret to recover, *if* it is high-entropy and stored only hashed. |
-| **Malicious operator** (reads login traffic / own DB; pushes malicious page JS) | `H(identifier)` (can't invert), the password (in the simple password-over-TLS flow), and the `ncryptsec` | The **keystone property**: even with the password, the operator cannot form `identifier ‖ password` because the identifier is server-blind. On the extension, input is isolated too. On the website, defense against malicious *page* JS rests on **perimeter hardening** (strict CSP, self-hosted bundle, no third-party scripts); full input isolation is the extension's job (a vault iframe is a documented future option, not the plan). |
+| **Static breach** (DB leak) | `H(identifier)`, `argon2(scrypt(password))`, `ncryptsec` | Strong password + scrypt KDF cost (the blob's own NIP-49 scrypt is the gate; the stored verifier adds a costlier `argon2(scrypt(pw))` to crack). The identifier-in-passphrase adds a second secret to recover, *if* it is high-entropy and stored only hashed. |
+| **Malicious operator** (reads login traffic / own DB; pushes malicious page JS) | `H(identifier)` (crackable if low-entropy), `scrypt(password)` (memory-hard — *not* the raw password), and the `ncryptsec` | The **keystone property**, restored by the client-derived auth secret: to form `identifier ‖ password` the operator must invert the memory-hard `scrypt(password)` (the raw password is never on the wire), reducing them to the **static-breach floor** regardless of identifier entropy. (Operator-resistance is *not* input isolation — a malicious *page* can still read the password as typed; that is perimeter-hardened on the website and fully isolated on the extension.) |
 
 Primary threat = **static breach**. It is held by the password alone; the
 identifier is defense-in-depth on top of it.
@@ -72,12 +72,16 @@ registration and login). The server stores and looks up accounts by `H(identifie
 Why this works:
 
 - **Static breach.** To derive the scrypt key, the attacker must recover the
-  literal string `identifier ‖ password`. Cracking `argon2(password)` alone is
-  no longer sufficient — they must *also* invert `H(identifier)` to recover the
-  identifier, which is infeasible if the identifier is high-entropy.
-- **Malicious operator.** The operator sees `H(identifier)` (can't invert) and,
-  in the simple flow, the password. They **still cannot decrypt** the `ncryptsec`,
-  because the passphrase needs the identifier half, which is opaque to them.
+  literal string `identifier ‖ password`. Cracking the stored
+  `argon2(scrypt(password))` alone is no longer sufficient — they must *also*
+  invert `H(identifier)` to recover the identifier, which is infeasible if the
+  identifier is high-entropy. (In practice they crack the blob's own NIP-49
+  scrypt on `identifier ‖ password` directly — that is the floor.)
+- **Malicious operator.** The operator sees `H(identifier)` (crackable if the
+  identifier is low-entropy) and `scrypt(password)` — **not** the raw password
+  (see "Client-derived auth secret" below). To decrypt the `ncryptsec` they must
+  invert the memory-hard `scrypt(password)` *and* recover the identifier, so the
+  floor is the password + scrypt cost — equal to the static-breach floor.
 
 This achieves operator-resistance **without a PAKE** — by splitting the secret
 and keeping half server-blind, rather than running an OPAQUE handshake. A PAKE
@@ -113,7 +117,7 @@ with default `log_n = 16`.
    └─────────────────────┘       └──────────────────────────┘
 ```
 
-- **Server** never decrypts, never sees the plaintext identifier, ideally never sees the plaintext password (PAKE later; for MVP it verifies `argon2(password)`).
+- **Server** never decrypts, never sees the plaintext identifier, and **never sees the plaintext password**: the client sends a memory-hard `scrypt(password)`; the server re-hashes that with argon2 for the stored verifier. (A full PAKE, which would also close online replay of the derived secret, is a roadmap option, not required for the floor.)
 - **Extension** holds the decrypted key in an isolated context and exposes `window.nostr` ([NIP-07]) to the browser's clients. Strongest surface — both input and keyholding are isolated from page JS.
 - **Website** holds the decrypted key in a Web Worker and exposes a [NIP-46] bunker for any client (including other devices). Deliberately the weaker surface; the extension is preferred wherever available.
 
@@ -191,7 +195,7 @@ The server stores exactly three fields per account, plus bookkeeping:
 | Field | Purpose | Notes |
 |---|---|---|
 | `identifier_hash` | Account locator; primary key | `H(identifier)`, computed client-side. Never the plaintext. |
-| `password_verifier` | Login check | `argon2(password)` (server-hashed). |
+| `password_verifier` | Login check | `argon2(password_secret)`, where `password_secret` is the client-derived `scrypt(password)` (server-hashed; never the wire value). |
 | `ncryptsec` | The encrypted private key | NIP-49 blob, `ncryptsec1…`, passphrase = `identifier ‖ password`. |
 
 Plus: created/updated timestamps, a KDF/version byte on the blob for future
@@ -214,15 +218,51 @@ The identifier is **defense-in-depth on top** of that floor: a bonus layer when
 it is strong and kept server-blind, and *no worse than password-only* when it is
 weak. The floor never drops because of the identifier.
 
-### Why no PAKE is needed for MVP
+### Client-derived auth secret
 
-Because the identifier is server-blind, an operator who captures the password at
-login *still* cannot decrypt the blob — they lack the identifier half of the
-passphrase, and `H(identifier)` is non-invertible. A PAKE (OPAQUE) becomes
-optional future hardening rather than a requirement. (On the website, the
-residual operator threat is *malicious page JS reading the identifier as typed*;
-that is addressed by perimeter defense — strict CSP, self-hosted bundle — with
-the extension for full input isolation, not by a PAKE.)
+The raw password never leaves the client. For auth, the client derives
+`password_secret = scrypt(password, salt = "keys.justworks-password-secret-v1:" ‖
+identifier)` — memory-hard, `N=2¹⁶, r=8, p=1`, 32 bytes — and sends that. The
+server applies argon2 on top and stores `argon2(password_secret)`; the wire value
+is never what is in the DB. (Implemented in `@kj/core::passwordSecret`; a golden
+vector locks the params/salt. Browser WebCrypto has no scrypt, hence
+`@noble/hashes`.)
+
+Two layers do different jobs: scrypt makes the *captured wire value* memory-hard
+to invert (so a traffic-logging operator can't recover the password); argon2
+makes the *stored verifier* costly to crack and unusable as a login credential on
+a DB leak. The blob's own NIP-49 scrypt (on `identifier ‖ password`) is a third,
+independent gate — the raw password is kept client-side solely for it.
+
+Not a PAKE: the operator still gets an offline-crackable, replayable verifier.
+It raises the operator floor back to the static-breach floor and removes the raw
+password from the wire (killing cross-site reuse as a bonus).
+
+### Why no PAKE is needed for the floor
+
+The client sends `password_secret = scrypt(password)` (memory-hard) for auth,
+never the raw password. An operator who captures login traffic therefore gets
+`scrypt(password)`, not the password — to form the blob passphrase they must
+invert that memory-hard secret *and* crack `H(identifier)` for the identifier.
+The floor is the password + scrypt cost, **independent of identifier entropy**.
+
+(This restores a property the design previously only *asserted*. An earlier
+draft sent the raw password to the server and claimed the operator still
+couldn't decrypt because `H(identifier)` is "non-invertible" — but an unsalted
+SHA-256 of a guessable email is trivially crackable, so with the raw password in
+hand the operator could form the passphrase for low-entropy identifiers. Sending
+`scrypt(password)` instead makes the claim actually hold.)
+
+A PAKE (OPAQUE) remains an optional *future* hardening: it would also stop the
+derived secret being **replayable** for online account actions by whoever
+captures it. (Against the operator itself this is moot — they control the server
+— so replay only matters to a third party that captured logged traffic.) That is
+a narrower residual than "raw password on the wire," hence deferred.
+
+The other residual operator threat is *malicious page JS reading the identifier
+and password as typed*; that is input isolation, not a PAKE — addressed by
+perimeter defense (strict CSP, self-hosted bundle) on the website and by the
+extension's isolated context, where it does not exist.
 
 ### Why the extension is the stronger surface
 
@@ -255,7 +295,7 @@ PUT  /api/blob         { identifier_hash, password, new_ncryptsec [, new_passwor
 DELETE /api/account    { identifier_hash, password }
 ```
 
-The API is namespaced under `/api/*` so it coexists with the bundled static site served at `/*` by the same Rust binary — one origin, no CORS (see [architecture.md](architecture.md)). `identifier_hash` is computed client-side as `H(identifier)`; the server never receives the plaintext identifier. **The server owns argon2**: `register` and `PUT` receive the plaintext `password` over TLS and hash it server-side — never a client-supplied verifier, which would let a client store a hash for a different password. Every endpoint except `register` verifies `argon2(password)` against the stored `password_verifier` inline — there is no separate auth layer and no session (PAKE upgrade deferred). `PUT /api/blob` covers both a plain re-encrypt and a password change: the client re-encrypts the `ncryptsec` with the new passphrase and, when rotating the password, also supplies `new_password` so both stored fields update atomically.
+The API is namespaced under `/api/*` so it coexists with the bundled static site served at `/*` by the same Rust binary — one origin, no CORS (see [architecture.md](architecture.md)). `identifier_hash` is computed client-side as `H(identifier)`; the server never receives the plaintext identifier. **The server owns argon2**: `register` and `PUT` receive the client-derived `password_secret` (`scrypt(password)` — the raw password never reaches the server) and hash it server-side — never a client-supplied verifier, which would let a client store a hash for a different password. Every endpoint except `register` verifies `argon2(password_secret)` against the stored `password_verifier` inline — there is no separate auth layer and no session (PAKE upgrade deferred). `PUT /api/blob` covers both a plain re-encrypt and a password change: the client re-encrypts the `ncryptsec` with the new passphrase and, when rotating the password, also supplies `new_password_secret` (`scrypt(new_password)`) so both stored fields update atomically.
 
 ### 2. Browser extension (JS, NIP-07)
 
