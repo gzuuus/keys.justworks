@@ -39,6 +39,16 @@ export type KeyholderRes =
   | { id: string; ok: true; result: unknown }
   | { id: string; ok: false; error: string };
 
+/**
+ * Idle auto-lock interval (generous, to avoid re-login footguns). The Worker
+ * wipes the held key after this long with no keyholder messages, then notifies
+ * the page. A page reload already drops the key (never persist).
+ */
+export const IDLE_LOCK_MS = 30 * 60 * 1000;
+
+/** Unsolicited Worker → page notification (no request correlation). */
+export type KeyholderNotification = { notification: "auto-locked" };
+
 /** Stateful keyholder: holds the secret, dispatches one request at a time. */
 export class KeyholderCore {
   #secret: Uint8Array | null = null;
@@ -46,6 +56,12 @@ export class KeyholderCore {
   /** Is a key currently held? (for tests / status) */
   get unlocked(): boolean {
     return this.#secret !== null;
+  }
+
+  /** Wipe the held key. Used by the `lock` op and by idle auto-lock. */
+  lock(): void {
+    this.#secret?.fill(0);
+    this.#secret = null;
   }
 
   /** Handle a wire request, returning the wire response (never throws). */
@@ -72,8 +88,7 @@ export class KeyholderCore {
         return { pubkey: getPublicKey(secret) };
       }
       case "lock":
-        this.#secret?.fill(0);
-        this.#secret = null;
+        this.lock();
         return { locked: true as const };
       case "status":
         return this.#secret

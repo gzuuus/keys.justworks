@@ -11,6 +11,7 @@
 	let npub = $state<string | null>(null);
 	let locked = $state(true);
 	let signedEvent = $state<string | null>(null);
+	let autoLockedNote = $state(false);
 
 	// ponytail: keyholder is page-scoped for this increment. A session-wide
 	// singleton (so navigating between routes keeps the unlocked key) is a later
@@ -26,13 +27,18 @@
 		event.preventDefault();
 		error = null;
 		signedEvent = null;
+		autoLockedNote = false;
 		if (!identifier || !password) {
 			error = 'Enter your identifier and password.';
 			return;
 		}
 		busy = true;
 		try {
-			if (!keyholder) keyholder = createKeyholder();
+			if (!keyholder) {
+				keyholder = createKeyholder();
+				// The Worker wipes the key after idle and notifies us; reflect it in the UI.
+				keyholder.onAutoLock = () => markLocked(true);
+			}
 			const identifier_hash = await identifierHash(identifier);
 			const ncryptsec = await login({ identifierHash: identifier_hash, password });
 			// Decrypt + hold the key in the Worker. The page sees only the pubkey;
@@ -64,11 +70,17 @@
 		}
 	}
 
-	async function onLock() {
-		await keyholder?.lock();
+	/** Reflect a locked key in the UI. `auto` flags an idle auto-lock for a note. */
+	function markLocked(auto = false) {
 		locked = true;
 		npub = null;
 		signedEvent = null;
+		if (auto) autoLockedNote = true;
+	}
+
+	async function onLock() {
+		await keyholder?.lock();
+		markLocked(false);
 	}
 </script>
 
@@ -97,6 +109,10 @@
 
 	<button type="submit" disabled={busy}>{busy ? 'Unlocking…' : 'Unlock'}</button>
 </form>
+
+{#if autoLockedNote}
+	<p class="note">Your key was auto-locked after inactivity. Unlock again to continue.</p>
+{/if}
 
 {#if !locked && npub}
 	<section class="unlocked">
@@ -161,6 +177,10 @@
 	}
 	.error {
 		color: #b00020;
+	}
+	.note {
+		color: #7a5400;
+		font-size: 0.85rem;
 	}
 	.unlocked {
 		margin-top: 2rem;

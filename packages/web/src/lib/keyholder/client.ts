@@ -11,7 +11,7 @@
  * hardening upgrade) is a transport change, not an API change.
  */
 import type { EventTemplate } from "nostr-tools";
-import type { KeyholderOp, KeyholderOps, KeyholderReq, KeyholderRes } from "./core";
+import type { KeyholderOp, KeyholderOps, KeyholderReq, KeyholderRes, KeyholderNotification } from "./core";
 
 interface Pending {
   resolve: (v: unknown) => void;
@@ -22,15 +22,22 @@ export class Keyholder {
   #worker: Worker;
   #pending = new Map<string, Pending>();
 
+  /** Invoked when the Worker auto-locks the key after idle (page updates its UI). */
+  onAutoLock: (() => void) | null = null;
+
   constructor(worker: Worker) {
     this.#worker = worker;
-    worker.onmessage = (e: MessageEvent<KeyholderRes>) => {
-      const res = e.data;
-      const p = this.#pending.get(res.id);
+    worker.onmessage = (e: MessageEvent<KeyholderRes | KeyholderNotification>) => {
+      const msg = e.data;
+      if ("notification" in msg) {
+        if (msg.notification === "auto-locked" && this.onAutoLock) this.onAutoLock();
+        return;
+      }
+      const p = this.#pending.get(msg.id);
       if (!p) return;
-      this.#pending.delete(res.id);
-      if (res.ok) p.resolve(res.result);
-      else p.reject(new Error(res.error));
+      this.#pending.delete(msg.id);
+      if (msg.ok) p.resolve(msg.result);
+      else p.reject(new Error(msg.error));
     };
     worker.onerror = (e) => {
       const err = new Error(e.message || "keyholder worker error");

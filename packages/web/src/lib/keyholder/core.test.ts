@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 import { generateSecretKey, getPublicKey, nip19, verifyEvent, type Event } from "nostr-tools";
 import { encryptSecret } from "@kj/core";
-import { KeyholderCore, type KeyholderReq } from "./core";
+import { KeyholderCore, IDLE_LOCK_MS, type KeyholderReq } from "./core";
 
 const ID = "alice@example.com";
 const PW = "correct horse battery staple";
@@ -63,6 +63,19 @@ describe("KeyholderCore lifecycle", () => {
     const core = new KeyholderCore();
     expect(() => ok(core, msg("unlock", { ncryptsec: NCRYPTSEC, identifier: ID, password: "wrong" }))).toThrow();
     expect(core.unlocked).toBe(false);
+  });
+
+  it("lock() wipes a held key directly (the path idle auto-lock takes)", () => {
+    const core = new KeyholderCore();
+    ok(core, msg("unlock", { ncryptsec: NCRYPTSEC, identifier: ID, password: PW }));
+    expect(core.unlocked).toBe(true);
+    core.lock();
+    expect(core.unlocked).toBe(false);
+    expect(err(core, msg("getPublicKey"))).toMatch(/locked/);
+  });
+
+  it("IDLE_LOCK_MS is the generous ~30 min idle window", () => {
+    expect(IDLE_LOCK_MS).toBe(30 * 60 * 1000);
   });
 });
 
