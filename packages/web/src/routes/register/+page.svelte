@@ -106,6 +106,8 @@
 	<button type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create key'}</button>
 </form>
 
+<p class="alt-link">Already have a key? <a href="/import">Import it</a> (advanced).</p>
+
 {#if npub}
 	<section class="success">
 		<h2>Key created ✓</h2>
@@ -211,6 +213,14 @@
 	}
 	.error {
 		color: #b00020;
+	}
+	.alt-link {
+		margin-top: 1rem;
+		font-size: 0.9rem;
+		color: #555;
+	}
+	.alt-link a {
+		color: inherit;
 	}
 	.success {
 		margin-top: 2rem;

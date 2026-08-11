@@ -8,6 +8,7 @@
 	const nav = [
 		{ href: '/', label: 'Home' },
 		{ href: '/register', label: 'Create' },
+		{ href: '/import', label: 'Import' },
 		{ href: '/login', label: 'Log in' }
 	];
 </script>

@@ -12,12 +12,15 @@
  * `worker.ts` (Worker entry) and `client.ts` (page client).
  */
 import type { EventTemplate, VerifiedEvent } from "nostr-tools";
-import { finalizeEvent, getPublicKey, nip04, nip44 } from "nostr-tools";
-import { decryptSecret } from "@kj/core";
+import { finalizeEvent, getPublicKey, nip04, nip19, nip44 } from "nostr-tools";
+import { decryptSecret, encryptSecret } from "@kj/core";
 
 /** Each operation maps to its request payload and result type. */
 export interface KeyholderOps {
   unlock: { req: { ncryptsec: string; identifier: string; password: string }; res: { pubkey: string } };
+  /** One-shot: decode an existing nsec and wrap it into an ncryptsec inside the
+   * Worker (the raw established key never lingers in page JS). Does not hold. */
+  import: { req: { nsec: string; identifier: string; password: string }; res: { ncryptsec: string; pubkey: string } };
   lock: { req: void; res: { locked: true } };
   status: { req: void; res: { unlocked: boolean; pubkey: string | null } };
   getPublicKey: { req: void; res: string };
@@ -86,6 +89,17 @@ export class KeyholderCore {
         this.#secret?.fill(0); // wipe any previously-held key
         this.#secret = secret;
         return { pubkey: getPublicKey(secret) };
+      }
+      case "import": {
+        const { nsec, identifier, password } = req.payload;
+        const decoded = nip19.decode(nsec); // throws on malformed bech32
+        if (decoded.type !== "nsec") throw new Error("expected an nsec");
+        const secret = decoded.data;
+        try {
+          return { ncryptsec: encryptSecret(secret, identifier, password), pubkey: getPublicKey(secret) };
+        } finally {
+          secret.fill(0); // never hold the imported key
+        }
       }
       case "lock":
         this.lock();

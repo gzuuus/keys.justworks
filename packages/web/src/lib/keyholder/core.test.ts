@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { generateSecretKey, getPublicKey, nip19, verifyEvent, type Event } from "nostr-tools";
-import { encryptSecret } from "@kj/core";
+import { encryptSecret, decryptSecret } from "@kj/core";
 import { KeyholderCore, IDLE_LOCK_MS, type KeyholderReq } from "./core";
 
 const ID = "alice@example.com";
@@ -63,6 +63,26 @@ describe("KeyholderCore lifecycle", () => {
     const core = new KeyholderCore();
     expect(() => ok(core, msg("unlock", { ncryptsec: NCRYPTSEC, identifier: ID, password: "wrong" }))).toThrow();
     expect(core.unlocked).toBe(false);
+  });
+
+  it("import decodes an nsec and wraps it to a valid ncryptsec, without holding", () => {
+    const core = new KeyholderCore();
+    const nsec = nip19.nsecEncode(SECRET);
+    const res = ok(core, msg("import", { nsec, identifier: ID, password: PW })) as {
+      ncryptsec: string;
+      pubkey: string;
+    };
+    expect(res.pubkey).toBe(PUBKEY);
+    // ncryptsec is non-deterministic (random salt/nonce); verify by decrypting.
+    expect(getPublicKey(decryptSecret(res.ncryptsec, ID, PW))).toBe(PUBKEY);
+    // import is a one-shot transform — it must NOT leave a key held.
+    expect(core.unlocked).toBe(false);
+    expect(err(core, msg("getPublicKey"))).toMatch(/locked/);
+  });
+
+  it("import rejects a malformed nsec", () => {
+    const core = new KeyholderCore();
+    expect(() => ok(core, msg("import", { nsec: "not-an-nsec", identifier: ID, password: PW }))).toThrow();
   });
 
   it("lock() wipes a held key directly (the path idle auto-lock takes)", () => {
