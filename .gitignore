@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+
+# rust
+target/
+
+# typescript build output
+dist/
+
+# web build output — keep the committed placeholder the server embeds at compile time
+packages/web/build/*
+!packages/web/build/index.html
+
+# env / misc
+*.log
+.DS_Store
+.env
+.env.*
