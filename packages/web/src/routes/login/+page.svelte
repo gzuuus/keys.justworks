@@ -1,54 +1,87 @@
 <script lang="ts">
-	import { decryptSecret, identifierHash, login, ApiError } from '@kj/core';
-	import { getPublicKey, nip19 } from 'nostr-tools';
+	import { onDestroy } from 'svelte';
+	import { identifierHash, login, ApiError } from '@kj/core';
+	import { nip19 } from 'nostr-tools';
+	import { createKeyholder, type Keyholder } from '$lib/keyholder/client';
 
 	let identifier = $state('');
 	let password = $state('');
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	let npub = $state<string | null>(null);
+	let locked = $state(true);
+	let signedEvent = $state<string | null>(null);
 
-	// ponytail: page-JS keyholding for this increment only — we decrypt to prove
-	// the custody-free retrieval loop works, then drop the key. The design MVP
-	// moves the held key into a Web Worker (and later a sandboxed vault iframe);
-	// that lands in the next increment along with NIP-46 signing.
+	// ponytail: keyholder is page-scoped for this increment. A session-wide
+	// singleton (so navigating between routes keeps the unlocked key) is a later
+	// UX step; a page reload already drops it, which is correct (never persist).
+	let keyholder: Keyholder | null = null;
 
-	async function onSubmit(event: SubmitEvent) {
+	onDestroy(() => {
+		keyholder?.destroy();
+		keyholder = null;
+	});
+
+	async function onUnlock(event: SubmitEvent) {
 		event.preventDefault();
 		error = null;
-		npub = null;
+		signedEvent = null;
 		if (!identifier || !password) {
 			error = 'Enter your identifier and password.';
 			return;
 		}
 		busy = true;
 		try {
+			if (!keyholder) keyholder = createKeyholder();
 			const identifier_hash = await identifierHash(identifier);
 			const ncryptsec = await login({ identifierHash: identifier_hash, password });
-			const secret = decryptSecret(ncryptsec, identifier, password);
-			try {
-				// If this npub matches the one shown at registration, the full
-				// register → store → retrieve → decrypt loop is proven.
-				npub = nip19.npubEncode(getPublicKey(secret));
-			} finally {
-				secret.fill(0); // best-effort wipe
-			}
+			// Decrypt + hold the key in the Worker. The page sees only the pubkey;
+			// the raw secret never leaves the Worker.
+			const { pubkey } = await keyholder.unlock(ncryptsec, identifier, password);
+			npub = nip19.npubEncode(pubkey);
+			locked = false;
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong. Please try again.';
 		} finally {
 			busy = false;
 		}
 	}
+
+	async function onSignTest() {
+		if (!keyholder || locked) return;
+		signedEvent = null;
+		error = null;
+		try {
+			const evt = await keyholder.signEvent({
+				kind: 1,
+				content: 'signed via keys.justworks worker keyholder',
+				tags: [],
+				created_at: Math.floor(Date.now() / 1000)
+			});
+			signedEvent = JSON.stringify(evt, null, 2);
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'signing failed';
+		}
+	}
+
+	async function onLock() {
+		await keyholder?.lock();
+		locked = true;
+		npub = null;
+		signedEvent = null;
+	}
 </script>
 
 <h1>Log in</h1>
 
 <p>
-		Your encrypted key is fetched from the server and decrypted in your browser.
-		The server verifies your password but can never see your key or identifier.
+	Your encrypted key is fetched from the server and decrypted <strong>inside a Web
+	Worker</strong> — the raw key never reaches this page. The Worker exposes the
+	NIP-07 surface (<code>getPublicKey</code>, <code>signEvent</code>,
+	<code>nip04</code>, <code>nip44</code>).
 </p>
 
-<form onsubmit={onSubmit}>
+<form onsubmit={onUnlock}>
 	<label>
 		Identifier
 		<input bind:value={identifier} autocomplete="username" required />
@@ -65,15 +98,20 @@
 	<button type="submit" disabled={busy}>{busy ? 'Unlocking…' : 'Unlock'}</button>
 </form>
 
-{#if npub}
-	<section class="success">
+{#if !locked && npub}
+	<section class="unlocked">
 		<h2>Unlocked ✓</h2>
-		<p>Key recovered. Your npub:</p>
+		<p>Key held in the Worker. Your npub:</p>
 		<code class="npub">{npub}</code>
-		<p class="muted">
-			(Increment 1 only proves retrieval — the key is not held beyond this page.
-			Holding it for signing via NIP-46 lands with the Web Worker keyholder.)
-		</p>
+
+		<div class="actions">
+			<button class="secondary" onclick={onSignTest}>Sign a test note</button>
+			<button class="danger" onclick={onLock}>Lock</button>
+		</div>
+
+		{#if signedEvent}
+			<pre class="signed">{signedEvent}</pre>
+		{/if}
 	</section>
 {/if}
 
@@ -111,10 +149,20 @@
 		opacity: 0.6;
 		cursor: default;
 	}
+	.secondary {
+		background: #fff;
+		color: #1a1a1a;
+		border: 1px solid #ccc;
+	}
+	.danger {
+		background: #fff;
+		color: #b00020;
+		border: 1px solid #b00020;
+	}
 	.error {
 		color: #b00020;
 	}
-	.success {
+	.unlocked {
 		margin-top: 2rem;
 		padding: 1rem;
 		background: #f0f7f0;
@@ -129,9 +177,29 @@
 		padding: 0.5rem;
 		border-radius: 4px;
 	}
-	.muted {
-		font-size: 0.8rem;
-		color: #666;
-		margin-bottom: 0;
+	.actions {
+		display: flex;
+		gap: 0.75rem;
+		margin-top: 1rem;
+	}
+	.actions button {
+		margin-top: 0;
+	}
+	.signed {
+		margin-top: 1rem;
+		background: #1a1a1a;
+		color: #eee;
+		padding: 0.75rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		overflow-x: auto;
+		white-space: pre-wrap;
+		word-break: break-all;
+	}
+	code {
+		background: #eee;
+		padding: 0.1rem 0.35rem;
+		border-radius: 3px;
+		font-size: 0.9em;
 	}
 </style>
