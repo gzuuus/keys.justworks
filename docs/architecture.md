@@ -99,6 +99,7 @@ Ports: **API** `:3000`, **web** `:5173` (proxies `/api/*` → `:3000`).
 | `make dev-api`      | run the Rust API only (`:3000`)                     |
 | `make dev-web`      | run the Vite dev server (`:5173`)                   |
 | `make dev-extension`| build the extension in watch mode                   |
+| `make serve`        | prod-like: build web, then run server (`:3000`)     |
 | `make build-web`    | build the static web assets                         |
 | `make build-server` | build the Rust server binary (embeds web)           |
 | `make build`        | build web, then server                              |

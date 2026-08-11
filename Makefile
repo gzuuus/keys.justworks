@@ -10,7 +10,7 @@ SERVER_DIR := server
 WEB_DIR    := packages/web
 EXT_DIR    := packages/extension
 
-.PHONY: help install dev dev-api dev-web dev-extension build build-web build-server clean
+.PHONY: help install dev dev-api dev-web dev-extension serve build build-web build-server clean
 
 help: ## show this help
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -21,11 +21,14 @@ install: ## install workspace dependencies (pnpm)
 dev: ## run api + web together (parallel)
 	$(MAKE) -j 2 dev-api dev-web
 
-dev-api: ## run the Rust api on :$(API_PORT)
+dev-api: ## run the Rust api on :$(API_PORT) (api only — no web build; pair with dev-web)
 	cd $(SERVER_DIR) && cargo run
 
 dev-web: ## run the Vite dev server on :$(WEB_PORT) (proxies /api -> :$(API_PORT))
 	cd $(WEB_DIR) && pnpm dev
+
+serve: build-web ## prod-like: build web then run server (serves bundled site on :$(API_PORT))
+	cd $(SERVER_DIR) && cargo run
 
 dev-extension: ## build the extension in watch mode (load unpacked in browser)
 	cd $(EXT_DIR) && pnpm dev

@@ -52,14 +52,16 @@ All orchestration is in the `Makefile`. Ports: **API** `:3000`, **web** `:5173`
 make help            # list all targets
 make install         # pnpm install across the workspace
 make dev             # api (:3000) + web (:5173) in parallel
-make dev-api         # Rust API only
+make dev-api         # Rust API only (no web build; pair with dev-web)
 make dev-web         # Vite dev server only
 make dev-extension   # extension watch build
+make serve           # prod-like: build web, then run server on :3000
 make build           # build web, then server (embeds web assets)
 make clean
 ```
 
 Rust (`server/`): `cargo fmt`, `cargo clippy --all-targets`, `cargo test`, `cargo run`.
+Run the bundled site end-to-end: `make serve` (builds web, then runs the server on :3000).
 JS (`packages/`): pnpm workspaces — `pnpm --filter @kj/<pkg> run <script>`.
 
 > Several targets are live only after the corresponding package is scaffolded
