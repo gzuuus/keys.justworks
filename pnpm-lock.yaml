@@ -26,6 +26,9 @@ importers:
       '@kj/core':
         specifier: workspace:*
         version: link:../core
+      nostr-tools:
+        specifier: ^2.24.1
+        version: 2.24.1(typescript@6.0.3)
     devDependencies:
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
@@ -973,6 +976,18 @@ snapshots:
       nostr-wasm: 0.1.0
     optionalDependencies:
       typescript: 5.9.3
+
+  nostr-tools@2.24.1(typescript@6.0.3):
+    dependencies:
+      '@noble/ciphers': 2.1.1
+      '@noble/curves': 2.0.1
+      '@noble/hashes': 2.0.1
+      '@scure/base': 2.0.0
+      '@scure/bip32': 2.0.1
+      '@scure/bip39': 2.0.1
+      nostr-wasm: 0.1.0
+    optionalDependencies:
+      typescript: 6.0.3
 
   nostr-wasm@0.1.0: {}
 
