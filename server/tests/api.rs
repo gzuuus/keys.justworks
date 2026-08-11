@@ -311,3 +311,26 @@ async fn delete_account_wrong_password_is_unauthorized() {
     .await;
     assert_eq!(st, StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn security_headers_present_on_every_response() {
+    let s = setup().await;
+    let resp = app(s)
+        .oneshot(
+            Request::builder()
+                .uri("/api/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let h = resp.headers();
+    assert_eq!(h.get("x-content-type-options").unwrap(), "nosniff");
+    assert_eq!(h.get("x-frame-options").unwrap(), "DENY");
+    assert_eq!(h.get("referrer-policy").unwrap(), "no-referrer");
+    assert_eq!(h.get("cross-origin-opener-policy").unwrap(), "same-origin");
+    let csp = h.get("content-security-policy").unwrap().to_str().unwrap();
+    assert!(csp.contains("script-src 'self'"), "{csp}");
+    assert!(csp.contains("frame-ancestors 'none'"), "{csp}");
+    assert!(csp.contains("object-src 'none'"), "{csp}");
+}

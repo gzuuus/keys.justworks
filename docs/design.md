@@ -285,11 +285,13 @@ The API is namespaced under `/api/*` so it coexists with the bundled static site
   `Content-Security-Policy` emitted as a **header** by the Rust server
   (`script-src 'self'`, `object-src 'none'`, `base-uri 'none'`,
   `frame-ancestors 'none'`, `connect-src 'self'` + relay `wss:` origins for
-  NIP-46); the Vite build emits **no inline scripts**
-  (`modulePreload.polyfill = false`) so `'self'` suffices with no nonces.
-  Everything is self-hosted and same-origin — no CDNs, no third-party scripts,
-  so no supply-chain script vector. This is what makes the brief windows where
-  a secret passes through page JS (generate, import, unlock) safe: with no XSS
+  NIP-46). The only inline `<script>` in the built HTML is SvelteKit's
+  bootstrap loader; the server hashes it from the embedded `index.html` and
+  includes `'sha256-<hash>'` in `script-src`, so no `'unsafe-inline'` is needed
+  (`modulePreload.polyfill = false` avoids an extra inline script). Everything is
+  self-hosted and same-origin — no CDNs, no third-party scripts, so no
+  supply-chain script vector. This is what makes the brief windows where a
+  secret passes through page JS (generate, import, unlock) safe: with no XSS
   installed, the window is benign.
 - **Idle auto-lock:** the Worker wipes the held key after a generous idle
   interval (~30 min, configurable) with no keyholder messages, then notifies

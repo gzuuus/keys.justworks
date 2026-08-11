@@ -10,13 +10,17 @@ use std::sync::OnceLock;
 
 use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
-use axum::http::{header, StatusCode, Uri};
+use axum::extract::{Request, State};
+use axum::http::{header, HeaderName, HeaderValue, StatusCode, Uri};
+use axum::middleware::{from_fn, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post, put};
-use axum::{extract::State, Json, Router};
+use axum::{Json, Router};
+use base64::{engine::general_purpose, Engine};
 use rand_core::OsRng;
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 use sqlx::{Row, SqlitePool};
 use thiserror::Error;
@@ -75,6 +79,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/account", delete(delete_account))
         .fallback(static_handler)
         .layer(TraceLayer::new_for_http())
+        .layer(from_fn(security_headers))
         .with_state(state)
 }
 
@@ -367,5 +372,132 @@ async fn static_handler(uri: Uri) -> Response {
                 .into_response()
         }
         None => (StatusCode::NOT_FOUND, "not found").into_response(),
+    }
+}
+
+// --- perimeter: CSP + security response headers -----------------------------
+
+/// The `Content-Security-Policy` for the bundled site. `script-src` is `'self'`
+/// plus a hash of SvelteKit's inline bootstrap loader (the inline `<script>`
+/// SvelteKit emits), computed from the embedded `index.html` so it stays in sync
+/// across rebuilds. Computed once and cached. See docs/design.md "Perimeter
+/// defense".
+fn csp_header() -> &'static str {
+    static CSP: OnceLock<String> = OnceLock::new();
+    CSP.get_or_init(build_csp)
+}
+
+fn build_csp() -> String {
+    let mut script_src = String::from("'self'");
+    for h in inline_script_hashes() {
+        script_src.push_str(" 'sha256-");
+        script_src.push_str(&h);
+        script_src.push('\'');
+    }
+    format!(
+        "default-src 'self'; script-src {script_src}; style-src 'self'; \
+         img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; \
+         base-uri 'none'; frame-ancestors 'none'; form-action 'self'; \
+         frame-src 'none'; manifest-src 'self'"
+    )
+}
+
+/// SHA-256/base64 (per CSP hash-source) of every inline `<script>` body in the
+/// embedded `index.html` (scripts without a `src`). External scripts are covered
+/// by `'self'`; only inline ones need a hash. The browser hashes the exact bytes
+/// between `>` and `</script>`, so we do too.
+fn inline_script_hashes() -> Vec<String> {
+    let Some(file) = WebAssets::get("index.html") else {
+        return Vec::new();
+    };
+    let Ok(html) = std::str::from_utf8(&file.data) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    let mut rest = html;
+    while let Some(open) = rest.find("<script") {
+        rest = &rest[open..];
+        let Some(tag_end) = rest.find('>') else { break };
+        let opening_tag = &rest[..tag_end]; // `<script` + attrs, no `>`
+        let after = &rest[tag_end + 1..];
+        let Some(close) = after.find("</script>") else {
+            break;
+        };
+        if !opening_tag.contains("src") {
+            out.push(general_purpose::STANDARD.encode(Sha256::digest(&after[..close])));
+        }
+        rest = &after[close + "</script>".len()..];
+    }
+    out
+}
+
+/// Apply security response headers to every response. CSP (with `frame-ancestors
+/// 'none'` — works in a header, unlike a meta tag), plus the usual hardening.
+async fn security_headers(req: Request, next: Next) -> Response {
+    let mut res = next.run(req).await;
+    let h = res.headers_mut();
+    h.insert(
+        HeaderName::from_static("content-security-policy"),
+        HeaderValue::from_str(csp_header()).expect("csp is ascii"),
+    );
+    h.insert(
+        HeaderName::from_static("x-content-type-options"),
+        HeaderValue::from_static("nosniff"),
+    );
+    h.insert(
+        HeaderName::from_static("referrer-policy"),
+        HeaderValue::from_static("no-referrer"),
+    );
+    h.insert(
+        HeaderName::from_static("x-frame-options"),
+        HeaderValue::from_static("DENY"),
+    );
+    h.insert(
+        HeaderName::from_static("cross-origin-opener-policy"),
+        HeaderValue::from_static("same-origin"),
+    );
+    h.insert(
+        HeaderName::from_static("permissions-policy"),
+        // ponytail: block the obvious sensitive APIs we don't use; extend as the app grows.
+        HeaderValue::from_static("camera=(), microphone=(), geolocation=(), payment=()"),
+    );
+    h.insert(
+        HeaderName::from_static("strict-transport-security"),
+        HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+    );
+    res
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn csp_shape_and_inline_script_hash() {
+        let csp = csp_header();
+        assert!(csp.contains("script-src 'self'"), "{csp}");
+        assert!(csp.contains("style-src 'self'"), "{csp}");
+        assert!(csp.contains("object-src 'none'"), "{csp}");
+        assert!(csp.contains("base-uri 'none'"), "{csp}");
+        assert!(csp.contains("frame-ancestors 'none'"), "{csp}");
+        assert!(csp.contains("form-action 'self'"), "{csp}");
+        // When the embedded index.html has an inline <script> (i.e. the web is
+        // built, not the placeholder), its hash must appear in script-src.
+        if let Some(f) = WebAssets::get("index.html") {
+            let html = std::str::from_utf8(&f.data).unwrap_or("");
+            let has_inline = html.match_indices("<script").any(|(i, _)| {
+                let rest = &html[i..];
+                let Some(te) = rest.find('>') else {
+                    return false;
+                };
+                !rest[..te].contains("src")
+            });
+            if has_inline {
+                assert!(
+                    csp.contains("'sha256-"),
+                    "inline script present but no hash in csp: {csp}"
+                );
+            }
+        }
     }
 }

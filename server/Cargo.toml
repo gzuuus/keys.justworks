@@ -21,6 +21,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
 
+# Perimeter: hash SvelteKit's bootstrap inline script into the CSP header.
+sha2 = "0.10"
+base64 = "0.22"
+
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
 http = "1"

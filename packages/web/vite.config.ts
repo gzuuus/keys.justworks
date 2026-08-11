@@ -16,6 +16,12 @@ export default defineConfig({
 			adapter: adapter({ fallback: 'index.html' })
 		})
 	],
+	// No inline modulepreload polyfill → SvelteKit's bootstrap is the ONLY inline
+	// <script> in the built index.html. The Rust server hashes it and includes the
+	// hash in the CSP header's script-src (see server/src/lib.rs). CSP is owned by
+	// the server, not here: SvelteKit's csp config only emits a meta for
+	// *prerendered* pages, and our SPA fallback isn't prerendered.
+	build: { modulePreload: { polyfill: false } },
 	server: {
 		// Dev: proxy /api/* to the Rust server on :3000 so the bundled-site,
 		// same-origin /api flow works in dev too.
