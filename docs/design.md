@@ -59,8 +59,9 @@ identifier is defense-in-depth on top of it.
 
 ## Core design: the keystone
 
-The `ncryptsec` is encrypted with a passphrase of **`identifier ‖ password`**
-(unambiguously concatenated — separator byte or length-prefixing), derived
+The `ncryptsec` is encrypted with a passphrase of **`identifier ‖ password`**,
+concatenated unambiguously with a byte-length prefix on the identifier
+(`dec(byteLen(identifier)) ‖ ":" ‖ identifier ‖ password`), derived
 client-side per [NIP-49] (scrypt + XChaCha20-Poly1305).
 
 The **identifier is the keystone**: it is the one secret the server is blind to.
@@ -85,14 +86,15 @@ remains an optional future hardening, not a requirement.
 ### Conditions (these are invariants of the security model)
 
 1. The identifier is sent/stored **only as `H(identifier)`**, at registration *and* login *and* on every subsequent request. One plaintext leak anywhere and the keystone is gone.
-2. The passphrase concatenation is **unambiguous** (a `id="ab", pw="cd"` vs `id="a", pw="bcd"` collision would be a silent, miserable bug).
+2. The passphrase concatenation is **unambiguous** (a `id="ab", pw="cd"` vs `id="a", pw="bcd"` collision would be a silent, miserable bug). Resolved by byte-length-prefixing the identifier.
 3. The identifier is high-entropy **if the user wants its full benefit**. (See "UX stance" — we disclose, we do not enforce.)
 
 ## Architecture
 
 One conceptual keyholder, three thin surfaces. The crypto is reviewed once and
-reused — via `nostr` (Rust) on the server side and `@nostr/tools` (JS) on the
-client surfaces, both implementing [NIP-49] with default `log_n = 16`.
+reused — via `nostr` (Rust) on the server side and `nostr-tools`
+(`nostr-tools/nip49`) on the client surfaces, both implementing [NIP-49]
+with default `log_n = 16`.
 
 ```
                 ┌─────────────────────────────────────┐
@@ -227,14 +229,14 @@ The API is namespaced under `/api/*` so it coexists with the bundled static site
 
 ### 2. Browser extension (JS, NIP-07)
 
-- **Stack:** TypeScript, `@nostr/tools` (`nip49`), WebExtensions (MV3).
+- **Stack:** TypeScript, `nostr-tools` (`nip49`), WebExtensions (MV3).
 - **Responsibility:** the secure signing surface. Login → fetch `ncryptsec` → decrypt → hold key → expose `window.nostr` ([NIP-07]: `getPublicKey`, `signEvent`, `getRelays`, `nip04`/`nip44` as needed).
 - **Isolation:** both identifier/password input (extension UI) and the decrypted key (extension background / isolated context) are out of page-JS reach.
 - **MVP scope:** NIP-07 only. Not a NIP-46 bunker (later).
 
 ### 3. Website (JS, NIP-46 bunker + onboarding)
 
-- **Stack:** TypeScript, `@nostr/tools` (`nip49`, `nip46`), a Web Worker keyholder.
+- **Stack:** TypeScript, `nostr-tools` (`nip49`, `nip46`), a Web Worker keyholder.
 - **Responsibility:** onboarding, login, and a [NIP-46] remote signer (bunker). This is also the **primary surface on mobile** (where browser extensions are largely unavailable) — not merely a convenience fallback.
 - **Keyholder isolation (MVP):** the decrypted `nsec` lives **only in a Web Worker**. The page exchanges sign-requests and signatures with the worker, never the key. A page compromise becomes a *live signing oracle for the session*, not silent key theft.
 - **Keyholder isolation (upgrade):** move the keyholder into a **sandboxed cross-origin iframe** (`vault.<origin>`, `sandbox="allow-scripts"` without `allow-same-origin`), bridged by `postMessage` with strict `targetOrigin`/`event.origin` checks, with approvals rendered in a popup to the vault origin. This also isolates identifier/password *input* from the main page, closing the residual malicious-page-JS gap. Design the message-bridge interface now so this is a drop-in upgrade.
@@ -303,4 +305,4 @@ These are implementation choices, not design decisions — they get resolved dur
 - [NIP-46] Nostr Connect (remote signer / bunker) — https://nips.nostr.com/46
 - [NIP-49] Private Key Encryption (`ncryptsec`) — https://nips.nostr.com/49
 - rust-nostr `nip49` (`EncryptedSecretKey`) — https://docs.rs/nostr/latest/nostr/nips/nip49/
-- `@nostr/tools` `nip49` — https://jsr.io/@nostr/tools/doc/nip49
+- `nostr-tools` `nip49` — https://github.com/nbd-wtf/nostr-tools (import from `nostr-tools/nip49`)

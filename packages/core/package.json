@@ -7,10 +7,14 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc",
-    "test": "echo 'no tests yet — add golden-vector for passphrase + identifierHash' && exit 0"
+    "build": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "nostr-tools": "^2.24.1"
   }
 }

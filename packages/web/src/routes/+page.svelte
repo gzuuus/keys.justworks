@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { identifierHash, passphrase } from '@kj/core';
+	import { identifierHash } from '@kj/core';
 
 	let status = $state('loading…');
 
 	// Smoke-check that the shared core is wired through the workspace.
 	(async () => {
-		const p = passphrase('demo', 'secret');
 		const h = await identifierHash('demo');
-		status = `core wired — passphrase ${p.length} chars, hash ${h.slice(0, 12)}…`;
+		status = `core wired — identifierHash ${h.slice(0, 12)}…`;
 	})();
 </script>
 
