@@ -207,11 +207,11 @@ in an isolated popup. Hence: *use the extension when you can.*
 
 ### 1. ncryptsec server (Rust)
 
-- **Stack:** Rust, SQLite (e.g. `rusqlite` or `sqlx`), a minimal web framework (`axum`), the `nostr` crate's `nip49` feature for any server-side validation (the server does not decrypt).
+- **Stack:** Rust, `axum` + `sqlx` (sqlite, runtime queries) + `argon2`, with the static site embedded by `rust-embed`. The server does not decrypt and treats `ncryptsec` as an opaque stored blob (prefix check only).
 - **Responsibility:** store and serve `ncryptsec` blobs behind identifier/password auth. Never decrypt. Never sign.
 - **Auth:** **stateless**. Every request that touches an account re-verifies `{ identifier_hash, password }` inline against the stored verifier; `POST /login` returns the `ncryptsec` directly. No sessions, no tokens — nothing to steal, store, or expire. The server is a locker, not a session host.
 - **Hardening:**
-  - Per-account **and** per-IP login rate-limiting (the only online brute-force defense).
+  - Per-account **and** per-IP login rate-limiting (the only online brute-force defense). Deferred past first cut; `argon2`'s deliberately slow verify is the floor throttle meanwhile.
   - TLS everywhere; HSTS.
   - Strong `argon2id` parameters; never lower them.
   - A version byte on the blob for future NIP-49 / KDF upgrades.
@@ -219,13 +219,13 @@ in an isolated popup. Hence: *use the extension when you can.*
 #### REST sketch
 
 ```
-POST /api/register     { identifier_hash, password_verifier, ncryptsec }
+POST /api/register     { identifier_hash, password, ncryptsec }
 POST /api/login        { identifier_hash, password }                → { ncryptsec }
-PUT  /api/blob         { identifier_hash, password, new_ncryptsec [, new_password_verifier] }
+PUT  /api/blob         { identifier_hash, password, new_ncryptsec [, new_password] }
 DELETE /api/account    { identifier_hash, password }
 ```
 
-The API is namespaced under `/api/*` so it coexists with the bundled static site served at `/*` by the same Rust binary — one origin, no CORS (see [architecture.md](architecture.md)). `identifier_hash` is computed client-side as `H(identifier)`; the server never receives plaintext identifier. Every endpoint except `register` verifies `argon2(password)` against `password_verifier` inline — there is no separate auth layer and no session (PAKE upgrade deferred). `PUT /api/blob` covers both a plain re-encrypt and a password change: the client re-encrypts the `ncryptsec` with the new passphrase and, when rotating the password, also supplies `new_password_verifier` so both stored fields update atomically.
+The API is namespaced under `/api/*` so it coexists with the bundled static site served at `/*` by the same Rust binary — one origin, no CORS (see [architecture.md](architecture.md)). `identifier_hash` is computed client-side as `H(identifier)`; the server never receives the plaintext identifier. **The server owns argon2**: `register` and `PUT` receive the plaintext `password` over TLS and hash it server-side — never a client-supplied verifier, which would let a client store a hash for a different password. Every endpoint except `register` verifies `argon2(password)` against the stored `password_verifier` inline — there is no separate auth layer and no session (PAKE upgrade deferred). `PUT /api/blob` covers both a plain re-encrypt and a password change: the client re-encrypts the `ncryptsec` with the new passphrase and, when rotating the password, also supplies `new_password` so both stored fields update atomically.
 
 ### 2. Browser extension (JS, NIP-07)
 

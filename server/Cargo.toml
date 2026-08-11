@@ -13,7 +13,14 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 rust-embed = "8"
 mime_guess = "2"
 
-# Planned (not wired yet — add when the register/login/account flows land):
-# nostr = { version = "0.37", default-features = false, features = ["nip49"] }
-# argon2 = "0.5"
-# sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite"] }   # or rusqlite
+# Storage + auth for the stateless locker.
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
+argon2 = "0.5"
+rand_core = { version = "0.6", features = ["getrandom"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+
+[dev-dependencies]
+tower = { version = "0.4", features = ["util"] }
+http = "1"

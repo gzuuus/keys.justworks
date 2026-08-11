@@ -1,17 +1,20 @@
 //! keys.justworks server entrypoint.
 
-use keys_justworks_server::app;
+use keys_justworks_server::{app, connect, AppState};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-        .await
-        .expect("bind 0.0.0.0:3000");
-    let addr = listener.local_addr().expect("local_addr");
-    tracing::info!("keys.justworks server listening on http://{addr}");
-    axum::serve(listener, app()).await.expect("server run");
+    let database_url =
+        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:keys.db".to_string());
+    let db = connect(&database_url).await?;
+
+    let listen = std::env::var("LISTEN_ADDR").unwrap_or_else(|_| "0.0.0.0:3000".to_string());
+    let listener = tokio::net::TcpListener::bind(&listen).await?;
+    tracing::info!("keys.justworks server listening on http://{listen} (db: {database_url})");
+    axum::serve(listener, app(AppState { db })).await?;
+    Ok(())
 }

@@ -4,6 +4,11 @@ node_modules/
 # rust
 target/
 
+# sqlite (dev db from `cargo run`)
+*.db
+*.db-wal
+*.db-shm
+
 # typescript build output
 dist/
 
