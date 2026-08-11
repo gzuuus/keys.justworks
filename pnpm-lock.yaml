@@ -51,6 +51,9 @@ importers:
       vite:
         specifier: ^8.0.16
         version: 8.2.1
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(vite@8.2.1)
 
 packages:
 
