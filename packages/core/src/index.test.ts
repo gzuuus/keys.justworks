@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { getPublicKey, nip19 } from "nostr-tools";
-import { identifierHash, encryptSecret, decryptSecret } from "./index";
+import { identifierHash, passwordSecret, encryptSecret, decryptSecret } from "./index";
 
 const ID = "alice@example.com";
 const PW = "correct horse battery staple";
@@ -26,6 +26,30 @@ describe("identifierHash", () => {
     expect(await identifierHash(ID)).toBe(
       "ff8d9819fc0e12bf0d24892e45987e249a28dce836a85cad60e28eaaa8c6d976",
     );
+  });
+});
+
+describe("passwordSecret", () => {
+  // Locks the scrypt params (N/r/p), the salt scheme
+  // (`keys.justworks-password-secret-v1:` + identifier), and dkLen. A change
+  // here is a BREAKING auth-contract change — existing accounts can no longer
+  // log in. Same drift rationale as the identifierHash golden above.
+  it("matches the golden vector (locks scrypt params + salt scheme)", async () => {
+    expect(await passwordSecret(ID, PW)).toBe(
+      "bf4bf9a5ecfec3f96390af8783cf5b68caea179bf505719236c35660e85ee98c",
+    );
+  });
+
+  it("is 32 bytes (64 hex) and deterministic for the same input", async () => {
+    const a = await passwordSecret(ID, PW);
+    const b = await passwordSecret(ID, PW);
+    expect(a).toBe(b);
+    expect(a).toHaveLength(64);
+  });
+
+  it("changes with the identifier (per-user salt) and the password", async () => {
+    expect(await passwordSecret("bob@example.com", PW)).not.toBe(await passwordSecret(ID, PW));
+    expect(await passwordSecret(ID, "different pw")).not.toBe(await passwordSecret(ID, PW));
   });
 });
 

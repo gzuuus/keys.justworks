@@ -13,15 +13,19 @@
  *
  * NIP-49 is taken from `nostr-tools` — never hand-rolled (design constraint:
  * "NIP-49 is the blob format. No custom crypto."). `nostr-tools` brings
- * `@noble/{ciphers,curves,hashes}` transitively, which we do NOT import
- * directly: we go through `nostr-tools/nip49` so our surface stays decoupled
- * from its internal noble versions.
+ * `@noble/{ciphers,curves,hashes}` transitively; we go through `nostr-tools/nip49`
+ * for NIP-49 so our surface stays decoupled from its internal noble versions. We
+ * DO import `@noble/hashes/scrypt` directly for `passwordSecret` — scrypt is not
+ * exposed by `nostr-tools`, and it is a separate memory-hard KDF (not a shortcut
+ * under an API nostr-tools already exposes). The version is pinned to match the
+ * transitive copy so the bundle carries one.
  */
 import {
   encrypt as nip49Encrypt,
   decrypt as nip49Decrypt,
 } from "nostr-tools/nip49";
 import type { Ncryptsec } from "nostr-tools/nip19";
+import { scryptAsync } from "@noble/hashes/scrypt.js";
 
 export * from "./api";
 
@@ -64,6 +68,37 @@ export async function identifierHash(identifier: string): Promise<string> {
   const data = new TextEncoder().encode(identifier);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return bytesToHex(new Uint8Array(digest));
+}
+
+/**
+ * Memory-hard secret derived from the password and sent to the server for auth,
+ * so the raw password never leaves the client (design.md "client-derived auth
+ * secret"). The server applies its own argon2 on top before storing — the wire
+ * value is never what's in the DB.
+ *
+ * Why scrypt and not WebCrypto: browser WebCrypto has no scrypt/argon2; its only
+ * KDF (PBKDF2) is GPU-crackable and would lower the operator floor.
+ * Memory-hardness is the whole point, so we use `@noble/hashes` scrypt.
+ *
+ * SECURITY CONTRACT — same byte-identical-across-surfaces rule as `passphrase`
+ * and `identifierHash`: a user registers on one surface and authenticates on
+ * another, so this MUST produce identical bytes for a given `(identifier,
+ * password)`. Changing `N`/`r`/`p`, the salt scheme, or `dkLen` is a BREAKING
+ * auth-contract change — existing accounts can no longer log in. The golden
+ * vector in `index.test.ts` locks it.
+ *
+ * `N = 2**16` matches the blob's NIP-49 scrypt cost so the operator floor stays
+ * equal to the static-breach floor (lowering it would drop the floor). Async
+ * (non-blocking); on the website run it from the Worker (see keyholder), since
+ * scrypt is CPU-bound.
+ */
+export async function passwordSecret(
+  identifier: string,
+  password: string,
+): Promise<string> {
+  const salt = `keys.justworks-password-secret-v1:${identifier}`;
+  const out = await scryptAsync(password, salt, { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
+  return bytesToHex(out);
 }
 
 /**
