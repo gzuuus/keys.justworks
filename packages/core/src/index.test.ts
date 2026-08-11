@@ -8,6 +8,7 @@
  * change that re-encrypts every existing ncryptsec.
  */
 import { describe, it, expect } from "vitest";
+import { getPublicKey, nip19 } from "nostr-tools";
 import { identifierHash, encryptSecret, decryptSecret } from "./index";
 
 const ID = "alice@example.com";
@@ -25,6 +26,23 @@ describe("identifierHash", () => {
     expect(await identifierHash(ID)).toBe(
       "ff8d9819fc0e12bf0d24892e45987e249a28dce836a85cad60e28eaaa8c6d976",
     );
+  });
+});
+
+describe("decrypt → npub (real recorded vector)", () => {
+  // A throwaway test key created through the real browser stack (nostr-tools
+  // keygen in the page → encryptSecret → server → back). Asserts the full
+  // decrypt → npub path, which the synthetic golden above only covers up to
+  // the secret bytes. If the passphrase scheme or the NIP-49 wiring drifts,
+  // this npub no longer matches.
+  const NCRYPTSEC =
+    "ncryptsec1qggxyu3gpqkxlwjylnz4m29vg7arrdqltjzgyxu6wd672zpq70n5lzl8vreclge95mpsywad6xt5fer97jjw4samcswf8x2hshyvp02agdvacrlz86a8tckwuph92p4ahkxdufm4mayhs50hfusxdesn";
+  const EXPECTED_NPUB =
+    "npub19e9l920pdsqlz78yz3fl6auwl0pfzrz33w9szpyxw550c2rpxzlsgkrjtz";
+
+  it("decrypts yo/123 to the expected npub", () => {
+    const secret = decryptSecret(NCRYPTSEC, "yo", "123");
+    expect(nip19.npubEncode(getPublicKey(secret))).toBe(EXPECTED_NPUB);
   });
 });
 
