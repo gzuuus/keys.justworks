@@ -1,9 +1,12 @@
 //! keys.justworks server library.
 //!
 //! Stateless `ncryptsec` locker (see docs/design.md): stores/serves encrypted
-//! key blobs behind `{ identifier_hash, password }` auth. Never decrypts, never
-//! signs. Auth is stateless — every handler re-verifies `argon2(password)`
-//! inline against the stored verifier; there are no sessions or tokens.
+//! key blobs behind `{ identifier_hash, password_secret }` auth. Never
+//! decrypts, never signs. Auth is stateless — every handler re-verifies
+//! `argon2(password_secret)` inline against the stored verifier; there are no
+//! sessions or tokens. The client sends `scrypt(password)` as `password_secret`
+//! (the raw password never reaches the server — see @kj/core); the server
+//! applies argon2 on top, so the stored verifier is never the wire value.
 
 use std::str::FromStr;
 use std::sync::OnceLock;
@@ -92,26 +95,27 @@ async fn health() -> &'static str {
 #[derive(Deserialize)]
 struct RegisterBody {
     identifier_hash: String,
-    password: String,
+    password_secret: String,
     ncryptsec: String,
 }
 
 #[derive(Deserialize)]
 struct AuthBody {
     identifier_hash: String,
-    password: String,
+    password_secret: String,
 }
 
 #[derive(Deserialize)]
 struct UpdateBlobBody {
     identifier_hash: String,
-    password: String,
+    password_secret: String,
     new_ncryptsec: String,
     /// Present only on a password change. The client must re-encrypt
     /// `new_ncryptsec` under the new passphrase (`identifier ‖ new_password`)
-    /// before sending — the server cannot re-encrypt.
+    /// and send `scrypt(new_password)` here as `new_password_secret` — the
+    /// server cannot re-encrypt or re-derive either.
     #[serde(default)]
-    new_password: Option<String>,
+    new_password_secret: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -158,16 +162,19 @@ impl IntoResponse for AppError {
 
 // --- handlers ----------------------------------------------------------------
 
-/// Store a new `{ identifier_hash, argon2(password), ncryptsec }`. The password
-/// arrives in plaintext over TLS and is hashed server-side — the server owns
-/// argon2, never trusting a client-supplied hash.
+/// Store a new `{ identifier_hash, argon2(password_secret), ncryptsec }`. The
+/// client sends `scrypt(password)` as `password_secret` (the raw password never
+/// leaves it — see @kj/core); the server applies argon2 on top, so the stored
+/// verifier is never the wire value. The server still owns argon2 — it never
+/// trusts a client-supplied verifier.
 async fn register(
     State(state): State<AppState>,
     Json(body): Json<RegisterBody>,
 ) -> Result<StatusCode, AppError> {
     validate_hash(&body.identifier_hash)?;
+    validate_secret(&body.password_secret)?;
     validate_ncryptsec(&body.ncryptsec)?;
-    let verifier = hash_password(&body.password)?;
+    let verifier = hash_secret(&body.password_secret)?;
 
     let res = sqlx::query(
         "INSERT INTO accounts (identifier_hash, password_verifier, ncryptsec) VALUES (?, ?, ?)",
@@ -185,15 +192,16 @@ async fn register(
     }
 }
 
-/// Verify `{ identifier_hash, password }` and return the stored `ncryptsec`.
-/// A missing account and a wrong password are indistinguishable (both 401):
-/// the response reveals nothing, and a dummy argon2 verify on the missing path
-/// keeps the timing roughly equal.
+/// Verify `{ identifier_hash, password_secret }` and return the stored
+/// `ncryptsec`. A missing account and a wrong secret are indistinguishable
+/// (both 401): the response reveals nothing, and a dummy argon2 verify on the
+/// missing path keeps the timing roughly equal.
 async fn login(
     State(state): State<AppState>,
     Json(body): Json<AuthBody>,
 ) -> Result<Json<NcryptsecResp>, AppError> {
     validate_hash(&body.identifier_hash)?;
+    validate_secret(&body.password_secret)?;
 
     let row =
         sqlx::query("SELECT password_verifier, ncryptsec FROM accounts WHERE identifier_hash = ?")
@@ -205,34 +213,36 @@ async fn login(
         // ponytail: timing equalization, not a constant-time guarantee. The
         // real online brute-force defense (per-account/per-IP rate-limiting)
         // is deferred — argon2's slow verify is the floor throttle until then.
-        let _ = verify_password(&body.password, dummy_verifier());
+        let _ = verify_secret(&body.password_secret, dummy_verifier());
         return Err(AppError::Unauthorized);
     };
 
     let verifier: String = row.try_get("password_verifier")?;
     let ncryptsec: String = row.try_get("ncryptsec")?;
 
-    if !verify_password(&body.password, &verifier)? {
+    if !verify_secret(&body.password_secret, &verifier)? {
         return Err(AppError::Unauthorized);
     }
     Ok(Json(NcryptsecResp { ncryptsec }))
 }
 
-/// Re-encrypt path: verify auth, then replace the blob. With `new_password`,
-/// also rotate the verifier (password change). Covers both re-encrypt and
-/// password rotation in one atomic request.
+/// Re-encrypt path: verify auth, then replace the blob. With
+/// `new_password_secret`, also rotate the verifier (password change). Covers
+/// both re-encrypt and password rotation in one atomic request.
 async fn update_blob(
     State(state): State<AppState>,
     Json(body): Json<UpdateBlobBody>,
 ) -> Result<StatusCode, AppError> {
     validate_hash(&body.identifier_hash)?;
+    validate_secret(&body.password_secret)?;
     validate_ncryptsec(&body.new_ncryptsec)?;
 
-    authenticated_verifier(&state.db, &body.identifier_hash, &body.password).await?;
+    authenticated_verifier(&state.db, &body.identifier_hash, &body.password_secret).await?;
 
-    match body.new_password {
-        Some(new_password) => {
-            let new_verifier = hash_password(&new_password)?;
+    match body.new_password_secret {
+        Some(new_password_secret) => {
+            validate_secret(&new_password_secret)?;
+            let new_verifier = hash_secret(&new_password_secret)?;
             sqlx::query(
                 "UPDATE accounts SET password_verifier = ?, ncryptsec = ?, updated_at = datetime('now') WHERE identifier_hash = ?",
             )
@@ -261,7 +271,8 @@ async fn delete_account(
     Json(body): Json<AuthBody>,
 ) -> Result<StatusCode, AppError> {
     validate_hash(&body.identifier_hash)?;
-    authenticated_verifier(&state.db, &body.identifier_hash, &body.password).await?;
+    validate_secret(&body.password_secret)?;
+    authenticated_verifier(&state.db, &body.identifier_hash, &body.password_secret).await?;
 
     sqlx::query("DELETE FROM accounts WHERE identifier_hash = ?")
         .bind(&body.identifier_hash)
@@ -272,24 +283,25 @@ async fn delete_account(
 
 // --- shared auth helper ------------------------------------------------------
 
-/// Fetch the stored verifier for `identifier_hash` and confirm `password`. Used
-/// by every non-register mutating route. Returns `Unauthorized` (with a dummy
-/// verify on the missing path) for both missing-account and wrong-password.
+/// Fetch the stored verifier for `identifier_hash` and confirm
+/// `password_secret`. Used by every non-register mutating route. Returns
+/// `Unauthorized` (with a dummy verify on the missing path) for both
+/// missing-account and wrong-secret.
 async fn authenticated_verifier(
     db: &SqlitePool,
     identifier_hash: &str,
-    password: &str,
+    password_secret: &str,
 ) -> Result<(), AppError> {
     let row = sqlx::query("SELECT password_verifier FROM accounts WHERE identifier_hash = ?")
         .bind(identifier_hash)
         .fetch_optional(db)
         .await?;
     let Some(row) = row else {
-        let _ = verify_password(password, dummy_verifier());
+        let _ = verify_secret(password_secret, dummy_verifier());
         return Err(AppError::Unauthorized);
     };
     let verifier: String = row.try_get("password_verifier")?;
-    if !verify_password(password, &verifier)? {
+    if !verify_secret(password_secret, &verifier)? {
         return Err(AppError::Unauthorized);
     }
     Ok(())
@@ -297,19 +309,20 @@ async fn authenticated_verifier(
 
 // --- crypto + validation helpers ---------------------------------------------
 
-/// Argon2id with crate defaults (m=19456 KiB, t=2, p=1 — RFC 9106 first row).
-/// ponytail: defaults are fine for now; tune memory/time before production load.
-fn hash_password(password: &str) -> Result<String, AppError> {
+/// Argon2id (crate defaults: m=19456 KiB, t=2, p=1 — RFC 9106 first row) of the
+/// client-derived `password_secret` (`scrypt(password)`). ponytail: defaults
+/// are fine for now; tune memory/time before production load.
+fn hash_secret(secret: &str) -> Result<String, AppError> {
     let salt = SaltString::generate(&mut OsRng);
     Ok(Argon2::default()
-        .hash_password(password.as_bytes(), &salt)?
+        .hash_password(secret.as_bytes(), &salt)?
         .to_string())
 }
 
-fn verify_password(password: &str, verifier: &str) -> Result<bool, AppError> {
+fn verify_secret(secret: &str, verifier: &str) -> Result<bool, AppError> {
     let parsed = PasswordHash::new(verifier)?;
     Ok(Argon2::default()
-        .verify_password(password.as_bytes(), &parsed)
+        .verify_password(secret.as_bytes(), &parsed)
         .is_ok())
 }
 
@@ -327,15 +340,30 @@ fn dummy_verifier() -> &'static str {
     })
 }
 
-/// `identifier_hash` is `H(identifier)`: 64 lowercase hex chars (SHA-256). This
-/// only validates the wire format the client produces in `@kj/core`, never the
-/// identifier's strength (design: disclose, never enforce).
+/// 64 hex chars (32 bytes) — the shape the client produces for both
+/// `identifier_hash` (`H(identifier)`) and `password_secret` (`scrypt(password)`).
+fn is_hex64(s: &str) -> bool {
+    s.len() == 64 && s.as_bytes().iter().all(|b| b.is_ascii_hexdigit())
+}
+
+/// `identifier_hash` is `H(identifier)`. Only validates the wire format the
+/// client produces in `@kj/core`, never the identifier's strength (design:
+/// disclose, never enforce).
 fn validate_hash(h: &str) -> Result<(), AppError> {
-    let ok = h.len() == 64 && h.as_bytes().iter().all(|b| b.is_ascii_hexdigit());
-    if ok {
+    if is_hex64(h) {
         Ok(())
     } else {
         Err(AppError::BadRequest("identifier_hash must be 64 hex chars"))
+    }
+}
+
+/// `password_secret` is the client-derived `scrypt(password)` (32 bytes). Only
+/// validates the wire format — the server never sees the raw password.
+fn validate_secret(s: &str) -> Result<(), AppError> {
+    if is_hex64(s) {
+        Ok(())
+    } else {
+        Err(AppError::BadRequest("password_secret must be 64 hex chars"))
     }
 }
 

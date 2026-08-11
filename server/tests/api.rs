@@ -2,6 +2,10 @@
 //!
 //! Each test builds its own in-memory SQLite DB so they run in parallel. The
 //! argon2 ops make these ~tens of ms each — fine.
+//!
+//! `password_secret` is the client-derived `scrypt(password)`: 32 bytes, sent as
+//! 64 hex. The server never sees the raw password. Test values are opaque 64-hex
+//! stand-ins (`secret(n)`) — the server only checks the wire format.
 
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
@@ -15,6 +19,12 @@ use tower::ServiceExt;
 /// A valid-looking 64-hex `identifier_hash` (the server only checks the wire
 /// format produced by `@kj/core`, never identifier strength).
 fn hash(n: u32) -> String {
+    format!("{n:0>64x}")
+}
+
+/// A valid-looking 64-hex `password_secret` stand-in. Distinct per `n` so
+/// "right" and "wrong" secrets differ within a test.
+fn secret(n: u32) -> String {
     format!("{n:0>64x}")
 }
 
@@ -77,7 +87,7 @@ async fn register_then_login() {
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "p@ssw0rd!", "ncryptsec": "ncryptsec1aaa" }),
+        json!({ "identifier_hash": id, "password_secret": secret(1), "ncryptsec": "ncryptsec1aaa" }),
     )
     .await;
     assert_eq!(st, StatusCode::CREATED);
@@ -86,7 +96,7 @@ async fn register_then_login() {
         app(s.clone()),
         "POST",
         "/api/login",
-        json!({ "identifier_hash": id, "password": "p@ssw0rd!" }),
+        json!({ "identifier_hash": id, "password_secret": secret(1) }),
     )
     .await;
     assert_eq!(st, StatusCode::OK);
@@ -101,14 +111,14 @@ async fn login_wrong_password_is_unauthorized() {
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "right", "ncryptsec": "ncryptsec1x" }),
+        json!({ "identifier_hash": id, "password_secret": secret(2), "ncryptsec": "ncryptsec1x" }),
     )
     .await;
     let (st, _) = send(
         app(s.clone()),
         "POST",
         "/api/login",
-        json!({ "identifier_hash": id, "password": "wrong" }),
+        json!({ "identifier_hash": id, "password_secret": secret(3) }),
     )
     .await;
     assert_eq!(st, StatusCode::UNAUTHORIZED);
@@ -121,7 +131,7 @@ async fn login_unknown_account_is_unauthorized() {
         app(s.clone()),
         "POST",
         "/api/login",
-        json!({ "identifier_hash": hash(99), "password": "anything" }),
+        json!({ "identifier_hash": hash(99), "password_secret": secret(4) }),
     )
     .await;
     assert_eq!(st, StatusCode::UNAUTHORIZED);
@@ -135,14 +145,14 @@ async fn register_duplicate_conflicts() {
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "a", "ncryptsec": "ncryptsec1a" }),
+        json!({ "identifier_hash": id, "password_secret": secret(5), "ncryptsec": "ncryptsec1a" }),
     )
     .await;
     let (st, _) = send(
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "b", "ncryptsec": "ncryptsec1b" }),
+        json!({ "identifier_hash": id, "password_secret": secret(6), "ncryptsec": "ncryptsec1b" }),
     )
     .await;
     assert_eq!(st, StatusCode::CONFLICT);
@@ -151,20 +161,33 @@ async fn register_duplicate_conflicts() {
 #[tokio::test]
 async fn register_rejects_bad_inputs() {
     let s = setup().await;
+    // bad identifier_hash (password_secret + ncryptsec valid → isolates id check)
     let (st, _) = send(
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": "tooshort", "password": "a", "ncryptsec": "ncryptsec1x" }),
+        json!({ "identifier_hash": "tooshort", "password_secret": secret(7), "ncryptsec": "ncryptsec1x" }),
     )
     .await;
     assert_eq!(st, StatusCode::BAD_REQUEST);
 
+    // bad ncryptsec (id + password_secret valid → isolates ncryptsec check)
     let (st, _) = send(
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": hash(4), "password": "a", "ncryptsec": "not-a-ncryptsec" }),
+        json!({ "identifier_hash": hash(4), "password_secret": secret(8), "ncryptsec": "not-a-ncryptsec" }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::BAD_REQUEST);
+
+    // bad password_secret (id + ncryptsec valid → isolates the secret check,
+    // i.e. rejects a raw password someone sent by mistake)
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/register",
+        json!({ "identifier_hash": hash(40), "password_secret": "not-64-hex", "ncryptsec": "ncryptsec1x" }),
     )
     .await;
     assert_eq!(st, StatusCode::BAD_REQUEST);
@@ -178,14 +201,14 @@ async fn update_blob_rotates_ncryptsec() {
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "pw", "ncryptsec": "ncryptsec1old" }),
+        json!({ "identifier_hash": id, "password_secret": secret(9), "ncryptsec": "ncryptsec1old" }),
     )
     .await;
     let (st, _) = send(
         app(s.clone()),
         "PUT",
         "/api/blob",
-        json!({ "identifier_hash": id, "password": "pw", "new_ncryptsec": "ncryptsec1new" }),
+        json!({ "identifier_hash": id, "password_secret": secret(9), "new_ncryptsec": "ncryptsec1new" }),
     )
     .await;
     assert_eq!(st, StatusCode::NO_CONTENT);
@@ -194,7 +217,7 @@ async fn update_blob_rotates_ncryptsec() {
         app(s.clone()),
         "POST",
         "/api/login",
-        json!({ "identifier_hash": id, "password": "pw" }),
+        json!({ "identifier_hash": id, "password_secret": secret(9) }),
     )
     .await;
     assert_eq!(body["ncryptsec"], "ncryptsec1new");
@@ -208,14 +231,14 @@ async fn update_blob_with_password_change() {
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "oldpw", "ncryptsec": "ncryptsec1old" }),
+        json!({ "identifier_hash": id, "password_secret": secret(10), "ncryptsec": "ncryptsec1old" }),
     )
     .await;
     let (st, _) = send(
         app(s.clone()),
         "PUT",
         "/api/blob",
-        json!({ "identifier_hash": id, "password": "oldpw", "new_ncryptsec": "ncryptsec1new", "new_password": "newpw" }),
+        json!({ "identifier_hash": id, "password_secret": secret(10), "new_ncryptsec": "ncryptsec1new", "new_password_secret": secret(11) }),
     )
     .await;
     assert_eq!(st, StatusCode::NO_CONTENT);
@@ -224,7 +247,7 @@ async fn update_blob_with_password_change() {
         app(s.clone()),
         "POST",
         "/api/login",
-        json!({ "identifier_hash": id, "password": "newpw" }),
+        json!({ "identifier_hash": id, "password_secret": secret(11) }),
     )
     .await;
     assert_eq!(st, StatusCode::OK);
@@ -234,7 +257,7 @@ async fn update_blob_with_password_change() {
         app(s.clone()),
         "POST",
         "/api/login",
-        json!({ "identifier_hash": id, "password": "oldpw" }),
+        json!({ "identifier_hash": id, "password_secret": secret(10) }),
     )
     .await;
     assert_eq!(st, StatusCode::UNAUTHORIZED);
@@ -248,14 +271,14 @@ async fn update_blob_wrong_password_is_unauthorized() {
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "pw", "ncryptsec": "ncryptsec1x" }),
+        json!({ "identifier_hash": id, "password_secret": secret(12), "ncryptsec": "ncryptsec1x" }),
     )
     .await;
     let (st, _) = send(
         app(s.clone()),
         "PUT",
         "/api/blob",
-        json!({ "identifier_hash": id, "password": "wrong", "new_ncryptsec": "ncryptsec1y" }),
+        json!({ "identifier_hash": id, "password_secret": secret(13), "new_ncryptsec": "ncryptsec1y" }),
     )
     .await;
     assert_eq!(st, StatusCode::UNAUTHORIZED);
@@ -269,14 +292,14 @@ async fn delete_account() {
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "pw", "ncryptsec": "ncryptsec1x" }),
+        json!({ "identifier_hash": id, "password_secret": secret(14), "ncryptsec": "ncryptsec1x" }),
     )
     .await;
     let (st, _) = send(
         app(s.clone()),
         "DELETE",
         "/api/account",
-        json!({ "identifier_hash": id, "password": "pw" }),
+        json!({ "identifier_hash": id, "password_secret": secret(14) }),
     )
     .await;
     assert_eq!(st, StatusCode::NO_CONTENT);
@@ -285,7 +308,7 @@ async fn delete_account() {
         app(s.clone()),
         "POST",
         "/api/login",
-        json!({ "identifier_hash": id, "password": "pw" }),
+        json!({ "identifier_hash": id, "password_secret": secret(14) }),
     )
     .await;
     assert_eq!(st, StatusCode::UNAUTHORIZED);
@@ -299,14 +322,14 @@ async fn delete_account_wrong_password_is_unauthorized() {
         app(s.clone()),
         "POST",
         "/api/register",
-        json!({ "identifier_hash": id, "password": "pw", "ncryptsec": "ncryptsec1x" }),
+        json!({ "identifier_hash": id, "password_secret": secret(15), "ncryptsec": "ncryptsec1x" }),
     )
     .await;
     let (st, _) = send(
         app(s.clone()),
         "DELETE",
         "/api/account",
-        json!({ "identifier_hash": id, "password": "wrong" }),
+        json!({ "identifier_hash": id, "password_secret": secret(16) }),
     )
     .await;
     assert_eq!(st, StatusCode::UNAUTHORIZED);
