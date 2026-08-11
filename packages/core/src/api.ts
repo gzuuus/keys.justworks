@@ -3,8 +3,8 @@
  *
  * Same-origin (`/api/*`), so no CORS — the website is bundled into the server
  * binary (one origin). Both surfaces (`web`, `extension`) share this so the
- * JSON field names (`identifier_hash`, `password`, `ncryptsec`) live in one
- * place and never drift.
+ * JSON field names (`identifier_hash`, `password_secret`, `ncryptsec`) live in
+ * one place and never drift.
  */
 
 const API_BASE = "/api";
@@ -17,10 +17,12 @@ export class ApiError extends Error {
   }
 }
 
-/** Register a new account. Throws `ApiError("conflict")` if it already exists. */
+/** Register a new account. Throws `ApiError("conflict")` if it already exists.
+ * `passwordSecret` is the client-derived `scrypt(password)` — never the raw
+ * password (see `passwordSecret` in index.ts). */
 export async function register(args: {
   identifierHash: string;
-  password: string;
+  passwordSecret: string;
   ncryptsec: string;
 }): Promise<void> {
   const res = await fetch(`${API_BASE}/register`, {
@@ -28,7 +30,7 @@ export async function register(args: {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       identifier_hash: args.identifierHash,
-      password: args.password,
+      password_secret: args.passwordSecret,
       ncryptsec: args.ncryptsec,
     }),
   });
@@ -40,17 +42,19 @@ export async function register(args: {
   }
 }
 
-/** Log in and retrieve the stored `ncryptsec`. Throws `ApiError("unauthorized")`. */
+/** Log in and retrieve the stored `ncryptsec`. Throws `ApiError("unauthorized")`.
+ * `passwordSecret` is the client-derived `scrypt(password)` — never the raw
+ * password. */
 export async function login(args: {
   identifierHash: string;
-  password: string;
+  passwordSecret: string;
 }): Promise<string> {
   const res = await fetch(`${API_BASE}/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       identifier_hash: args.identifierHash,
-      password: args.password,
+      password_secret: args.passwordSecret,
     }),
   });
   if (res.status === 401) {
