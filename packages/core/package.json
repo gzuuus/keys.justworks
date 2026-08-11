@@ -1,0 +1,16 @@
+{
+  "name": "@kj/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo 'no tests yet — add golden-vector for passphrase + identifierHash' && exit 0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
