@@ -52,7 +52,7 @@ Two distinct adversaries, with distinct defenses:
 | Adversary | What they get | Defense |
 |---|---|---|
 | **Static breach** (DB leak) | `H(identifier)`, `argon2(password)`, `ncryptsec` | Strong password + scrypt KDF cost. The identifier-in-passphrase adds a second secret to recover, *if* it is high-entropy and stored only hashed. |
-| **Malicious operator** (reads login traffic / own DB; pushes malicious page JS) | `H(identifier)` (can't invert), the password (in the simple password-over-TLS flow), and the `ncryptsec` | The **keystone property**: even with the password, the operator cannot form `identifier ‖ password` because the identifier is server-blind. On the extension, input is isolated too. On the website, full protection against malicious *page* JS additionally requires isolated input (container/popup, a later hardening step). |
+| **Malicious operator** (reads login traffic / own DB; pushes malicious page JS) | `H(identifier)` (can't invert), the password (in the simple password-over-TLS flow), and the `ncryptsec` | The **keystone property**: even with the password, the operator cannot form `identifier ‖ password` because the identifier is server-blind. On the extension, input is isolated too. On the website, defense against malicious *page* JS rests on **perimeter hardening** (strict CSP, self-hosted bundle, no third-party scripts); full input isolation is the extension's job (a vault iframe is a documented future option, not the plan). |
 
 Primary threat = **static breach**. It is held by the password alone; the
 identifier is defense-in-depth on top of it.
@@ -149,6 +149,32 @@ extension; website import is convenience with acknowledged risk. This mirrors
 the signing trust boundary: the extension is the safer surface for any operation
 that touches a raw key.
 
+**Hardening website import against XSS (the highest-stakes page-JS exposure).**
+Import puts an *established, reputed* key in page JS — unlike generate (a
+brand-new unreputed key, low cost to leak). The complete defense is **input
+isolation** (extension / vault iframe / WebAuthn), which is deferred on the
+website; the mitigations below are **probability reduction**, and the residual
+is stated honestly:
+
+1. **Prefer the extension for import** — the only place the nsec is safe from
+   page JS. Website import carries a loud gate: *"importing an established key
+   here is the riskiest operation on this site; use the extension if you can."*
+2. **Strict CSP** (the load-bearing mitigation) — `script-src 'self'` with no
+   inline scripts; blocks injected scripts, which is what makes the brief
+   page-JS window safe.
+3. **Self-host everything** — no CDNs, no third-party scripts; no supply-chain
+   script vector.
+4. **Encrypt in the Worker, not page JS** — the Worker receives
+   `{nsec, identifier, password}`, runs the NIP-49 encrypt, returns the
+   `ncryptsec`, and wipes; page-JS exposure shrinks to the instant between
+   reading the input and `postMessage`.
+5. **Brief-window discipline** — read → post → clear the input and drop the
+   reference immediately; never persist the nsec in reactive state or logs.
+6. **Dependency hygiene** — the residual CSP cannot cover: a malicious
+   *trusted* dependency (compromised `nostr-tools`, malicious build plugin)
+   runs as `'self'`. Pin the lockfile, audit, minimize. Only input isolation
+   fixes this class.
+
 ### One-time export (consistent with "no recovery")
 
 At creation (generate or import), offer the user a single chance to view/export
@@ -195,13 +221,17 @@ login *still* cannot decrypt the blob — they lack the identifier half of the
 passphrase, and `H(identifier)` is non-invertible. A PAKE (OPAQUE) becomes
 optional future hardening rather than a requirement. (On the website, the
 residual operator threat is *malicious page JS reading the identifier as typed*;
-that is addressed by isolated input — the container/popup upgrade — not by a PAKE.)
+that is addressed by perimeter defense — strict CSP, self-hosted bundle — with
+the extension for full input isolation, not by a PAKE.)
 
 ### Why the extension is the stronger surface
 
 Identifier and password are typed into the extension's own isolated UI; page JS
-never sees them. On the website, the same inputs live in the page unless taken
-in an isolated popup. Hence: *use the extension when you can.*
+never sees them. On the website, those inputs live in page JS — defended by
+**perimeter defense** (strict CSP, self-hosted bundle, no third-party scripts),
+not by isolation. The residual risk (a compromised trusted dependency, or any
+XSS that gets past CSP) is why import steers toward the extension. Hence: *use
+the extension when you can.*
 
 ## Component specifications
 
@@ -238,18 +268,47 @@ The API is namespaced under `/api/*` so it coexists with the bundled static site
 
 - **Stack:** TypeScript, `nostr-tools` (`nip49`, `nip46`), a Web Worker keyholder.
 - **Responsibility:** onboarding, login, and a [NIP-46] remote signer (bunker). This is also the **primary surface on mobile** (where browser extensions are largely unavailable) — not merely a convenience fallback.
-- **Keyholder isolation (MVP):** the decrypted `nsec` lives **only in a Web Worker**. The page exchanges sign-requests and signatures with the worker, never the key. A page compromise becomes a *live signing oracle for the session*, not silent key theft.
-- **Keyholder isolation (upgrade):** move the keyholder into a **sandboxed cross-origin iframe** (`vault.<origin>`, `sandbox="allow-scripts"` without `allow-same-origin`), bridged by `postMessage` with strict `targetOrigin`/`event.origin` checks, with approvals rendered in a popup to the vault origin. This also isolates identifier/password *input* from the main page, closing the residual malicious-page-JS gap. Design the message-bridge interface now so this is a drop-in upgrade.
+- **Keyholder isolation:** the decrypted `nsec` lives **only in a Web Worker**.
+  The page exchanges sign-requests and signatures with the worker, never the
+  key, and no op in the worker protocol returns the raw secret — so a page
+  compromise becomes a *live signing oracle for the session*, not silent key
+  theft, and a generous idle auto-lock (below) shrinks that window. This is the
+  durable design, not a placeholder.
+- **Input isolation:** the Worker is downstream of the input and therefore
+  **cannot** isolate identifier/password entry. That residual gap (page JS
+  reading secrets as typed) is covered on the website by **perimeter defense**
+  (strict CSP, self-hosted bundle, no third-party scripts) plus the **extension**
+  for users who want the strong surface. A sandboxed vault iframe that also
+  isolates input is a *documented future option*, not the active plan (see
+  "Documented future options").
+- **Perimeter defense (the practical XSS mitigation):** a strict
+  `Content-Security-Policy` emitted as a **header** by the Rust server
+  (`script-src 'self'`, `object-src 'none'`, `base-uri 'none'`,
+  `frame-ancestors 'none'`, `connect-src 'self'` + relay `wss:` origins for
+  NIP-46); the Vite build emits **no inline scripts**
+  (`modulePreload.polyfill = false`) so `'self'` suffices with no nonces.
+  Everything is self-hosted and same-origin — no CDNs, no third-party scripts,
+  so no supply-chain script vector. This is what makes the brief windows where
+  a secret passes through page JS (generate, import, unlock) safe: with no XSS
+  installed, the window is benign.
+- **Idle auto-lock:** the Worker wipes the held key after a generous idle
+  interval (~30 min, configurable) with no keyholder messages, then notifies
+  the page so the UI reflects the lock. Generous on purpose to avoid re-login
+  footguns; a page reload already drops the key (never persist).
 
 ## Hardening summary
 
 | Surface | Input isolation | Key isolation | Status |
 |---|---|---|---|
 | Extension | isolated (extension UI) | isolated (extension context) | MVP |
-| Website (MVP) | page DOM | Web Worker | MVP |
-| Website (upgrade) | vault popup (separate origin) | sandboxed vault iframe | later |
+| Website | perimeter (strict CSP, self-hosted, no 3rd-party scripts) + extension nudge for the strong surface | Web Worker + generous idle auto-lock | MVP |
 
-General rules across surfaces: per-sign prompts, short session TTL, wipe-on-idle, never persist the decrypted key (re-derive each session).
+The sandboxed vault iframe (input + key isolation in a separate cross-origin
+`vault.<origin>`) is a documented future option, not the active roadmap — see
+"Documented future options."
+
+General rules across surfaces: per-sign prompts, generous session TTL with
+wipe-on-idle, never persist the decrypted key (re-derive each session).
 
 ## Recovery posture
 
@@ -281,12 +340,34 @@ That delivers the full value proposition: keys everywhere, non-custodial, server
 
 ## Roadmap (post-MVP, in rough order)
 
-1. **Website hardening upgrade** — Web Worker → sandboxed vault iframe + popup approvals (isolates input too).
-2. **PAKE auth (OPAQUE)** — optional; removes password exposure at login.
-3. **Extension as NIP-46 bunker** — reuse the held key to serve Nostr Connect for other devices. (Note MV3 service-worker lifecycle fights persistent relay connections; budget for keepalive.)
-4. **Passkey + WebAuthn PRF** — derive the blob encryption key from a hardware authenticator; resists offline brute-force and improves UX. Re-wrap path needed for credential resets.
-5. **OAuth** — as an **access gate** only. OAuth can prove account ownership to release a blob, but it **cannot** become the decryption secret without re-introducing custody (the OAuth provider could then authenticate as you). A user-held `(identifier, password)` must remain.
-6. **Social recovery / Shamir shards** — split the key M-of-N across guardians for users who want recovery at the cost of complexity.
+1. **PAKE auth (OPAQUE)** — optional; removes password exposure at login.
+2. **Extension as NIP-46 bunker** — reuse the held key to serve Nostr Connect for other devices. (Note MV3 service-worker lifecycle fights persistent relay connections; budget for keepalive.)
+3. **Passkey + WebAuthn PRF** — derive the blob encryption key from a hardware authenticator; resists offline brute-force and improves UX. Re-wrap path needed for credential resets. This is the **preferred future input-isolation upgrade** (removes the password from JS entirely) and supersedes the iframe option for that gap.
+4. **OAuth** — as an **access gate** only. OAuth can prove account ownership to release a blob, but it **cannot** become the decryption secret without re-introducing custody (the OAuth provider could then authenticate as you). A user-held `(identifier, password)` must remain.
+5. **Social recovery / Shamir shards** — split the key M-of-N across guardians for users who want recovery at the cost of complexity.
+
+## Documented future options (not the active plan)
+
+Recorded so a decision is not silently re-litigated. Each is a viable upgrade
+kept off the roadmap for a stated reason.
+
+- **Sandboxed vault iframe for input + key isolation.** Move the keyholder (and
+  secret *input* — identifier/password/nsec) into a sandboxed cross-origin
+  iframe (`vault.<origin>`, `sandbox="allow-scripts"` without
+  `allow-same-origin`), bridged by `postMessage` with strict
+  `targetOrigin`/`event.origin` checks, approvals rendered in a popup to the
+  vault origin. This is the only website-side path that isolates *input* from
+  page JS (closing the residual malicious-page-JS / keylogger gap), and it
+  would make per-sign approvals un-bypassable. **Why deferred:** it defends a
+  secondary threat (the keystone is defense-in-depth, not the floor; the
+  primary threat is static breach, held by password + scrypt), the website is
+  "deliberately the weaker surface" with the extension as the strong one, and
+  the iframe carries real cost (cross-origin sandbox UX, no `localStorage`,
+  popup approvals). The `postMessage` protocol is kept transport-agnostic so
+  this remains a drop-in upgrade. **Revisit if:** operator-resistance-on-the-web
+  becomes a first-class goal, or per-sign approval integrity for the NIP-46
+  bunker demands it. **Note:** WebAuthn PRF (roadmap) is a strictly better
+  input-isolation upgrade and would likely land first.
 
 ## Open build-time questions
 
