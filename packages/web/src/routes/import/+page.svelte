@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { identifierHash, register, ApiError } from '@kj/core';
+	import { identifierHash, passwordSecret, register, ApiError } from '@kj/core';
 	import { nip19 } from 'nostr-tools';
 	import { createKeyholder, type Keyholder } from '$lib/keyholder/client';
 
@@ -48,7 +48,8 @@
 			nsec = '';
 			const identifier_hash = await identifierHash(identifier);
 			const { ncryptsec, pubkey } = await keyholder.import(nsecVal, identifier, password);
-			await register({ identifierHash: identifier_hash, password, ncryptsec });
+			const password_secret = await passwordSecret(identifier, password);
+			await register({ identifierHash: identifier_hash, passwordSecret: password_secret, ncryptsec });
 			npub = nip19.npubEncode(pubkey);
 			ncryptsecOut = ncryptsec;
 		} catch (e) {

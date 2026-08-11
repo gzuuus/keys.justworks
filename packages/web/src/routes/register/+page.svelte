@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { encryptSecret, identifierHash, register, ApiError } from '@kj/core';
+	import { encryptSecret, identifierHash, passwordSecret, register, ApiError } from '@kj/core';
 	import { generateSecretKey, getPublicKey, nip19 } from 'nostr-tools';
 
 	let identifier = $state('');
@@ -41,8 +41,9 @@
 			try {
 				const pubkey = getPublicKey(secret);
 				const identifier_hash = await identifierHash(identifier);
+				const password_secret = await passwordSecret(identifier, password);
 				const blob = encryptSecret(secret, identifier, password);
-				await register({ identifierHash: identifier_hash, password, ncryptsec: blob });
+				await register({ identifierHash: identifier_hash, passwordSecret: password_secret, ncryptsec: blob });
 				npub = nip19.npubEncode(pubkey);
 				nsec = nip19.nsecEncode(secret); // user-managed backup (no recovery by design)
 				ncryptsec = blob;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { identifierHash, login, ApiError } from '@kj/core';
+	import { identifierHash, passwordSecret, login, ApiError } from '@kj/core';
 	import { nip19 } from 'nostr-tools';
 	import { createKeyholder, type Keyholder } from '$lib/keyholder/client';
 
@@ -40,7 +40,8 @@
 				keyholder.onAutoLock = () => markLocked(true);
 			}
 			const identifier_hash = await identifierHash(identifier);
-			const ncryptsec = await login({ identifierHash: identifier_hash, password });
+			const password_secret = await passwordSecret(identifier, password);
+			const ncryptsec = await login({ identifierHash: identifier_hash, passwordSecret: password_secret });
 			// Decrypt + hold the key in the Worker. The page sees only the pubkey;
 			// the raw secret never leaves the Worker.
 			const { pubkey } = await keyholder.unlock(ncryptsec, identifier, password);
