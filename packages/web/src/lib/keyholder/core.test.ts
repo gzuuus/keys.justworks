@@ -48,7 +48,7 @@ describe('KeyholderCore lifecycle', () => {
 		expect(
 			await ok(core, msg('unlock', { ncryptsec: NCRYPTSEC, identifier: ID, password: PW }))
 		).toEqual({
-			pubkey: PUBKEY
+			npub: N_PUB
 		});
 		expect(core.unlocked).toBe(true);
 		expect(await ok(core, msg('getPublicKey'))).toBe(PUBKEY);
@@ -77,9 +77,11 @@ describe('KeyholderCore lifecycle', () => {
 		const nsec = nip19.nsecEncode(SECRET);
 		const res = (await ok(core, msg('import', { nsec, identifier: ID, password: PW }))) as {
 			ncryptsec: string;
-			pubkey: string;
+			npub: string;
+			passwordSecret: string;
 		};
-		expect(res.pubkey).toBe(PUBKEY);
+		expect(res.npub).toBe(N_PUB);
+		expect(res.passwordSecret).toBe(PW_SECRET); // golden auth secret, like `create`
 		// ncryptsec is non-deterministic (random salt/nonce); verify by decrypting.
 		expect(getPublicKey(decryptSecret(res.ncryptsec, ID, PW))).toBe(PUBKEY);
 		// import is a one-shot transform — it must NOT leave a key held.

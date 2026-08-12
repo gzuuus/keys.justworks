@@ -36,13 +36,14 @@ export interface KeyholderOps {
 	};
 	unlock: {
 		req: { ncryptsec: string; identifier: string; password: string };
-		res: { pubkey: string };
+		res: { npub: string };
 	};
-	/** One-shot: decode an existing nsec and wrap it into an ncryptsec inside the
-	 * Worker (the raw established key never lingers in page JS). Does not hold. */
+	/** One-shot: decode an existing nsec, wrap it as an ncryptsec, and derive the
+	 * auth secret + npub — all in-Worker so the raw established key never lingers
+	 * in page JS. Does not hold. Mirrors `create` minus key generation. */
 	import: {
 		req: { nsec: string; identifier: string; password: string };
-		res: { ncryptsec: string; pubkey: string };
+		res: { ncryptsec: string; npub: string; passwordSecret: string };
 	};
 	lock: { req: void; res: { locked: true } };
 	status: { req: void; res: { unlocked: boolean; pubkey: string | null } };
@@ -129,7 +130,7 @@ export class KeyholderCore {
 				const secret = decryptSecret(ncryptsec, identifier, password);
 				this.#secret?.fill(0); // wipe any previously-held key
 				this.#secret = secret;
-				return { pubkey: getPublicKey(secret) };
+				return { npub: nip19.npubEncode(getPublicKey(secret)) };
 			}
 			case 'import': {
 				const { nsec, identifier, password } = req.payload;
@@ -137,9 +138,11 @@ export class KeyholderCore {
 				if (decoded.type !== 'nsec') throw new Error('expected an nsec');
 				const secret = decoded.data;
 				try {
+					const pubkey = getPublicKey(secret);
 					return {
 						ncryptsec: encryptSecret(secret, identifier, password),
-						pubkey: getPublicKey(secret)
+						npub: nip19.npubEncode(pubkey),
+						passwordSecret: await passwordSecret(identifier, password)
 					};
 				} finally {
 					secret.fill(0); // never hold the imported key

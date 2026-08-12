@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { identifierHash, login, ApiError } from '@kj/core';
-	import { nip19 } from 'nostr-tools';
 	import { createKeyholder, type Keyholder } from '$lib/keyholder/client';
 
 	let identifier = $state('');
@@ -45,10 +44,9 @@
 				identifierHash: identifier_hash,
 				passwordSecret: password_secret
 			});
-			// Decrypt + hold the key in the Worker. The page sees only the pubkey;
+			// Decrypt + hold the key in the Worker. The page sees only the npub;
 			// the raw secret never leaves the Worker.
-			const { pubkey } = await keyholder.unlock(ncryptsec, identifier, password);
-			npub = nip19.npubEncode(pubkey);
+			npub = (await keyholder.unlock(ncryptsec, identifier, password)).npub;
 			locked = false;
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong. Please try again.';
