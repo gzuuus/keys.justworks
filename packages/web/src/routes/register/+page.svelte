@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import { identifierHash, register, ApiError } from '@kj/core';
-	import { createKeyholder, type Keyholder } from '$lib/keyholder/client';
+	import { keyholder } from '$lib/keyholder/store.svelte';
 
 	let identifier = $state('');
 	let password = $state('');
@@ -19,14 +18,6 @@
 	let revealNcryptsec = $state(false);
 	let copied = $state<string | null>(null);
 
-	// ponytail: a throwaway keyholder used only for the `create` offload (it does
-	// not hold a key). Destroyed on unmount.
-	let keyholder: Keyholder | null = null;
-	onDestroy(() => {
-		keyholder?.destroy();
-		keyholder = null;
-	});
-
 	async function onSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		error = null;
@@ -41,7 +32,6 @@
 		}
 		busy = true;
 		try {
-			if (!keyholder) keyholder = createKeyholder();
 			// Key generation + NIP-49 wrap + auth-secret derivation all run in the
 			// Worker (off the main thread, and the raw 32 bytes never reach the page
 			// — only the bech32 backup, which the user must see once).

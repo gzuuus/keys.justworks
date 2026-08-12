@@ -1,53 +1,32 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import { identifierHash, login, ApiError } from '@kj/core';
-	import { createKeyholder, type Keyholder } from '$lib/keyholder/client';
+	import { keyholder } from '$lib/keyholder/store.svelte';
 
 	let identifier = $state('');
 	let password = $state('');
 	let busy = $state(false);
 	let error = $state<string | null>(null);
-	let npub = $state<string | null>(null);
-	let locked = $state(true);
 	let signedEvent = $state<string | null>(null);
-	let autoLockedNote = $state(false);
-
-	// ponytail: keyholder is page-scoped for this increment. A session-wide
-	// singleton (so navigating between routes keeps the unlocked key) is a later
-	// UX step; a page reload already drops it, which is correct (never persist).
-	let keyholder: Keyholder | null = null;
-
-	onDestroy(() => {
-		keyholder?.destroy();
-		keyholder = null;
-	});
 
 	async function onUnlock(event: SubmitEvent) {
 		event.preventDefault();
 		error = null;
 		signedEvent = null;
-		autoLockedNote = false;
 		if (!identifier || !password) {
 			error = 'Enter your identifier and password.';
 			return;
 		}
 		busy = true;
 		try {
-			if (!keyholder) {
-				keyholder = createKeyholder();
-				// The Worker wipes the key after idle and notifies us; reflect it in the UI.
-				keyholder.onAutoLock = () => markLocked(true);
-			}
 			const identifier_hash = await identifierHash(identifier);
 			const password_secret = await keyholder.passwordSecret(identifier, password);
 			const ncryptsec = await login({
 				identifierHash: identifier_hash,
 				passwordSecret: password_secret
 			});
-			// Decrypt + hold the key in the Worker. The page sees only the npub;
+			// Decrypt + hold the key in the Worker. The store exposes only the npub;
 			// the raw secret never leaves the Worker.
-			npub = (await keyholder.unlock(ncryptsec, identifier, password)).npub;
-			locked = false;
+			await keyholder.unlock(ncryptsec, identifier, password);
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong. Please try again.';
 		} finally {
@@ -56,7 +35,7 @@
 	}
 
 	async function onSignTest() {
-		if (!keyholder || locked) return;
+		if (keyholder.locked) return;
 		signedEvent = null;
 		error = null;
 		try {
@@ -72,17 +51,9 @@
 		}
 	}
 
-	/** Reflect a locked key in the UI. `auto` flags an idle auto-lock for a note. */
-	function markLocked(auto = false) {
-		locked = true;
-		npub = null;
-		signedEvent = null;
-		if (auto) autoLockedNote = true;
-	}
-
 	async function onLock() {
-		await keyholder?.lock();
-		markLocked(false);
+		await keyholder.lock();
+		signedEvent = null;
 	}
 </script>
 
@@ -128,17 +99,18 @@
 	>
 </form>
 
-{#if autoLockedNote}
+{#if keyholder.autoLocked}
 	<p class="mt-4 text-sm text-amber-700">
 		Your key was auto-locked after inactivity. Unlock again to continue.
 	</p>
 {/if}
 
-{#if !locked && npub}
+{#if !keyholder.locked && keyholder.npub}
 	<section class="mt-8 rounded-md border border-green-200 bg-green-50 p-4">
 		<h2 class="text-lg font-semibold">Unlocked ✓</h2>
 		<p class="mt-1 text-sm">Key held in the Worker. Your npub:</p>
-		<code class="mt-1 block rounded bg-white p-2 font-mono text-xs break-all">{npub}</code>
+		<code class="mt-1 block rounded bg-white p-2 font-mono text-xs break-all">{keyholder.npub}</code
+		>
 
 		<div class="mt-4 flex gap-3">
 			<button

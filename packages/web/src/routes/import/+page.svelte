@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import { identifierHash, register, ApiError } from '@kj/core';
-	import { createKeyholder, type Keyholder } from '$lib/keyholder/client';
+	import { keyholder } from '$lib/keyholder/store.svelte';
 
 	let nsec = $state('');
 	let identifier = $state('');
@@ -15,14 +14,6 @@
 	let ncryptsecOut = $state<string | null>(null);
 	let revealNcryptsec = $state(false);
 	let copied = $state(false);
-
-	// ponytail: a throwaway keyholder just for the import op (it does not hold a
-	// key). Destroyed on unmount.
-	let keyholder: Keyholder | null = null;
-	onDestroy(() => {
-		keyholder?.destroy();
-		keyholder = null;
-	});
 
 	async function onSubmit(event: SubmitEvent) {
 		event.preventDefault();
@@ -38,7 +29,6 @@
 		}
 		busy = true;
 		try {
-			if (!keyholder) keyholder = createKeyholder();
 			// Brief-window discipline (design.md "Hardening website import"): lift the
 			// nsec into a local and clear the input *before* the await, then hand it to
 			// the Worker. The page never encrypts with it — the raw established key
