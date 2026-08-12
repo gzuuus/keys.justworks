@@ -3,6 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* bits-ui emits data-state="checked"/"unchecked"/"open"/"closed"; shadcn's component
+   classes use the bare data-checked:/data-open: variants, which Tailwind would
+   otherwise compile to a non-matching [data-checked] presence selector. */
+@custom-variant data-checked (&:is([data-state="checked"]));
+@custom-variant data-unchecked (&:is([data-state="unchecked"]));
+@custom-variant data-open (&:is([data-state="open"]));
+@custom-variant data-closed (&:is([data-state="closed"]));
+
 :root {
 	--radius: 0.625rem;
 	--background: oklch(1 0 0);
