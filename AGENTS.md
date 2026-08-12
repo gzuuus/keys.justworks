@@ -117,6 +117,10 @@ Range Calendar, Resizable, Scroll Area, Select, Separator, Sheet, Sidebar,
 Skeleton, Slider, Sonner, Spinner, Switch, Table, Tabs, Textarea, Toggle,
 Toggle Group, Tooltip, Typography.
 
+Getting the docs fro an specific component, curl adding the '.md' extension at the end of the url, for example: 
+
+`curl https://www.shadcn-svelte.com/docs/components/accordion.md` 
+
 ## Testing
 
 - **Rust:** `cargo test` in `server/`. Non-trivial logic (a branch, parser, crypto
