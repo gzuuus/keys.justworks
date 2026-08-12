@@ -336,6 +336,32 @@ async fn delete_account_wrong_password_is_unauthorized() {
 }
 
 #[tokio::test]
+async fn static_fallback_route_served_as_html() {
+    // A direct load of a client route (e.g. /register) falls back to index.html.
+    // It must come back as text/html, not octet-stream guessed from the request
+    // path — otherwise `nosniff` makes the browser download the page.
+    let s = setup().await;
+    let resp = app(s)
+        .oneshot(
+            Request::builder()
+                .uri("/register")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert_eq!(
+        resp.headers()
+            .get("content-type")
+            .unwrap()
+            .to_str()
+            .unwrap(),
+        "text/html"
+    );
+}
+
+#[tokio::test]
 async fn security_headers_present_on_every_response() {
     let s = setup().await;
     let resp = app(s)

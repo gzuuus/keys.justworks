@@ -385,22 +385,27 @@ fn validate_ncryptsec(s: &str) -> Result<(), AppError> {
 /// routing. Unknown paths 404.
 async fn static_handler(uri: Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
-    let file = WebAssets::get(path).or_else(|| WebAssets::get("index.html"));
-    match file {
-        Some(f) => {
-            let mime = mime_guess::from_path(path)
-                .first_or_octet_stream()
-                .essence_str()
-                .to_owned();
-            (
-                StatusCode::OK,
-                [(header::CONTENT_TYPE, mime)],
-                f.data.into_owned(),
-            )
-                .into_response()
-        }
-        None => (StatusCode::NOT_FOUND, "not found").into_response(),
-    }
+    // Mime comes from the *resolved* asset path, not the request path: a direct
+    // load of `/register` (or `/`) falls back to index.html, which must be served
+    // as text/html — not guessed from "register" (no extension → octet-stream),
+    // which our `nosniff` header would make the browser download instead of render.
+    let (resolved, file) = match WebAssets::get(path) {
+        Some(f) => (path, f),
+        None => match WebAssets::get("index.html") {
+            Some(f) => ("index.html", f),
+            None => return (StatusCode::NOT_FOUND, "not found").into_response(),
+        },
+    };
+    let mime = mime_guess::from_path(resolved)
+        .first_or_octet_stream()
+        .essence_str()
+        .to_owned();
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, mime)],
+        file.data.into_owned(),
+    )
+        .into_response()
 }
 
 // --- perimeter: CSP + security response headers -----------------------------
