@@ -5,15 +5,15 @@
 <h1 class="text-2xl leading-tight">Your Nostr key, everywhere. Not held by anyone.</h1>
 
 <p class="mt-2">
-	keys.justworks stores your encrypted key (<code>ncryptsec</code>) on a server
-	that <strong>cannot decrypt it</strong> and <strong>cannot link it to your
-	identity</strong>. You retrieve and decrypt it on any device with your
-	identifier and password.
+	keys.justworks stores your encrypted key (<code>ncryptsec</code>) on a server that
+	<strong>cannot decrypt it</strong>
+	and <strong>cannot link it to your identity</strong>. You retrieve and decrypt it on any device
+	with your identifier and password.
 </p>
 
 <p class="mt-3">
-	<strong>There is no recovery.</strong> Lose your identifier or password and the
-	key is gone — that's the trade for non-custodial availability.
+	<strong>There is no recovery.</strong> Lose your identifier or password and the key is gone — that's
+	the trade for non-custodial availability.
 </p>
 
 <div class="mt-8 flex gap-3">

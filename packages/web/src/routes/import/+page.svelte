@@ -49,7 +49,11 @@
 			const identifier_hash = await identifierHash(identifier);
 			const { ncryptsec, pubkey } = await keyholder.import(nsecVal, identifier, password);
 			const password_secret = await keyholder.passwordSecret(identifier, password);
-			await register({ identifierHash: identifier_hash, passwordSecret: password_secret, ncryptsec });
+			await register({
+				identifierHash: identifier_hash,
+				passwordSecret: password_secret,
+				ncryptsec
+			});
 			npub = nip19.npubEncode(pubkey);
 			ncryptsecOut = ncryptsec;
 		} catch (e) {
@@ -76,11 +80,11 @@
 <h1 class="text-xl font-semibold">Import a key</h1>
 
 <p class="mt-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-	⚠ Importing an <strong>established</strong> key is the riskiest operation on this site.
-	If you have the <strong>browser extension</strong>, import there instead — its input is
-	isolated from page JS. Here, the raw key passes through page JS only briefly and is
-	encrypted inside a Worker, but a compromised page at that moment would leak a key with
-	your existing followers and reputation. <a class="underline" href="/">New here? Generate a fresh key instead.</a>
+	⚠ Importing an <strong>established</strong> key is the riskiest operation on this site. If you
+	have the <strong>browser extension</strong>, import there instead — its input is isolated from
+	page JS. Here, the raw key passes through page JS only briefly and is encrypted inside a Worker,
+	but a compromised page at that moment would leak a key with your existing followers and
+	reputation. <a class="underline" href="/">New here? Generate a fresh key instead.</a>
 </p>
 
 <form class="mt-4 flex flex-col gap-3" onsubmit={onSubmit}>
@@ -94,7 +98,9 @@
 			required
 		/>
 	</label>
-	<small class="text-xs text-neutral-500">Hidden by default. Pasted straight into the Worker for encryption.</small>
+	<small class="text-xs text-neutral-500"
+		>Hidden by default. Pasted straight into the Worker for encryption.</small
+	>
 
 	<label class="flex flex-col gap-1 text-sm">
 		Identifier
@@ -106,8 +112,8 @@
 		/>
 	</label>
 	<small class="text-xs text-neutral-500">
-		The key is re-encrypted with <code>identifier ‖ password</code>. Reuse the identifier
-		you'll remember, or pick a new one.
+		The key is re-encrypted with <code>identifier ‖ password</code>. Reuse the identifier you'll
+		remember, or pick a new one.
 	</small>
 
 	<label class="flex flex-col gap-1 text-sm">
@@ -146,14 +152,14 @@
 	<section class="mt-8 rounded-md border border-green-200 bg-green-50 p-4">
 		<h2 class="text-lg font-semibold">Key imported ✓</h2>
 		<p class="mt-1 text-sm">Now stored in your locker. Your public ID (npub):</p>
-		<code class="mt-1 block break-all rounded bg-white p-2 font-mono text-xs">{npub}</code>
+		<code class="mt-1 block rounded bg-white p-2 font-mono text-xs break-all">{npub}</code>
 
 		<div class="mt-6 border-t border-dashed border-green-200 pt-4">
 			<h3 class="text-sm font-semibold">Back up the encrypted blob</h3>
 			<p class="mt-1 text-sm text-amber-700">
-				You already hold the nsec you imported. Back up the <strong>ncryptsec</strong> too
-				(encrypted — safe anywhere) so the locker can be restored independently of this
-				site. There is no recovery if you lose your identifier and password.
+				You already hold the nsec you imported. Back up the <strong>ncryptsec</strong> too (encrypted
+				— safe anywhere) so the locker can be restored independently of this site. There is no recovery
+				if you lose your identifier and password.
 			</p>
 			<div class="mt-2 flex items-center gap-2">
 				<input
@@ -178,8 +184,8 @@
 		</div>
 
 		<p class="mt-4 text-sm text-amber-700">
-			Save your <strong>identifier</strong> and <strong>password</strong> — you'll need both to
-			log in from any device.
+			Save your <strong>identifier</strong> and <strong>password</strong> — you'll need both to log in
+			from any device.
 		</p>
 	</section>
 {/if}

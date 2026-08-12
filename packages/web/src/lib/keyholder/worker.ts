@@ -10,29 +10,29 @@
  * gone rogue can't keep the key alive.
  */
 import {
-  KeyholderCore,
-  IDLE_LOCK_MS,
-  type KeyholderNotification,
-  type KeyholderReq,
-  type KeyholderRes,
-} from "./core";
+	KeyholderCore,
+	IDLE_LOCK_MS,
+	type KeyholderNotification,
+	type KeyholderReq,
+	type KeyholderRes
+} from './core';
 
 const core = new KeyholderCore();
 const post = (m: KeyholderRes | KeyholderNotification) =>
-  (self as unknown as Worker).postMessage(m);
+	(self as unknown as Worker).postMessage(m);
 
 let idle: ReturnType<typeof setTimeout> | undefined;
 function armIdleLock() {
-  clearTimeout(idle);
-  idle = setTimeout(() => {
-    if (core.unlocked) {
-      core.lock();
-      post({ notification: "auto-locked" });
-    }
-  }, IDLE_LOCK_MS);
+	clearTimeout(idle);
+	idle = setTimeout(() => {
+		if (core.unlocked) {
+			core.lock();
+			post({ notification: 'auto-locked' });
+		}
+	}, IDLE_LOCK_MS);
 }
 
 self.onmessage = async (e: MessageEvent<KeyholderReq>) => {
-  post(await core.handle(e.data));
-  armIdleLock(); // any keyholder activity resets the idle window
+	post(await core.handle(e.data));
+	armIdleLock(); // any keyholder activity resets the idle window
 };

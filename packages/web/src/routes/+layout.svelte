@@ -27,8 +27,8 @@
 				href={item.href}
 				class={page.url.pathname === item.href
 					? 'font-semibold no-underline'
-					: 'no-underline text-neutral-600'}
-			>{item.label}</a>
+					: 'text-neutral-600 no-underline'}>{item.label}</a
+			>
 		{/each}
 	</nav>
 </header>

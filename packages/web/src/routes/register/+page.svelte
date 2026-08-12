@@ -46,9 +46,17 @@
 			// Worker (off the main thread, and the raw 32 bytes never reach the page
 			// — only the bech32 backup, which the user must see once).
 			const identifier_hash = await identifierHash(identifier);
-			const { ncryptsec: blob, npub: np, nsec: ns, passwordSecret: password_secret } =
-				await keyholder.create(identifier, password);
-			await register({ identifierHash: identifier_hash, passwordSecret: password_secret, ncryptsec: blob });
+			const {
+				ncryptsec: blob,
+				npub: np,
+				nsec: ns,
+				passwordSecret: password_secret
+			} = await keyholder.create(identifier, password);
+			await register({
+				identifierHash: identifier_hash,
+				passwordSecret: password_secret,
+				ncryptsec: blob
+			});
 			npub = np;
 			nsec = ns;
 			ncryptsec = blob;
@@ -78,9 +86,9 @@
 <h1 class="text-xl font-semibold">Create your key</h1>
 
 <p class="mt-2 text-sm text-neutral-600">
-	A fresh Nostr key is generated in your browser, encrypted with your identifier
-	+ password, and stored on the server. The server never sees the plaintext key.
-	Save your identifier and password — there is no recovery.
+	A fresh Nostr key is generated in your browser, encrypted with your identifier + password, and
+	stored on the server. The server never sees the plaintext key. Save your identifier and password —
+	there is no recovery.
 </p>
 
 <form class="mt-4 flex flex-col gap-3" onsubmit={onSubmit}>
@@ -94,8 +102,8 @@
 		/>
 	</label>
 	<small class="text-xs text-neutral-500">
-		Defense-in-depth, not required to be strong — but a private, hard-to-guess
-		identifier adds a layer the server can't see. We never enforce or reject it.
+		Defense-in-depth, not required to be strong — but a private, hard-to-guess identifier adds a
+		layer the server can't see. We never enforce or reject it.
 	</small>
 
 	<label class="flex flex-col gap-1 text-sm">
@@ -130,26 +138,30 @@
 	>
 </form>
 
-<p class="mt-4 text-sm text-neutral-600">Already have a key? <a class="underline" href="/import">Import it</a> (advanced).</p>
+<p class="mt-4 text-sm text-neutral-600">
+	Already have a key? <a class="underline" href="/import">Import it</a> (advanced).
+</p>
 
 {#if npub}
 	<section class="mt-8 rounded-md border border-green-200 bg-green-50 p-4">
 		<h2 class="text-lg font-semibold">Key created ✓</h2>
 		<p class="mt-1 text-sm">Your public ID (npub) — share it freely:</p>
-		<code class="mt-1 block break-all rounded bg-white p-2 font-mono text-xs">{npub}</code>
+		<code class="mt-1 block rounded bg-white p-2 font-mono text-xs break-all">{npub}</code>
 
 		<div class="mt-6 border-t border-dashed border-green-200 pt-4">
 			<h3 class="text-sm font-semibold">Back up your key</h3>
 			<p class="mt-1 text-sm text-amber-700">
-				There is no recovery. If you lose both your identifier and password, the
-				key is gone forever. A backup you control is the only safety net — copy
-				these now into a password manager.
+				There is no recovery. If you lose both your identifier and password, the key is gone
+				forever. A backup you control is the only safety net — copy these now into a password
+				manager.
 			</p>
 
 			<div class="mt-3 flex flex-col gap-4">
 				<label class="flex flex-col gap-1 text-sm">
 					<span>
-						nsec <span class="text-neutral-500">— survives a forgotten password (the only thing that does)</span>
+						nsec <span class="text-neutral-500"
+							>— survives a forgotten password (the only thing that does)</span
+						>
 					</span>
 					<div class="mt-1 flex items-center gap-2">
 						<input
@@ -174,8 +186,7 @@
 						</button>
 					</div>
 					<small class="text-xs text-red-700">
-						Anyone with this owns your identity. Store only in a password manager or
-						fully offline.
+						Anyone with this owns your identity. Store only in a password manager or fully offline.
 					</small>
 				</label>
 
@@ -208,14 +219,16 @@
 							{copied === 'ncryptsec' ? 'Copied' : 'Copy'}
 						</button>
 					</div>
-					<small class="text-xs text-neutral-500">Encrypted — safe to store in a cloud note or on a second device.</small>
+					<small class="text-xs text-neutral-500"
+						>Encrypted — safe to store in a cloud note or on a second device.</small
+					>
 				</label>
 			</div>
 		</div>
 
 		<p class="mt-4 text-sm text-amber-700">
-			Also save your <strong>identifier</strong> and <strong>password</strong> (a password
-			manager is ideal). You will need both to log in from any device.
+			Also save your <strong>identifier</strong> and <strong>password</strong> (a password manager is
+			ideal). You will need both to log in from any device.
 		</p>
 	</section>
 {/if}

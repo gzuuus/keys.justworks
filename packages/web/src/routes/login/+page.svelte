@@ -41,7 +41,10 @@
 			}
 			const identifier_hash = await identifierHash(identifier);
 			const password_secret = await keyholder.passwordSecret(identifier, password);
-			const ncryptsec = await login({ identifierHash: identifier_hash, passwordSecret: password_secret });
+			const ncryptsec = await login({
+				identifierHash: identifier_hash,
+				passwordSecret: password_secret
+			});
 			// Decrypt + hold the key in the Worker. The page sees only the pubkey;
 			// the raw secret never leaves the Worker.
 			const { pubkey } = await keyholder.unlock(ncryptsec, identifier, password);
@@ -88,9 +91,10 @@
 <h1 class="text-xl font-semibold">Log in</h1>
 
 <p class="mt-2 text-sm text-neutral-600">
-	Your encrypted key is fetched from the server and decrypted <strong>inside a Web
-	Worker</strong> — the raw key never reaches this page. The Worker exposes the
-	NIP-07 surface (<code>getPublicKey</code>, <code>signEvent</code>,
+	Your encrypted key is fetched from the server and decrypted <strong>inside a Web Worker</strong> —
+	the raw key never reaches this page. The Worker exposes the NIP-07 surface (<code
+		>getPublicKey</code
+	>, <code>signEvent</code>,
 	<code>nip04</code>, <code>nip44</code>).
 </p>
 
@@ -127,14 +131,16 @@
 </form>
 
 {#if autoLockedNote}
-	<p class="mt-4 text-sm text-amber-700">Your key was auto-locked after inactivity. Unlock again to continue.</p>
+	<p class="mt-4 text-sm text-amber-700">
+		Your key was auto-locked after inactivity. Unlock again to continue.
+	</p>
 {/if}
 
 {#if !locked && npub}
 	<section class="mt-8 rounded-md border border-green-200 bg-green-50 p-4">
 		<h2 class="text-lg font-semibold">Unlocked ✓</h2>
 		<p class="mt-1 text-sm">Key held in the Worker. Your npub:</p>
-		<code class="mt-1 block break-all rounded bg-white p-2 font-mono text-xs">{npub}</code>
+		<code class="mt-1 block rounded bg-white p-2 font-mono text-xs break-all">{npub}</code>
 
 		<div class="mt-4 flex gap-3">
 			<button
@@ -149,8 +155,7 @@
 
 		{#if signedEvent}
 			<pre
-				class="mt-4 overflow-x-auto break-all rounded bg-neutral-900 p-3 text-xs whitespace-pre-wrap text-neutral-200"
-			>{signedEvent}</pre>
+				class="mt-4 overflow-x-auto rounded bg-neutral-900 p-3 text-xs break-all whitespace-pre-wrap text-neutral-200">{signedEvent}</pre>
 		{/if}
 	</section>
 {/if}
