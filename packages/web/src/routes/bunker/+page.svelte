@@ -28,8 +28,17 @@
 	// the provider subscribes/publishes to.
 	const pool = new RelayPool();
 
-	let relay = $state('wss://relay.nsec.app/');
+	// Comma-separated relay list (relay URLs contain no commas). The provider
+	// listens on these for the bunker:// flow; the nostrconnect:// flow prefers
+	// the client's own relays (see startWithUri).
+	let relay = $state('wss://relay.primal.net, wss://relay.ditto.pub');
 	let connectUri = $state(''); // nostrconnect:// URI (client-initiated flow)
+	function relays(): string[] {
+		return relay
+			.split(',')
+			.map((r) => r.trim())
+			.filter(Boolean);
+	}
 	let provider = $state<NostrConnectProvider | null>(null);
 	let bunkerUri = $state<string | null>(null);
 	let running = $state(false);
@@ -135,13 +144,15 @@
 
 	// --- provider lifecycle ----------------------------------------------------
 
-	function makeProvider(): NostrConnectProvider {
+	function makeProvider(listenRelays: string[], bunkerSecret?: string): NostrConnectProvider {
 		return new NostrConnectProvider({
-			relays: [relay],
+			relays: listenRelays,
 			// The store IS the ISigner: getPublicKey/signEvent/nip04/nip44 route
 			// straight to the Worker-held key. No adapter needed.
 			upstream: keyholder,
-			bunkerSecret: crypto.randomUUID(),
+			// bunkerSecret omitted for the nostrconnect:// flow: the client dictates
+			// the secret, and the provider adopts it from the URI on connect.
+			...(bunkerSecret ? { bunkerSecret } : {}),
 			pool: { subscription: pool.subscription.bind(pool), publish: pool.publish.bind(pool) },
 			onClientConnect: (client) => addLog('connect', `client connected: ${short(client)}`),
 			onClientDisconnect: () => addLog('disconnect', 'client disconnected'),
@@ -170,12 +181,13 @@
 		busy = true;
 		error = null;
 		try {
-			const p = makeProvider();
+			const listen = relays();
+			const p = makeProvider(listen, crypto.randomUUID());
 			await p.start();
 			bunkerUri = await p.getBunkerURI();
 			provider = p;
 			running = true;
-			addLog('info', `provider listening on ${relay}`);
+			addLog('info', `provider listening on ${listen.join(', ')}`);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'failed to start provider';
 			addLog('error', error);
@@ -194,11 +206,22 @@
 			error = 'Paste a nostrconnect:// URI from the client.';
 			return;
 		}
+		// The client sends its connect request on the URI's own relays, so listen
+		// there (fall back to the configured list if the URI lists none). No secret
+		// is set — the provider adopts it from the URI.
+		let uriRelays: string[] = [];
+		try {
+			uriRelays = new URL(uri).searchParams.getAll('relay').filter(Boolean);
+		} catch {
+			// malformed URI — let the provider throw a clearer error below
+		}
 		busy = true;
 		error = null;
 		try {
-			const p = makeProvider();
+			const listen = uriRelays.length ? uriRelays : relays();
+			const p = makeProvider(listen);
 			await p.start(uri);
+			addLog('info', `provider listening on ${listen.join(', ')}`);
 			provider = p;
 			bunkerUri = null; // client-initiated: no bunker:// URI from us
 			running = true;
@@ -290,8 +313,9 @@
 		</CardHeader>
 		<CardContent class="flex flex-col gap-4">
 			<div class="flex flex-col gap-2">
-				<Label for="relay">Relay</Label>
-				<Input id="relay" bind:value={relay} disabled={running} placeholder="wss://…" />
+				<Label for="relay">Relays</Label>
+				<Input id="relay" bind:value={relay} disabled={running} placeholder="wss://a, wss://b" />
+				<p class="text-xs text-muted-foreground">Comma-separated. The bunker listens on these.</p>
 			</div>
 
 			<div class="flex items-center gap-3">
