@@ -24,11 +24,13 @@ import { keyholder } from '$lib/keyholder/store.svelte';
 import { bunkerApps, newApp, type BunkerApp } from './apps.svelte';
 import {
 	check,
+	grant,
 	normalizeRelay,
 	parseNostrConnect,
 	permLabel,
 	permissionKey,
-	short
+	short,
+	type Duration
 } from './policy';
 
 export type Status = 'stopped' | 'listening' | 'connected';
@@ -275,15 +277,24 @@ export class BunkerRuntime {
 
 	// --- approval (runtime-owned; page renders) ------------------------------
 
-	/** Resolve the front of the queue with allow/deny; show next if any. */
-	decide(allow: boolean) {
+	/**
+	 * Resolve the front of the queue. `allow` grants the request; when `duration`
+	 * is longer than 'once' (and the request isn't the connect handshake), the
+	 * grant is persisted so future matching requests auto-approve via `check`.
+	 */
+	decide(allow: boolean, duration: Duration = 'once') {
 		const [req, ...rest] = this.pending;
 		if (!req) return;
 		this.pending = rest;
+		if (allow && duration !== 'once' && req.permKey !== 'connect') {
+			bunkerApps.recordDecision(req.appId, req.permKey, grant(duration));
+		}
 		this.#log(
 			allow ? 'grant' : 'request',
 			req.appId,
-			`${allow ? 'approved' : 'denied'}: ${APPROVAL_LABEL[req.kind].toLowerCase()}`
+			`${allow ? 'approved' : 'denied'}${duration !== 'once' ? ` (${duration})` : ''}: ${APPROVAL_LABEL[
+				req.kind
+			].toLowerCase()}`
 		);
 		req.resolve(allow);
 		this.dialogOpen = this.pending.length > 0;

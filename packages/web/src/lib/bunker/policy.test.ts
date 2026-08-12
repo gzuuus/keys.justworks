@@ -15,6 +15,7 @@ import {
 	permissionKey,
 	splitKey,
 	permLabel,
+	describeDecision,
 	type Decision
 } from './policy';
 
@@ -196,5 +197,21 @@ describe('permLabel', () => {
 		expect(permLabel(`nip04_encrypt:${pk}`)).toBe(
 			`NIP-04 encrypt to ${pk.slice(0, 8)}…${pk.slice(-4)}`
 		);
+	});
+});
+
+describe('describeDecision', () => {
+	const NOW = 1_700_000_000_000;
+	it('always grant → "always"', () => {
+		expect(describeDecision({ acceptUntil: ALWAYS, rejectUntil: 0 }, NOW)).toBe('always');
+	});
+	it('time-bound accept → remaining window', () => {
+		expect(describeDecision({ acceptUntil: NOW + 5 * 60_000, rejectUntil: 0 }, NOW)).toBe('for 5m');
+		expect(describeDecision({ acceptUntil: NOW + 2 * 60 * 60_000, rejectUntil: 0 }, NOW)).toBe(
+			'for 2h'
+		);
+	});
+	it('expired accept → "expired"', () => {
+		expect(describeDecision({ acceptUntil: NOW - 1, rejectUntil: 0 }, NOW)).toBe('expired');
 	});
 });

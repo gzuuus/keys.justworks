@@ -3,7 +3,7 @@
 	import { keyholder } from '$lib/keyholder/store.svelte';
 	import { bunkerApps, type BunkerApp } from '$lib/bunker/apps.svelte';
 	import { BunkerRuntime } from '$lib/bunker/bunkers.svelte';
-	import { short } from '$lib/bunker/policy';
+	import { short, permLabel, describeDecision, type Duration } from '$lib/bunker/policy';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -17,6 +17,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Switch } from '$lib/components/ui/switch';
+	import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
 	import {
 		Dialog,
 		DialogContent,
@@ -35,6 +36,7 @@
 	let copiedId = $state<string | null>(null);
 	let editingId = $state<string | null>(null);
 	let draftName = $state('');
+	let remember = $state<Duration>('once');
 
 	function startEdit(app: BunkerApp) {
 		editingId = app.id;
@@ -301,6 +303,24 @@
 					<p class="text-sm text-destructive">{bunker.slots[app.id]!.error}</p>
 				{/if}
 
+				{#if Object.keys(app.permissions).length}
+					<div class="flex flex-col gap-1.5">
+						<span class="text-xs font-medium text-muted-foreground">Remembered grants</span>
+						{#each Object.entries(app.permissions) as [key, d] (key)}
+							<div class="flex items-center gap-2 text-xs">
+								<span class="flex-1 break-all">{permLabel(key)}</span>
+								<Badge variant="outline">{describeDecision(d)}</Badge>
+								<Button
+									variant="ghost"
+									size="sm"
+									class="h-6 px-2 text-xs"
+									onclick={() => bunkerApps.revoke(app.id, key)}>Revoke</Button
+								>
+							</div>
+						{/each}
+					</div>
+				{/if}
+
 				<Separator />
 
 				<div class="flex flex-wrap items-center gap-2">
@@ -389,8 +409,26 @@
 				{/if}
 			</div>
 			<DialogFooter>
-				<Button variant="outline" onclick={() => bunker.decide(false)}>Deny</Button>
-				<Button onclick={() => bunker.decide(true)}>Allow</Button>
+				<div class="flex w-full flex-col gap-3">
+					<div class="flex items-center gap-2">
+						<span class="text-xs text-muted-foreground">Remember</span>
+						<ToggleGroup type="single" bind:value={remember} variant="outline" size="sm">
+							<ToggleGroupItem value="once">Once</ToggleGroupItem>
+							<ToggleGroupItem value="5min">5 min</ToggleGroupItem>
+							<ToggleGroupItem value="1h">1 hour</ToggleGroupItem>
+							<ToggleGroupItem value="always">Always</ToggleGroupItem>
+						</ToggleGroup>
+					</div>
+					<div class="flex justify-end gap-2">
+						<Button variant="outline" onclick={() => bunker.decide(false)}>Deny</Button>
+						<Button
+							onclick={() => {
+								bunker.decide(true, remember);
+								remember = 'once';
+							}}>Allow</Button
+						>
+					</div>
+				</div>
 			</DialogFooter>
 		{/if}
 	</DialogContent>

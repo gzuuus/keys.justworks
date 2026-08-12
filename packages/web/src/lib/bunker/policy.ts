@@ -189,3 +189,21 @@ export function permLabel(permKey: string): string {
 			return permKey;
 	}
 }
+
+// --- grant status (display) -----------------------------------------------
+
+/** Human-readable label for a remembered decision (for grant panels). */
+export function describeDecision(d: Decision, now: number = Date.now()): string {
+	if (d.acceptUntil >= ALWAYS) return 'always';
+	if (d.acceptUntil > now) return `for ${formatRemaining(d.acceptUntil - now)}`;
+	// ponytail: reject branches stay until remember-reject ships; v1 never sets rejectUntil.
+	if (d.rejectUntil >= ALWAYS) return 'always denied';
+	if (d.rejectUntil > now) return `denied for ${formatRemaining(d.rejectUntil - now)}`;
+	return 'expired';
+}
+
+function formatRemaining(ms: number): string {
+	if (ms >= 60 * 60 * 1000) return `${Math.round(ms / (60 * 60 * 1000))}h`;
+	if (ms >= 60 * 1000) return `${Math.round(ms / (60 * 1000))}m`;
+	return `${Math.round(ms / 1000)}s`;
+}
