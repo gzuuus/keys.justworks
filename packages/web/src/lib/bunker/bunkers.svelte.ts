@@ -10,9 +10,9 @@
  *
  * Approval is runtime-owned (the gate to signing): a reactive queue + dialog
  * flag the page renders. Decisions flow through `policy.check()`, so remembered
- * grants auto-resolve; `autoApprove` and per-app `trustApp` short-circuit. This
- * increment's floor is once-only (no grant is set yet); increment 4 adds the
- * durations UI that populates `recordDecision`.
+ * grants auto-resolve; `autoApprove` and per-app `trustApp` short-circuit. The
+ * dialog offers once / 5min / 1h / always durations; anything beyond 'once' is
+ * persisted via `recordDecision`.
  *
  * Page-scoped by design: instantiated on /bunker, `startAll()` reconnects on
  * mount, `stopAll()` on unmount/lock. Persisted records (apps.svelte.ts) survive
@@ -131,16 +131,18 @@ export class BunkerRuntime {
 				name: parsed.name,
 				url: parsed.url
 			});
-		// refresh relays/secret/metadata from the fresh URI on a known client
-		app.relays = parsed.relays;
-		app.secret = parsed.secret;
-		if (parsed.name) app.name = parsed.name;
-		if (parsed.url) app.url = parsed.url;
+		if (existing) {
+			// a known client reconnected with a fresh URI — refresh its fields
+			app.relays = parsed.relays;
+			app.secret = parsed.secret;
+			if (parsed.name) app.name = parsed.name;
+			if (parsed.url) app.url = parsed.url;
+		}
 		bunkerApps.upsert(app);
 		await this.#startAndSlot(app, uriRaw.trim());
 	}
 
-	/** Persisted reconnect: rebuild a provider from a stored record (listen only). */
+	/** Start (or reconnect) a provider for an app and track its slot state. */
 	async #startAndSlot(app: BunkerApp, uri?: string): Promise<void> {
 		try {
 			const bunkerUri = await this.#start(app, uri);
@@ -149,7 +151,7 @@ export class BunkerRuntime {
 				'info',
 				app.id,
 				uri
-					? `connecting to ${app.name || short(app.clientPubkey ?? parsedClient(uri))} via nostrconnect`
+					? `connecting to ${app.name || short(app.clientPubkey ?? 'client')} via nostrconnect`
 					: `bunker listening on ${app.relays.join(', ')}`
 			);
 		} catch (e) {
@@ -403,14 +405,5 @@ export class BunkerRuntime {
 
 	clearLogs() {
 		this.logs = [];
-	}
-}
-
-/** Extract the client pubkey from a nostrconnect URI (for log labels only). */
-function parsedClient(uri: string): string {
-	try {
-		return parseNostrConnect(uri).client;
-	} catch {
-		return 'client';
 	}
 }

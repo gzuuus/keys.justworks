@@ -436,13 +436,12 @@
 	<DialogContent showCloseButton={false}>
 		{#if front()}
 			{@const req = front()!}
-			{@const app = bunkerApps.get(req.appId)}
 			<DialogHeader>
 				<DialogTitle>Approve {req.kind.replace('_', ' ')}?</DialogTitle>
 			</DialogHeader>
 			<div class="flex flex-col gap-2 text-sm">
 				<p class="text-muted-foreground">
-					{app?.name || (app?.clientPubkey ? short(app.clientPubkey) : 'Bunker slot')} · client
+					{appName(req.appId)} · client
 					<code class="font-mono">{short(req.client)}</code> · {req.summary}
 				</p>
 				{#if req.detail}

@@ -161,7 +161,6 @@ describe('parseNostrConnect', () => {
 		expect(r.secret).toBe('y2u1pq');
 		expect(r.name).toBe('jumble.social');
 		expect(r.url).toBe('https://jumble.social');
-		expect(r.perms).toEqual(['sign_event:1', 'nip04_encrypt:abc']);
 	});
 
 	it('throws on missing secret', () => {
@@ -176,11 +175,10 @@ describe('parseNostrConnect', () => {
 		const uri = `nostrconnect://notahex?relay=wss://relay.primal.net&secret=y2u1pq`;
 		expect(() => parseNostrConnect(uri)).toThrow();
 	});
-	it('tolerates a URI with no metadata/perms', () => {
+	it('tolerates a URI with no metadata', () => {
 		const uri = `nostrconnect://${CLIENT}?relay=wss://relay.primal.net&secret=y2u1pq`;
 		const r = parseNostrConnect(uri);
 		expect(r.name).toBe('');
-		expect(r.perms).toEqual([]);
 	});
 });
 

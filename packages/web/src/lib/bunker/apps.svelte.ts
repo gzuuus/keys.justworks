@@ -144,20 +144,13 @@ class BunkerApps {
 		this.#persist();
 	}
 
-	/** Record the client that connected (and any metadata learned on connect). */
-	setClient(id: string, clientPubkey: string, meta?: { name?: string; url?: string }) {
+	/** Record the client that connected. (Metadata like name/url come from the
+	 *  nostrconnect URI at creation; applesauce surfaces only pubkey + perms on
+	 *  connect, so there's nothing extra to learn here.) */
+	setClient(id: string, clientPubkey: string) {
 		const app = this.get(id);
 		if (!app) return;
 		app.clientPubkey = clientPubkey;
-		if (meta?.name) app.name = meta.name;
-		if (meta?.url) app.url = meta.url;
-		app.lastUsed = Date.now();
-		this.#persist();
-	}
-
-	touch(id: string) {
-		const app = this.get(id);
-		if (!app) return;
 		app.lastUsed = Date.now();
 		this.#persist();
 	}

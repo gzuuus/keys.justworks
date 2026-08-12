@@ -120,8 +120,6 @@ export interface ParsedNostrConnect {
 	secret: string;
 	name: string; // from URI metadata, if provided
 	url: string;
-	image: string;
-	perms: string[]; // requested permission keys, e.g. ["sign_event:1"]
 }
 
 /**
@@ -137,12 +135,7 @@ export function parseNostrConnect(uri: string): ParsedNostrConnect {
 		relays: base.relays.map(normalizeRelay),
 		secret: base.secret ?? '',
 		name: p.get('name') ?? '',
-		url: p.get('url') ?? '',
-		image: p.get('image') ?? '',
-		perms: (p.get('perms') ?? '')
-			.split(',')
-			.map((x) => x.trim())
-			.filter(Boolean)
+		url: p.get('url') ?? ''
 	};
 }
 
