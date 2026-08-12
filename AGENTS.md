@@ -92,6 +92,31 @@ JS (`packages/`): pnpm workspaces — `pnpm --filter @kj/<pkg> run <script>`.
 - Prefer the ladder before writing new code: stdlib → existing dependency → minimal
   code. Reuse what's already in the repo before reaching for a new crate/npm package.
 
+## Web UI
+
+**`packages/web` uses [shadcn-svelte](https://shadcn-svelte.com)** (Tailwind v4 +
+SvelteKit, theme tokens in `src/routes/layout.css`). UI primitives come from it —
+don't hand-roll a button, dialog, input, or tooltip. The `cn()` helper and the
+`WithElementRef` / `WithoutChildren*` types live in `$lib/utils`; components land in
+`$lib/components/ui/<name>/`. Both are managed by the CLI, so don't edit generated
+files by hand unless you know the regen cost.
+
+Add a component from the repo root:
+
+```
+pnpm --filter @kj/web dlx shadcn-svelte@latest add <name> --yes
+```
+
+Available components (registry: `nova` style, `lucide` icons): Accordion, Alert,
+Alert Dialog, Aspect Ratio, Avatar, Badge, Breadcrumb, Button, Button Group,
+Calendar, Card, Carousel, Chart, Checkbox, Collapsible, Combobox, Command,
+Context Menu, Data Table, Date Picker, Dialog, Drawer, Dropdown Menu, Empty,
+Field, Hover Card, Input, Input Group, Input OTP, Item, Kbd, Label, Menubar,
+Native Select, Navigation Menu, Pagination, Popover, Progress, Radio Group,
+Range Calendar, Resizable, Scroll Area, Select, Separator, Sheet, Sidebar,
+Skeleton, Slider, Sonner, Spinner, Switch, Table, Tabs, Textarea, Toggle,
+Toggle Group, Tooltip, Typography.
+
 ## Testing
 
 - **Rust:** `cargo test` in `server/`. Non-trivial logic (a branch, parser, crypto
