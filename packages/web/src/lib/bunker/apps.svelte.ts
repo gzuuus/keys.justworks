@@ -136,6 +136,14 @@ class BunkerApps {
 		this.#persist();
 	}
 
+	/** Rename a slot (bunker:// slots have no client metadata to derive a name from). */
+	rename(id: string, name: string) {
+		const app = this.get(id);
+		if (!app) return;
+		app.name = name.trim();
+		this.#persist();
+	}
+
 	/** Record the client that connected (and any metadata learned on connect). */
 	setClient(id: string, clientPubkey: string, meta?: { name?: string; url?: string }) {
 		const app = this.get(id);

@@ -33,24 +33,35 @@
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	let copiedId = $state<string | null>(null);
+	let editingId = $state<string | null>(null);
+	let draftName = $state('');
+
+	function startEdit(app: BunkerApp) {
+		editingId = app.id;
+		draftName = app.name;
+	}
+	function saveEdit() {
+		if (editingId) bunkerApps.rename(editingId, draftName);
+		editingId = null;
+	}
 
 	// Drive lifecycle from the keyholder: owner scope + reconnect on unlock,
-	// stop everything on lock. Reads only keyholder state, so no feedback loop.
+	// stop everything on lock. Transition-guarded — `configuredFor` is a plain,
+	// non-reactive var, so the effect only acts on a real lock/unlock change and
+	// can never feed back into itself. Dialog dismissal is event-driven
+	// (onOpenChange), not an effect, for the same reason.
+	let configuredFor: string | null | undefined = undefined;
 	$effect(() => {
-		const npub = keyholder.npub;
-		const locked = keyholder.locked;
-		if (locked) {
+		const target: string | null = keyholder.locked || !keyholder.npub ? null : keyholder.npub;
+		if (target === configuredFor) return;
+		configuredFor = target;
+		if (target) {
+			bunkerApps.setOwner(target);
+			void bunker.startAll();
+		} else {
 			bunkerApps.setOwner(null);
 			void bunker.stopAll();
-		} else if (npub) {
-			bunkerApps.setOwner(npub);
-			void bunker.startAll();
 		}
-	});
-
-	// Dialog dismissed (Escape/overlay) while a request waits → deny front, next.
-	$effect(() => {
-		bunker.dismiss();
 	});
 
 	onDestroy(() => {
@@ -215,7 +226,24 @@
 		<Card class="mt-4">
 			<CardHeader>
 				<div class="flex flex-wrap items-center gap-2">
-					<CardTitle class="text-base">{name(app)}</CardTitle>
+					{#if editingId === app.id}
+						<Input
+							bind:value={draftName}
+							class="h-8 max-w-[14rem]"
+							placeholder="Slot name"
+							onkeydown={(e) => {
+								if (e.key === 'Enter') saveEdit();
+								if (e.key === 'Escape') editingId = null;
+							}}
+							onblur={saveEdit}
+						/>
+					{:else}
+						<CardTitle
+							class="cursor-text text-base"
+							onclick={() => startEdit(app)}
+							title="Click to rename">{name(app)}</CardTitle
+						>
+					{/if}
 					<Badge variant={STATUS_VARIANT[status(app)]}>{status(app)}</Badge>
 					<Badge variant="outline">{app.mode}</Badge>
 					{#if app.trustApp}
@@ -337,7 +365,12 @@
 	</Card>
 {/if}
 
-<Dialog bind:open={bunker.dialogOpen}>
+<Dialog
+	bind:open={bunker.dialogOpen}
+	onOpenChange={(open) => {
+		if (!open) bunker.decide(false);
+	}}
+>
 	<DialogContent showCloseButton={false}>
 		{#if front()}
 			{@const req = front()!}

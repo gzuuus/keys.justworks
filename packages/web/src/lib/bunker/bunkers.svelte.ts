@@ -289,11 +289,6 @@ export class BunkerRuntime {
 		this.dialogOpen = this.pending.length > 0;
 	}
 
-	/** Dismiss (Escape/overlay) → deny front, show next. Call from a page $effect. */
-	dismiss() {
-		if (!this.dialogOpen && this.pending.length > 0) this.decide(false);
-	}
-
 	/** Deny everything still queued (e.g. on stop/lock). */
 	clearPending() {
 		for (const r of this.pending) r.resolve(false);
