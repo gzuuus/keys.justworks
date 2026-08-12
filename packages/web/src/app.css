@@ -1,6 +1,0 @@
-/* Global styles. Imported once by the root layout so every route gets it.
- * Kept separate from component <style> blocks (which are scoped) for rules that
- * target the app shell wrapper in app.html. */
-.app-shell {
-	display: contents;
-}

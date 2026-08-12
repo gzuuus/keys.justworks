@@ -85,142 +85,72 @@
 	}
 </script>
 
-<h1>Log in</h1>
+<h1 class="text-xl font-semibold">Log in</h1>
 
-<p>
+<p class="mt-2 text-sm text-neutral-600">
 	Your encrypted key is fetched from the server and decrypted <strong>inside a Web
 	Worker</strong> — the raw key never reaches this page. The Worker exposes the
 	NIP-07 surface (<code>getPublicKey</code>, <code>signEvent</code>,
 	<code>nip04</code>, <code>nip44</code>).
 </p>
 
-<form onsubmit={onUnlock}>
-	<label>
+<form class="mt-4 flex flex-col gap-3" onsubmit={onUnlock}>
+	<label class="flex flex-col gap-1 text-sm">
 		Identifier
-		<input bind:value={identifier} autocomplete="username" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			bind:value={identifier}
+			autocomplete="username"
+			required
+		/>
 	</label>
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Password
-		<input type="password" bind:value={password} autocomplete="current-password" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			type="password"
+			bind:value={password}
+			autocomplete="current-password"
+			required
+		/>
 	</label>
 
 	{#if error}
-		<p class="error">{error}</p>
+		<p class="text-sm text-red-700">{error}</p>
 	{/if}
 
-	<button type="submit" disabled={busy}>{busy ? 'Unlocking…' : 'Unlock'}</button>
+	<button
+		class="mt-2 self-start rounded-md bg-neutral-900 px-5 py-2.5 text-base text-white disabled:opacity-60"
+		type="submit"
+		disabled={busy}>{busy ? 'Unlocking…' : 'Unlock'}</button
+	>
 </form>
 
 {#if autoLockedNote}
-	<p class="note">Your key was auto-locked after inactivity. Unlock again to continue.</p>
+	<p class="mt-4 text-sm text-amber-700">Your key was auto-locked after inactivity. Unlock again to continue.</p>
 {/if}
 
 {#if !locked && npub}
-	<section class="unlocked">
-		<h2>Unlocked ✓</h2>
-		<p>Key held in the Worker. Your npub:</p>
-		<code class="npub">{npub}</code>
+	<section class="mt-8 rounded-md border border-green-200 bg-green-50 p-4">
+		<h2 class="text-lg font-semibold">Unlocked ✓</h2>
+		<p class="mt-1 text-sm">Key held in the Worker. Your npub:</p>
+		<code class="mt-1 block break-all rounded bg-white p-2 font-mono text-xs">{npub}</code>
 
-		<div class="actions">
-			<button class="secondary" onclick={onSignTest}>Sign a test note</button>
-			<button class="danger" onclick={onLock}>Lock</button>
+		<div class="mt-4 flex gap-3">
+			<button
+				class="rounded-md border border-neutral-300 bg-white px-5 py-2.5 text-base text-neutral-900"
+				onclick={onSignTest}>Sign a test note</button
+			>
+			<button
+				class="rounded-md border border-red-700 bg-white px-5 py-2.5 text-base text-red-700"
+				onclick={onLock}>Lock</button
+			>
 		</div>
 
 		{#if signedEvent}
-			<pre class="signed">{signedEvent}</pre>
+			<pre
+				class="mt-4 overflow-x-auto break-all rounded bg-neutral-900 p-3 text-xs whitespace-pre-wrap text-neutral-200"
+			>{signedEvent}</pre>
 		{/if}
 	</section>
 {/if}
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		margin-top: 1rem;
-	}
-	label {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		font-size: 0.9rem;
-	}
-	input {
-		padding: 0.5rem;
-		border: 1px solid #ccc;
-		border-radius: 5px;
-		font-size: 1rem;
-	}
-	button {
-		align-self: flex-start;
-		padding: 0.6rem 1.2rem;
-		background: #1a1a1a;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-	}
-	button:disabled {
-		opacity: 0.6;
-		cursor: default;
-	}
-	.secondary {
-		background: #fff;
-		color: #1a1a1a;
-		border: 1px solid #ccc;
-	}
-	.danger {
-		background: #fff;
-		color: #b00020;
-		border: 1px solid #b00020;
-	}
-	.error {
-		color: #b00020;
-	}
-	.note {
-		color: #7a5400;
-		font-size: 0.85rem;
-	}
-	.unlocked {
-		margin-top: 2rem;
-		padding: 1rem;
-		background: #f0f7f0;
-		border: 1px solid #cfe3cf;
-		border-radius: 6px;
-	}
-	.npub {
-		display: block;
-		word-break: break-all;
-		font-size: 0.8rem;
-		background: #fff;
-		padding: 0.5rem;
-		border-radius: 4px;
-	}
-	.actions {
-		display: flex;
-		gap: 0.75rem;
-		margin-top: 1rem;
-	}
-	.actions button {
-		margin-top: 0;
-	}
-	.signed {
-		margin-top: 1rem;
-		background: #1a1a1a;
-		color: #eee;
-		padding: 0.75rem;
-		border-radius: 4px;
-		font-size: 0.75rem;
-		overflow-x: auto;
-		white-space: pre-wrap;
-		word-break: break-all;
-	}
-	code {
-		background: #eee;
-		padding: 0.1rem 0.35rem;
-		border-radius: 3px;
-		font-size: 0.9em;
-	}
-</style>

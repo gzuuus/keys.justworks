@@ -73,180 +73,113 @@
 	}
 </script>
 
-<h1>Import a key</h1>
+<h1 class="text-xl font-semibold">Import a key</h1>
 
-<p class="danger-banner">
+<p class="mt-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
 	⚠ Importing an <strong>established</strong> key is the riskiest operation on this site.
 	If you have the <strong>browser extension</strong>, import there instead — its input is
 	isolated from page JS. Here, the raw key passes through page JS only briefly and is
 	encrypted inside a Worker, but a compromised page at that moment would leak a key with
-	your existing followers and reputation. <a href="/">New here? Generate a fresh key instead.</a>
+	your existing followers and reputation. <a class="underline" href="/">New here? Generate a fresh key instead.</a>
 </p>
 
-<form onsubmit={onSubmit}>
-	<label>
+<form class="mt-4 flex flex-col gap-3" onsubmit={onSubmit}>
+	<label class="flex flex-col gap-1 text-sm">
 		Your nsec
-		<input type="password" bind:value={nsec} autocomplete="off" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			type="password"
+			bind:value={nsec}
+			autocomplete="off"
+			required
+		/>
 	</label>
-	<small class="hint">Hidden by default. Pasted straight into the Worker for encryption.</small>
+	<small class="text-xs text-neutral-500">Hidden by default. Pasted straight into the Worker for encryption.</small>
 
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Identifier
-		<input bind:value={identifier} autocomplete="username" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			bind:value={identifier}
+			autocomplete="username"
+			required
+		/>
 	</label>
-	<small class="hint">
+	<small class="text-xs text-neutral-500">
 		The key is re-encrypted with <code>identifier ‖ password</code>. Reuse the identifier
 		you'll remember, or pick a new one.
 	</small>
 
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Password
-		<input type="password" bind:value={password} autocomplete="new-password" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			type="password"
+			bind:value={password}
+			autocomplete="new-password"
+			required
+		/>
 	</label>
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Confirm password
-		<input type="password" bind:value={confirm} autocomplete="new-password" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			type="password"
+			bind:value={confirm}
+			autocomplete="new-password"
+			required
+		/>
 	</label>
 
 	{#if error}
-		<p class="error">{error}</p>
+		<p class="text-sm text-red-700">{error}</p>
 	{/if}
 
-	<button type="submit" disabled={busy}>{busy ? 'Importing…' : 'Import key'}</button>
+	<button
+		class="mt-2 self-start rounded-md bg-neutral-900 px-5 py-2.5 text-base text-white disabled:opacity-60"
+		type="submit"
+		disabled={busy}>{busy ? 'Importing…' : 'Import key'}</button
+	>
 </form>
 
 {#if npub}
-	<section class="success">
-		<h2>Key imported ✓</h2>
-		<p>Now stored in your locker. Your public ID (npub):</p>
-		<code class="npub">{npub}</code>
+	<section class="mt-8 rounded-md border border-green-200 bg-green-50 p-4">
+		<h2 class="text-lg font-semibold">Key imported ✓</h2>
+		<p class="mt-1 text-sm">Now stored in your locker. Your public ID (npub):</p>
+		<code class="mt-1 block break-all rounded bg-white p-2 font-mono text-xs">{npub}</code>
 
-		<div class="backup">
-			<h3>Back up the encrypted blob</h3>
-			<p class="warn">
+		<div class="mt-6 border-t border-dashed border-green-200 pt-4">
+			<h3 class="text-sm font-semibold">Back up the encrypted blob</h3>
+			<p class="mt-1 text-sm text-amber-700">
 				You already hold the nsec you imported. Back up the <strong>ncryptsec</strong> too
 				(encrypted — safe anywhere) so the locker can be restored independently of this
 				site. There is no recovery if you lose your identifier and password.
 			</p>
-			<div class="secret-row">
-				<input type={revealNcryptsec ? 'text' : 'password'} value={ncryptsecOut ?? ''} readonly />
-				<button type="button" class="ghost" onclick={() => (revealNcryptsec = !revealNcryptsec)}>
+			<div class="mt-2 flex items-center gap-2">
+				<input
+					class="flex-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 font-mono text-xs"
+					type={revealNcryptsec ? 'text' : 'password'}
+					value={ncryptsecOut ?? ''}
+					readonly
+				/>
+				<button
+					class="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900"
+					type="button"
+					onclick={() => (revealNcryptsec = !revealNcryptsec)}
+				>
 					{revealNcryptsec ? 'Hide' : 'Reveal'}
 				</button>
-				<button type="button" class="ghost" onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+				<button
+					class="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900"
+					type="button"
+					onclick={copy}>{copied ? 'Copied' : 'Copy'}</button
+				>
 			</div>
 		</div>
 
-		<p class="warn">
+		<p class="mt-4 text-sm text-amber-700">
 			Save your <strong>identifier</strong> and <strong>password</strong> — you'll need both to
 			log in from any device.
 		</p>
 	</section>
 {/if}
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		margin-top: 1rem;
-	}
-	label {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		font-size: 0.9rem;
-	}
-	input {
-		padding: 0.5rem;
-		border: 1px solid #ccc;
-		border-radius: 5px;
-		font-size: 1rem;
-	}
-	.hint {
-		color: #666;
-		font-size: 0.8rem;
-		margin-top: -0.25rem;
-	}
-	.danger-banner {
-		background: #fff4f4;
-		border: 1px solid #f0c0c0;
-		color: #7a1212;
-		padding: 0.75rem;
-		border-radius: 6px;
-		font-size: 0.85rem;
-	}
-	.danger-banner a {
-		color: inherit;
-	}
-	button {
-		align-self: flex-start;
-		padding: 0.6rem 1.2rem;
-		background: #1a1a1a;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-	}
-	button:disabled {
-		opacity: 0.6;
-		cursor: default;
-	}
-	.error {
-		color: #b00020;
-	}
-	.success {
-		margin-top: 2rem;
-		padding: 1rem;
-		background: #f0f7f0;
-		border: 1px solid #cfe3cf;
-		border-radius: 6px;
-	}
-	.npub {
-		display: block;
-		word-break: break-all;
-		font-size: 0.8rem;
-		background: #fff;
-		padding: 0.5rem;
-		border-radius: 4px;
-	}
-	.backup {
-		margin-top: 1.5rem;
-		padding-top: 1rem;
-		border-top: 1px dashed #cfe3cf;
-	}
-	.backup h3 {
-		margin: 0 0 0.25rem;
-	}
-	.secret-row {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-		margin-top: 0.5rem;
-	}
-	.secret-row input {
-		flex: 1;
-		font-family: monospace;
-		font-size: 0.8rem;
-	}
-	.ghost {
-		margin-top: 0;
-		padding: 0.45rem 0.75rem;
-		background: #fff;
-		color: #1a1a1a;
-		border: 1px solid #ccc;
-		font-size: 0.85rem;
-	}
-	.warn {
-		font-size: 0.85rem;
-		color: #7a5400;
-	}
-	code {
-		background: #eee;
-		padding: 0.1rem 0.35rem;
-		border-radius: 3px;
-		font-size: 0.9em;
-	}
-</style>

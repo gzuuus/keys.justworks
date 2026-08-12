@@ -75,218 +75,147 @@
 	}
 </script>
 
-<h1>Create your key</h1>
+<h1 class="text-xl font-semibold">Create your key</h1>
 
-<p>
+<p class="mt-2 text-sm text-neutral-600">
 	A fresh Nostr key is generated in your browser, encrypted with your identifier
 	+ password, and stored on the server. The server never sees the plaintext key.
 	Save your identifier and password — there is no recovery.
 </p>
 
-<form onsubmit={onSubmit}>
-	<label>
+<form class="mt-4 flex flex-col gap-3" onsubmit={onSubmit}>
+	<label class="flex flex-col gap-1 text-sm">
 		Identifier
-		<input bind:value={identifier} autocomplete="username" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			bind:value={identifier}
+			autocomplete="username"
+			required
+		/>
 	</label>
-	<small class="hint">
+	<small class="text-xs text-neutral-500">
 		Defense-in-depth, not required to be strong — but a private, hard-to-guess
 		identifier adds a layer the server can't see. We never enforce or reject it.
 	</small>
 
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Password
-		<input type="password" bind:value={password} autocomplete="new-password" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			type="password"
+			bind:value={password}
+			autocomplete="new-password"
+			required
+		/>
 	</label>
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Confirm password
-		<input type="password" bind:value={confirm} autocomplete="new-password" required />
+		<input
+			class="rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-base"
+			type="password"
+			bind:value={confirm}
+			autocomplete="new-password"
+			required
+		/>
 	</label>
 
 	{#if error}
-		<p class="error">{error}</p>
+		<p class="text-sm text-red-700">{error}</p>
 	{/if}
 
-	<button type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create key'}</button>
+	<button
+		class="mt-2 self-start rounded-md bg-neutral-900 px-5 py-2.5 text-base text-white disabled:opacity-60"
+		type="submit"
+		disabled={busy}>{busy ? 'Creating…' : 'Create key'}</button
+	>
 </form>
 
-<p class="alt-link">Already have a key? <a href="/import">Import it</a> (advanced).</p>
+<p class="mt-4 text-sm text-neutral-600">Already have a key? <a class="underline" href="/import">Import it</a> (advanced).</p>
 
 {#if npub}
-	<section class="success">
-		<h2>Key created ✓</h2>
-		<p>Your public ID (npub) — share it freely:</p>
-		<code class="npub">{npub}</code>
+	<section class="mt-8 rounded-md border border-green-200 bg-green-50 p-4">
+		<h2 class="text-lg font-semibold">Key created ✓</h2>
+		<p class="mt-1 text-sm">Your public ID (npub) — share it freely:</p>
+		<code class="mt-1 block break-all rounded bg-white p-2 font-mono text-xs">{npub}</code>
 
-		<div class="backup">
-			<h3>Back up your key</h3>
-			<p class="warn">
+		<div class="mt-6 border-t border-dashed border-green-200 pt-4">
+			<h3 class="text-sm font-semibold">Back up your key</h3>
+			<p class="mt-1 text-sm text-amber-700">
 				There is no recovery. If you lose both your identifier and password, the
 				key is gone forever. A backup you control is the only safety net — copy
 				these now into a password manager.
 			</p>
 
-			<div class="secret">
-				<label>
-					<span class="secret-title">
-						nsec <em>— survives a forgotten password (the only thing that does)</em>
+			<div class="mt-3 flex flex-col gap-4">
+				<label class="flex flex-col gap-1 text-sm">
+					<span>
+						nsec <span class="text-neutral-500">— survives a forgotten password (the only thing that does)</span>
 					</span>
-					<div class="secret-row">
-						<input type={revealNsec ? 'text' : 'password'} value={nsec ?? ''} readonly />
-						<button type="button" class="ghost" onclick={() => (revealNsec = !revealNsec)}>
+					<div class="mt-1 flex items-center gap-2">
+						<input
+							class="flex-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 font-mono text-xs"
+							type={revealNsec ? 'text' : 'password'}
+							value={nsec ?? ''}
+							readonly
+						/>
+						<button
+							class="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900"
+							type="button"
+							onclick={() => (revealNsec = !revealNsec)}
+						>
 							{revealNsec ? 'Hide' : 'Reveal'}
 						</button>
-						<button type="button" class="ghost" onclick={() => copy(nsec ?? '', 'nsec')}>
+						<button
+							class="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900"
+							type="button"
+							onclick={() => copy(nsec ?? '', 'nsec')}
+						>
 							{copied === 'nsec' ? 'Copied' : 'Copy'}
 						</button>
 					</div>
-					<small class="danger">
+					<small class="text-xs text-red-700">
 						Anyone with this owns your identity. Store only in a password manager or
 						fully offline.
 					</small>
 				</label>
 
-				<label>
-					<span class="secret-title">
+				<label class="flex flex-col gap-1 text-sm">
+					<span>
 						ncryptsec
-						<em>— encrypted; survives the locker disappearing (still needs your password)</em>
+						<span class="text-neutral-500"
+							>— encrypted; survives the locker disappearing (still needs your password)</span
+						>
 					</span>
-					<div class="secret-row">
-						<input type={revealNcryptsec ? 'text' : 'password'} value={ncryptsec ?? ''} readonly />
-						<button type="button" class="ghost" onclick={() => (revealNcryptsec = !revealNcryptsec)}>
+					<div class="mt-1 flex items-center gap-2">
+						<input
+							class="flex-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 font-mono text-xs"
+							type={revealNcryptsec ? 'text' : 'password'}
+							value={ncryptsec ?? ''}
+							readonly
+						/>
+						<button
+							class="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900"
+							type="button"
+							onclick={() => (revealNcryptsec = !revealNcryptsec)}
+						>
 							{revealNcryptsec ? 'Hide' : 'Reveal'}
 						</button>
 						<button
+							class="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900"
 							type="button"
-							class="ghost"
 							onclick={() => copy(ncryptsec ?? '', 'ncryptsec')}
 						>
 							{copied === 'ncryptsec' ? 'Copied' : 'Copy'}
 						</button>
 					</div>
-					<small>Encrypted — safe to store in a cloud note or on a second device.</small>
+					<small class="text-xs text-neutral-500">Encrypted — safe to store in a cloud note or on a second device.</small>
 				</label>
 			</div>
 		</div>
 
-		<p class="warn">
+		<p class="mt-4 text-sm text-amber-700">
 			Also save your <strong>identifier</strong> and <strong>password</strong> (a password
 			manager is ideal). You will need both to log in from any device.
 		</p>
 	</section>
 {/if}
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		margin-top: 1rem;
-	}
-	label {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		font-size: 0.9rem;
-	}
-	input {
-		padding: 0.5rem;
-		border: 1px solid #ccc;
-		border-radius: 5px;
-		font-size: 1rem;
-	}
-	.hint {
-		color: #666;
-		font-size: 0.8rem;
-		margin-top: -0.25rem;
-	}
-	button {
-		align-self: flex-start;
-		padding: 0.6rem 1.2rem;
-		background: #1a1a1a;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-	}
-	button:disabled {
-		opacity: 0.6;
-		cursor: default;
-	}
-	.error {
-		color: #b00020;
-	}
-	.alt-link {
-		margin-top: 1rem;
-		font-size: 0.9rem;
-		color: #555;
-	}
-	.alt-link a {
-		color: inherit;
-	}
-	.success {
-		margin-top: 2rem;
-		padding: 1rem;
-		background: #f0f7f0;
-		border: 1px solid #cfe3cf;
-		border-radius: 6px;
-	}
-	.npub {
-		display: block;
-		word-break: break-all;
-		font-size: 0.8rem;
-		background: #fff;
-		padding: 0.5rem;
-		border-radius: 4px;
-	}
-	.backup {
-		margin-top: 1.5rem;
-		padding-top: 1rem;
-		border-top: 1px dashed #cfe3cf;
-	}
-	.backup h3 {
-		margin: 0 0 0.25rem;
-	}
-	.secret {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		margin-top: 0.75rem;
-	}
-	.secret-title {
-		font-size: 0.85rem;
-	}
-	.secret-title em {
-		color: #666;
-		font-style: normal;
-		font-size: 0.8rem;
-	}
-	.secret-row {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-		margin-top: 0.25rem;
-	}
-	.secret-row input {
-		flex: 1;
-		font-family: monospace;
-		font-size: 0.8rem;
-	}
-	.ghost {
-		margin-top: 0;
-		padding: 0.45rem 0.75rem;
-		background: #fff;
-		color: #1a1a1a;
-		border: 1px solid #ccc;
-		font-size: 0.85rem;
-	}
-	.warn {
-		font-size: 0.85rem;
-		color: #7a5400;
-	}
-	.danger {
-		color: #b00020;
-		font-size: 0.78rem;
-	}
-</style>
