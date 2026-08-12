@@ -414,7 +414,9 @@ async fn static_handler(uri: Uri) -> Response {
 /// plus a hash of SvelteKit's inline bootstrap loader (the inline `<script>`
 /// SvelteKit emits), computed from the embedded `index.html` so it stays in sync
 /// across rebuilds. Computed once and cached. See docs/design.md "Perimeter
-/// defense".
+/// defense". `connect-src` also allows the `wss:` scheme so the NIP-46 bunker
+/// can reach user-chosen relays (the primary XSS defense remains
+/// `script-src 'self'`; see docs/design.md "Perimeter defense").
 fn csp_header() -> &'static str {
     static CSP: OnceLock<String> = OnceLock::new();
     CSP.get_or_init(build_csp)
@@ -429,7 +431,7 @@ fn build_csp() -> String {
     }
     format!(
         "default-src 'self'; script-src {script_src}; style-src 'self'; \
-         img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; \
+         img-src 'self'; font-src 'self'; connect-src 'self' wss:; object-src 'none'; \
          base-uri 'none'; frame-ancestors 'none'; form-action 'self'; \
          frame-src 'none'; manifest-src 'self'"
     )
@@ -514,6 +516,8 @@ mod tests {
         assert!(csp.contains("base-uri 'none'"), "{csp}");
         assert!(csp.contains("frame-ancestors 'none'"), "{csp}");
         assert!(csp.contains("form-action 'self'"), "{csp}");
+        // NIP-46 bunker needs wss: relay connections (user-chosen relay).
+        assert!(csp.contains("connect-src 'self' wss:"), "{csp}");
         // When the embedded index.html has an inline <script> (i.e. the web is
         // built, not the placeholder), its hash must appear in script-src.
         if let Some(f) = WebAssets::get("index.html") {
