@@ -9,7 +9,8 @@
 		{ href: '/', label: 'Home' },
 		{ href: '/register', label: 'Create' },
 		{ href: '/import', label: 'Import' },
-		{ href: '/login', label: 'Log in' }
+		{ href: '/login', label: 'Log in' },
+		{ href: '/bunker', label: 'Bunker' }
 	];
 </script>
 
