@@ -159,13 +159,23 @@ export class BunkerRuntime {
 	}
 
 	async #start(app: BunkerApp, uri?: string): Promise<string | null> {
+		// Ignore relay replay of events from before this provider started. On
+		// reconnect the relay otherwise dumps every stored kind-24133 for the
+		// (now-persistent) transport pubkey, re-firing callbacks for requests
+		// already handled. Mirrors Amber's `since` filter.
+		const since = Math.floor(Date.now() / 1000);
 		const provider = new NostrConnectProvider({
 			relays: app.relays,
 			signer: PrivateKeySigner.fromKey(app.localKey),
 			bunkerSecret: app.secret,
 			upstream: keyholder,
 			pool: {
-				subscription: this.#pool.subscription.bind(this.#pool),
+				subscription: (relays, filters) =>
+					this.#pool.subscription.call(
+						this.#pool,
+						relays,
+						filters.map((f) => ({ ...f, since }))
+					),
 				publish: this.#pool.publish.bind(this.#pool)
 			},
 			onClientConnect: (client) => {
