@@ -56,6 +56,18 @@ export class Keyholder {
     });
   }
 
+  /** CPU-bound offload — run in the Worker so the UI never freezes. */
+
+  /** Derive the client auth secret (scrypt) in the Worker. */
+  passwordSecret(identifier: string, password: string) {
+    return this.#send("passwordSecret", { identifier, password });
+  }
+  /** Registration: generate + wrap a fresh key in the Worker; the raw 32 bytes
+   * never reach the page (only the bech32 backup, which the user must see once). */
+  create(identifier: string, password: string) {
+    return this.#send("create", { identifier, password });
+  }
+
   /** Lifecycle. */
   unlock(ncryptsec: string, identifier: string, password: string) {
     return this.#send("unlock", { ncryptsec, identifier, password });

@@ -91,10 +91,9 @@ export async function identifierHash(identifier: string): Promise<string> {
  * equal to the static-breach floor (lowering it would drop the floor).
  *
  * `scryptAsync` yields to the event loop between phases but is still CPU-bound
- * for ~tens–hundreds of ms, so deriving it on the page briefly janks the UI
- * (notably under CPU throttling). The surfaces currently call this from the
- * page; moving it into the keyholder Worker (like `decryptSecret`) is a tracked
- * follow-up.
+ * for ~tens–hundreds of ms. On the website it runs in the keyholder Worker (via
+ * its `passwordSecret` op) so it never freezes the UI; an extension surface
+ * would call this directly in its isolated context.
  */
 export async function passwordSecret(
   identifier: string,

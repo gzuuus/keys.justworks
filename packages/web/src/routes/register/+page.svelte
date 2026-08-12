@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { encryptSecret, identifierHash, passwordSecret, register, ApiError } from '@kj/core';
-	import { generateSecretKey, getPublicKey, nip19 } from 'nostr-tools';
+	import { onDestroy } from 'svelte';
+	import { identifierHash, register, ApiError } from '@kj/core';
+	import { createKeyholder, type Keyholder } from '$lib/keyholder/client';
 
 	let identifier = $state('');
 	let password = $state('');
@@ -18,6 +19,14 @@
 	let revealNcryptsec = $state(false);
 	let copied = $state<string | null>(null);
 
+	// ponytail: a throwaway keyholder used only for the `create` offload (it does
+	// not hold a key). Destroyed on unmount.
+	let keyholder: Keyholder | null = null;
+	onDestroy(() => {
+		keyholder?.destroy();
+		keyholder = null;
+	});
+
 	async function onSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		error = null;
@@ -32,20 +41,17 @@
 		}
 		busy = true;
 		try {
-			// Fresh secp256k1 key from a CSPRNG (nostr-tools → @noble/curves).
-			const secret = generateSecretKey();
-			try {
-				const pubkey = getPublicKey(secret);
-				const identifier_hash = await identifierHash(identifier);
-				const password_secret = await passwordSecret(identifier, password);
-				const blob = encryptSecret(secret, identifier, password);
-				await register({ identifierHash: identifier_hash, passwordSecret: password_secret, ncryptsec: blob });
-				npub = nip19.npubEncode(pubkey);
-				nsec = nip19.nsecEncode(secret); // user-managed backup (no recovery by design)
-				ncryptsec = blob;
-			} finally {
-				secret.fill(0); // best-effort wipe; JS GC makes this imperfect
-			}
+			if (!keyholder) keyholder = createKeyholder();
+			// Key generation + NIP-49 wrap + auth-secret derivation all run in the
+			// Worker (off the main thread, and the raw 32 bytes never reach the page
+			// — only the bech32 backup, which the user must see once).
+			const identifier_hash = await identifierHash(identifier);
+			const { ncryptsec: blob, npub: np, nsec: ns, passwordSecret: password_secret } =
+				await keyholder.create(identifier, password);
+			await register({ identifierHash: identifier_hash, passwordSecret: password_secret, ncryptsec: blob });
+			npub = np;
+			nsec = ns;
+			ncryptsec = blob;
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong. Please try again.';
 		} finally {

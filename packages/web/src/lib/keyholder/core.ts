@@ -1,22 +1,39 @@
 /**
  * keys.justworks — Web Worker keyholder: pure message handler.
  *
- * Holds the decrypted secp256k1 secret in Worker memory only and serves the
- * NIP-07-shaped operations (`getPublicKey`, `signEvent`, `nip04`, `nip44`) over
- * a `postMessage` protocol, plus `unlock`/`lock`/`status` lifecycle. Mirrors the
- * NIP-07 `window.nostr` surface so the page client (and, later, an injected
- * `window.nostr` shim) speaks the same shape as a browser extension signer.
+ * The page's single crypto Worker. Two jobs, both off the main thread:
+ *  - key custody + NIP-07 signing — holds the decrypted secp256k1 secret in
+ *    Worker memory only and serves `getPublicKey`/`signEvent`/`nip04`/`nip44`
+ *    over a `postMessage` protocol, plus `unlock`/`lock`/`status` lifecycle;
+ *  - CPU-bound offload — `passwordSecret` (scrypt auth secret) and `create`
+ *    (generate + wrap a fresh key for registration) run here so they never
+ *    freeze the UI. Neither touches the held key.
+ *
+ * Mirrors the NIP-07 `window.nostr` surface so the page client (and, later, an
+ * injected `window.nostr` shim) speaks the same shape as a browser extension
+ * signer.
  *
  * Pure on purpose: no `Worker`/`postMessage`/DOM here, so the dispatch logic is
  * unit-testable without a worker harness. The thin I/O adapters live in
  * `worker.ts` (Worker entry) and `client.ts` (page client).
  */
 import type { EventTemplate, VerifiedEvent } from "nostr-tools";
-import { finalizeEvent, getPublicKey, nip04, nip19, nip44 } from "nostr-tools";
-import { decryptSecret, encryptSecret } from "@kj/core";
+import { finalizeEvent, generateSecretKey, getPublicKey, nip04, nip19, nip44 } from "nostr-tools";
+import { decryptSecret, encryptSecret, passwordSecret } from "@kj/core";
 
 /** Each operation maps to its request payload and result type. */
 export interface KeyholderOps {
+  /** Stateless CPU offload: derive the client auth secret (scrypt) off the main
+   * thread. Does not touch any held key. */
+  passwordSecret: { req: { identifier: string; password: string }; res: string };
+  /** Registration: generate a fresh key, wrap it as an ncryptsec, and derive the
+   * auth secret + npub/nsec — all in-Worker so the raw 32 bytes never touch page
+   * JS (only the bech32 backup leaves, which the user must see once anyway). Does
+   * not hold the key. */
+  create: {
+    req: { identifier: string; password: string };
+    res: { ncryptsec: string; npub: string; nsec: string; passwordSecret: string };
+  };
   unlock: { req: { ncryptsec: string; identifier: string; password: string }; res: { pubkey: string } };
   /** One-shot: decode an existing nsec and wrap it into an ncryptsec inside the
    * Worker (the raw established key never lingers in page JS). Does not hold. */
@@ -68,9 +85,9 @@ export class KeyholderCore {
   }
 
   /** Handle a wire request, returning the wire response (never throws). */
-  handle(req: KeyholderReq): KeyholderRes {
+  async handle(req: KeyholderReq): Promise<KeyholderRes> {
     try {
-      return { id: req.id, ok: true, result: this.#dispatch(req) };
+      return { id: req.id, ok: true, result: await this.#dispatch(req) };
     } catch (e) {
       return { id: req.id, ok: false, error: e instanceof Error ? e.message : "keyholder error" };
     }
@@ -81,8 +98,27 @@ export class KeyholderCore {
     return this.#secret;
   }
 
-  #dispatch(req: KeyholderReq): unknown {
+  async #dispatch(req: KeyholderReq): Promise<unknown> {
     switch (req.op) {
+      case "passwordSecret": {
+        const { identifier, password } = req.payload;
+        return passwordSecret(identifier, password);
+      }
+      case "create": {
+        const { identifier, password } = req.payload;
+        const secret = generateSecretKey();
+        try {
+          const pubkey = getPublicKey(secret);
+          return {
+            ncryptsec: encryptSecret(secret, identifier, password),
+            npub: nip19.npubEncode(pubkey),
+            nsec: nip19.nsecEncode(secret),
+            passwordSecret: await passwordSecret(identifier, password),
+          };
+        } finally {
+          secret.fill(0); // generated key never leaves the Worker as raw bytes
+        }
+      }
       case "unlock": {
         const { ncryptsec, identifier, password } = req.payload;
         const secret = decryptSecret(ncryptsec, identifier, password);

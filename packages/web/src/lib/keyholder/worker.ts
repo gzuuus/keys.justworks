@@ -32,7 +32,7 @@ function armIdleLock() {
   }, IDLE_LOCK_MS);
 }
 
-self.onmessage = (e: MessageEvent<KeyholderReq>) => {
-  post(core.handle(e.data));
+self.onmessage = async (e: MessageEvent<KeyholderReq>) => {
+  post(await core.handle(e.data));
   armIdleLock(); // any keyholder activity resets the idle window
 };
