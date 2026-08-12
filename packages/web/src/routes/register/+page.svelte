@@ -18,10 +18,6 @@
 	let revealNcryptsec = $state(false);
 	let copied = $state<string | null>(null);
 
-	// ponytail: generate-only for now. Importing an existing nsec puts a raw,
-	// established key in page JS (XSS risk per design.md "Key provenance") — add
-	// it once import is hardened (Worker-side encrypt + extension preference).
-
 	async function onSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		error = null;

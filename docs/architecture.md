@@ -14,7 +14,7 @@ keys.justworks/
 │   ├── design.md                 # security model, data model, components
 │   └── architecture.md           # this file
 ├── server/                       # Rust — axum + sqlite, ONE deployable binary
-│   ├── Cargo.toml                #   axum, tower-http, rust-embed (argon2/sqlx/nostr planned)
+│   ├── Cargo.toml                #   axum, tower-http, rust-embed, sqlx, argon2, sha2, base64
 │   └── src/
 │       └── main.rs               #   /api/* → handlers ; /* → embedded web assets
 ├── packages/                     # JS monorepo (pnpm workspaces)

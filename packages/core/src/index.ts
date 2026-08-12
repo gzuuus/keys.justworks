@@ -88,9 +88,13 @@ export async function identifierHash(identifier: string): Promise<string> {
  * vector in `index.test.ts` locks it.
  *
  * `N = 2**16` matches the blob's NIP-49 scrypt cost so the operator floor stays
- * equal to the static-breach floor (lowering it would drop the floor). Async
- * (non-blocking); on the website run it from the Worker (see keyholder), since
- * scrypt is CPU-bound.
+ * equal to the static-breach floor (lowering it would drop the floor).
+ *
+ * `scryptAsync` yields to the event loop between phases but is still CPU-bound
+ * for ~tens–hundreds of ms, so deriving it on the page briefly janks the UI
+ * (notably under CPU throttling). The surfaces currently call this from the
+ * page; moving it into the keyholder Worker (like `decryptSecret`) is a tracked
+ * follow-up.
  */
 export async function passwordSecret(
   identifier: string,
