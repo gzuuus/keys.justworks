@@ -16,6 +16,9 @@ dist/
 packages/web/build/*
 !packages/web/build/index.html
 
+# vendored reference repos (third-party, read-only)
+references/
+
 # env / misc
 *.log
 .DS_Store
