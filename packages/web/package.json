@@ -16,6 +16,8 @@
 	},
 	"dependencies": {
 		"@kj/core": "workspace:*",
+		"applesauce-relay": "^6.2.1",
+		"applesauce-signers": "^6.2.2",
 		"nostr-tools": "^2.24.1"
 	},
 	"devDependencies": {
