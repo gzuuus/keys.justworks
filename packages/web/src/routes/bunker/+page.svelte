@@ -18,6 +18,13 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { Switch } from '$lib/components/ui/switch';
 	import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import {
+		Collapsible,
+		CollapsibleContent,
+		CollapsibleTrigger
+	} from '$lib/components/ui/collapsible';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import {
 		Dialog,
 		DialogContent,
@@ -37,6 +44,12 @@
 	let editingId = $state<string | null>(null);
 	let draftName = $state('');
 	let remember = $state<Duration>('once');
+	let cardOpen = $state<Record<string, boolean>>({});
+	const isOpen = (id: string) => cardOpen[id] ?? true;
+	// ToggleGroup's default on-state (bg-muted) is too close to the resting bg to
+	// read as selected — make the active duration primary-colored.
+	const DURATION_ON =
+		'data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground';
 
 	function startEdit(app: BunkerApp) {
 		editingId = app.id;
@@ -226,121 +239,141 @@
 
 	{#each bunkerApps.apps as app (app.id)}
 		<Card class="mt-4">
-			<CardHeader>
-				<div class="flex flex-wrap items-center gap-2">
-					{#if editingId === app.id}
-						<Input
-							bind:value={draftName}
-							class="h-8 max-w-[14rem]"
-							placeholder="Slot name"
-							onkeydown={(e) => {
-								if (e.key === 'Enter') saveEdit();
-								if (e.key === 'Escape') editingId = null;
-							}}
-							onblur={saveEdit}
-						/>
-					{:else}
-						<CardTitle
-							class="cursor-text text-base"
-							onclick={() => startEdit(app)}
-							title="Click to rename">{name(app)}</CardTitle
+			<Collapsible
+				open={isOpen(app.id)}
+				onOpenChange={(o) => (cardOpen[app.id] = o)}
+				class="flex flex-col gap-(--card-spacing)"
+			>
+				<CardHeader>
+					<div class="flex flex-wrap items-center justify-between gap-2">
+						<div class="flex flex-wrap items-center gap-2">
+							{#if editingId === app.id}
+								<Input
+									bind:value={draftName}
+									class="h-8 max-w-[14rem]"
+									placeholder="Slot name"
+									onkeydown={(e) => {
+										if (e.key === 'Enter') saveEdit();
+										if (e.key === 'Escape') editingId = null;
+									}}
+									onblur={saveEdit}
+								/>
+							{:else}
+								<CardTitle
+									class="cursor-text text-base"
+									onclick={() => startEdit(app)}
+									title="Click to rename">{name(app)}</CardTitle
+								>
+							{/if}
+							<Badge variant={STATUS_VARIANT[status(app)]}>{status(app)}</Badge>
+							<Badge variant="outline">{app.mode}</Badge>
+							{#if app.trustApp}
+								<Badge variant="secondary">trusted</Badge>
+							{/if}
+						</div>
+						<CollapsibleTrigger
+							class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent"
+							aria-label={isOpen(app.id) ? 'Collapse' : 'Expand'}
 						>
-					{/if}
-					<Badge variant={STATUS_VARIANT[status(app)]}>{status(app)}</Badge>
-					<Badge variant="outline">{app.mode}</Badge>
-					{#if app.trustApp}
-						<Badge variant="secondary">trusted</Badge>
-					{/if}
-				</div>
-				<CardDescription class="flex flex-col gap-0.5">
-					<span>{app.relays.join(', ')}</span>
-					{#if app.clientPubkey}
-						<span class="font-mono text-xs">client {short(app.clientPubkey)}</span>
-					{:else}
-						<span class="text-xs">no client connected yet</span>
-					{/if}
-				</CardDescription>
-			</CardHeader>
-			<CardContent class="flex flex-col gap-4">
-				<div class="flex items-center gap-3">
-					<Switch
-						id="trust-{app.id}"
-						checked={app.trustApp}
-						onCheckedChange={(v) => bunkerApps.setTrust(app.id, v)}
-					/>
-					<Label for="trust-{app.id}" class="cursor-pointer">
-						Trust this client
-						<span class="block text-xs font-normal text-muted-foreground">
-							Auto-approve every request from this slot.
-						</span>
-					</Label>
-				</div>
+							<ChevronDown
+								class="size-4 transition-transform {isOpen(app.id) ? 'rotate-180' : ''}"
+							/>
+						</CollapsibleTrigger>
+					</div>
+					<CardDescription class="flex flex-col gap-0.5">
+						<span>{app.relays.join(', ')}</span>
+						{#if app.clientPubkey}
+							<span class="font-mono text-xs">client {short(app.clientPubkey)}</span>
+						{:else}
+							<span class="text-xs">no client connected yet</span>
+						{/if}
+					</CardDescription>
+				</CardHeader>
+				<CollapsibleContent>
+					<CardContent class="flex flex-col gap-4">
+						<div class="flex items-center gap-3">
+							<Switch
+								id="trust-{app.id}"
+								checked={app.trustApp}
+								onCheckedChange={(v) => bunkerApps.setTrust(app.id, v)}
+							/>
+							<Label for="trust-{app.id}" class="cursor-pointer">
+								Trust this client
+								<span class="block text-xs font-normal text-muted-foreground">
+									Auto-approve every request from this slot.
+								</span>
+							</Label>
+						</div>
 
-				{#if bunker.slots[app.id]?.bunkerUri}
-					<div class="flex flex-col gap-2">
-						<Label>Bunker URI</Label>
-						<code
-							class="block max-h-32 overflow-auto rounded-md bg-muted p-2 font-mono text-xs break-all"
-							>{bunker.slots[app.id]!.bunkerUri}</code
-						>
-						<div>
+						{#if bunker.slots[app.id]?.bunkerUri}
+							<div class="flex flex-col gap-2">
+								<Label>Bunker URI</Label>
+								<code
+									class="block max-h-32 overflow-auto rounded-md bg-muted p-2 font-mono text-xs break-all"
+									>{bunker.slots[app.id]!.bunkerUri}</code
+								>
+								<div>
+									<Button
+										variant="outline"
+										size="sm"
+										onclick={() => copyUri(app.id, bunker.slots[app.id]!.bunkerUri!)}
+									>
+										{copiedId === app.id ? 'Copied' : 'Copy URI'}
+									</Button>
+								</div>
+								<p class="text-xs text-muted-foreground">
+									The pubkey in the URI is this slot's transport identity; the client learns your
+									real npub after connecting.
+								</p>
+							</div>
+						{/if}
+
+						{#if bunker.slots[app.id]?.error}
+							<p class="text-sm text-destructive">{bunker.slots[app.id]!.error}</p>
+						{/if}
+
+						{#if Object.keys(app.permissions).length}
+							<div class="flex flex-col gap-1.5">
+								<span class="text-xs font-medium text-muted-foreground">Remembered grants</span>
+								{#each Object.entries(app.permissions) as [key, d] (key)}
+									<div class="flex items-center gap-2 text-xs">
+										<span class="flex-1 break-all">{permLabel(key)}</span>
+										<Badge variant="outline">{describeDecision(d)}</Badge>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-6 px-2 text-xs"
+											onclick={() => bunkerApps.revoke(app.id, key)}>Revoke</Button
+										>
+									</div>
+								{/each}
+							</div>
+						{/if}
+
+						<Separator />
+
+						<div class="flex flex-wrap items-center gap-2">
+							{#if status(app) === 'stopped'}
+								<Button variant="outline" size="sm" onclick={() => bunker.restart(app.id)}
+									>Start</Button
+								>
+							{:else}
+								<Button variant="outline" size="sm" onclick={() => bunker.stop(app.id)}>Stop</Button
+								>
+							{/if}
 							<Button
 								variant="outline"
 								size="sm"
-								onclick={() => copyUri(app.id, bunker.slots[app.id]!.bunkerUri!)}
+								onclick={() => bunker.restart(app.id)}
+								disabled={status(app) === 'stopped'}>Restart</Button
 							>
-								{copiedId === app.id ? 'Copied' : 'Copy URI'}
-							</Button>
+							<Button variant="destructive" size="sm" onclick={() => bunker.remove(app.id)}
+								>Remove</Button
+							>
 						</div>
-						<p class="text-xs text-muted-foreground">
-							The pubkey in the URI is this slot's transport identity; the client learns your real
-							npub after connecting.
-						</p>
-					</div>
-				{/if}
-
-				{#if bunker.slots[app.id]?.error}
-					<p class="text-sm text-destructive">{bunker.slots[app.id]!.error}</p>
-				{/if}
-
-				{#if Object.keys(app.permissions).length}
-					<div class="flex flex-col gap-1.5">
-						<span class="text-xs font-medium text-muted-foreground">Remembered grants</span>
-						{#each Object.entries(app.permissions) as [key, d] (key)}
-							<div class="flex items-center gap-2 text-xs">
-								<span class="flex-1 break-all">{permLabel(key)}</span>
-								<Badge variant="outline">{describeDecision(d)}</Badge>
-								<Button
-									variant="ghost"
-									size="sm"
-									class="h-6 px-2 text-xs"
-									onclick={() => bunkerApps.revoke(app.id, key)}>Revoke</Button
-								>
-							</div>
-						{/each}
-					</div>
-				{/if}
-
-				<Separator />
-
-				<div class="flex flex-wrap items-center gap-2">
-					{#if status(app) === 'stopped'}
-						<Button variant="outline" size="sm" onclick={() => bunker.restart(app.id)}>Start</Button
-						>
-					{:else}
-						<Button variant="outline" size="sm" onclick={() => bunker.stop(app.id)}>Stop</Button>
-					{/if}
-					<Button
-						variant="outline"
-						size="sm"
-						onclick={() => bunker.restart(app.id)}
-						disabled={status(app) === 'stopped'}>Restart</Button
-					>
-					<Button variant="destructive" size="sm" onclick={() => bunker.remove(app.id)}
-						>Remove</Button
-					>
-				</div>
-			</CardContent>
+					</CardContent>
+				</CollapsibleContent>
+			</Collapsible>
 		</Card>
 	{:else}
 		<Card class="mt-4 border-dashed">
@@ -352,10 +385,17 @@
 
 	<Card class="mt-4">
 		<CardHeader>
-			<CardTitle>Activity</CardTitle>
-			<CardDescription
-				>Relay/provider events and incoming client requests across all slots.</CardDescription
-			>
+			<div class="flex flex-wrap items-center justify-between gap-2">
+				<div>
+					<CardTitle>Activity</CardTitle>
+					<CardDescription>
+						Relay/provider events and incoming client requests across all slots.
+					</CardDescription>
+				</div>
+				{#if bunker.logs.length}
+					<Button variant="outline" size="sm" onclick={() => bunker.clearLogs()}>Clear</Button>
+				{/if}
+			</div>
 		</CardHeader>
 		<CardContent>
 			{#if bunker.logs.length === 0}
@@ -363,23 +403,25 @@
 					No activity yet. Add a slot, then connect a client.
 				</p>
 			{:else}
-				<ul class="flex flex-col gap-1.5">
-					{#each bunker.logs as entry (entry.id)}
-						<li class="flex items-start gap-2 text-sm">
-							<Badge
-								variant={bunker.logVariant[entry.kind]}
-								class="mt-0.5 shrink-0 font-mono text-xs"
-							>
-								{entry.kind}
-							</Badge>
-							<span class="shrink-0 text-xs text-muted-foreground">{appName(entry.appId)}</span>
-							<span class="flex-1 break-all">{entry.msg}</span>
-							<span class="shrink-0 text-xs text-muted-foreground">
-								{entry.ts.toLocaleTimeString()}
-							</span>
-						</li>
-					{/each}
-				</ul>
+				<ScrollArea class="h-80">
+					<ul class="flex flex-col gap-1.5 pr-3">
+						{#each bunker.logs as entry (entry.id)}
+							<li class="flex items-start gap-2 text-sm">
+								<Badge
+									variant={bunker.logVariant[entry.kind]}
+									class="mt-0.5 shrink-0 font-mono text-xs"
+								>
+									{entry.kind}
+								</Badge>
+								<span class="shrink-0 text-xs text-muted-foreground">{appName(entry.appId)}</span>
+								<span class="flex-1 break-all">{entry.msg}</span>
+								<span class="shrink-0 text-xs text-muted-foreground">
+									{entry.ts.toLocaleTimeString()}
+								</span>
+							</li>
+						{/each}
+					</ul>
+				</ScrollArea>
 			{/if}
 		</CardContent>
 	</Card>
@@ -413,10 +455,10 @@
 					<div class="flex items-center gap-2">
 						<span class="text-xs text-muted-foreground">Remember</span>
 						<ToggleGroup type="single" bind:value={remember} variant="outline" size="sm">
-							<ToggleGroupItem value="once">Once</ToggleGroupItem>
-							<ToggleGroupItem value="5min">5 min</ToggleGroupItem>
-							<ToggleGroupItem value="1h">1 hour</ToggleGroupItem>
-							<ToggleGroupItem value="always">Always</ToggleGroupItem>
+							<ToggleGroupItem value="once" class={DURATION_ON}>Once</ToggleGroupItem>
+							<ToggleGroupItem value="5min" class={DURATION_ON}>5 min</ToggleGroupItem>
+							<ToggleGroupItem value="1h" class={DURATION_ON}>1 hour</ToggleGroupItem>
+							<ToggleGroupItem value="always" class={DURATION_ON}>Always</ToggleGroupItem>
 						</ToggleGroup>
 					</div>
 					<div class="flex justify-end gap-2">

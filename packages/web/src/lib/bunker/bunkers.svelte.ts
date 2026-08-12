@@ -229,6 +229,11 @@ export class BunkerRuntime {
 			onLogout: () => this.#log('disconnect', app.id, 'client logged out (session ended)')
 		});
 		this.#providers.set(app.id, provider);
+		// Reconnect only (no fresh URI): restore the known client so the provider
+		// accepts its requests without a new connect handshake — the client won't
+		// re-send connect on its own, so without this every request would be
+		// rejected as "unknown client" and hang until timeout.
+		if (!uri && app.clientPubkey) provider.client = app.clientPubkey;
 		await provider.start(uri);
 		return app.mode === 'bunker' ? await provider.getBunkerURI() : null;
 	}
@@ -382,8 +387,12 @@ export class BunkerRuntime {
 	#log(kind: LogKind, appId: string, msg: string) {
 		this.logs = [{ id: this.#logSeq++, ts: new Date(), kind, appId, msg }, ...this.logs].slice(
 			0,
-			200
+			100
 		);
+	}
+
+	clearLogs() {
+		this.logs = [];
 	}
 }
 
