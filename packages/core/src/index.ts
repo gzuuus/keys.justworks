@@ -26,6 +26,7 @@ import {
 } from "nostr-tools/nip49";
 import type { Ncryptsec } from "nostr-tools/nip19";
 import { scryptAsync } from "@noble/hashes/scrypt.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 
 export * from "./api";
 
@@ -132,11 +133,4 @@ export function decryptSecret(
   password: string,
 ): Uint8Array {
   return nip49Decrypt(ncryptsec, passphrase(identifier, password));
-}
-
-/** Lowercase hex of a byte array. */
-export function bytesToHex(bytes: Uint8Array): string {
-  let out = "";
-  for (const b of bytes) out += b.toString(16).padStart(2, "0");
-  return out;
 }
