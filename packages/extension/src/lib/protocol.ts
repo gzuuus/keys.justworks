@@ -20,15 +20,6 @@ export type NostrMethod =
   | "nip44.encrypt"
   | "nip44.decrypt";
 
-export const NOSTR_METHODS: readonly NostrMethod[] = [
-  "getPublicKey",
-  "signEvent",
-  "nip04.encrypt",
-  "nip04.decrypt",
-  "nip44.encrypt",
-  "nip44.decrypt",
-];
-
 /** Human description per method, shown in the approval prompt + permissions UI. */
 export const PERMISSION_NAMES: Record<NostrMethod, string> = {
   getPublicKey: "read your public key",

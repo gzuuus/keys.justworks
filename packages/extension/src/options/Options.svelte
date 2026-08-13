@@ -1,10 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { BgReply } from "../lib/protocol";
+  import { send, shortNpub, type Status } from "../lib/ui";
   import { PERMISSION_NAMES, type NostrMethod } from "../lib/protocol";
   import type { PermissionEntry } from "../lib/permissions";
 
-  type Status = { unlocked: boolean; npub: string | null };
   interface KjConfig {
     apiBase: string;
   }
@@ -27,17 +26,6 @@
   let backup = $state<{ npub: string; nsec: string } | null>(null);
   let imported = $state<{ npub: string } | null>(null);
   let savedFlash = $state<string | null>(null);
-
-  async function send<T>(msg: unknown): Promise<T> {
-    const r = (await chrome.runtime.sendMessage(msg)) as BgReply<T>;
-    if (!r.ok) throw new Error(r.error);
-    return r.result;
-  }
-
-  /** npub1xxxxxxxx…xxxxxx — compact display. */
-  function shortNpub(n: string): string {
-    return n.length > 16 ? `${n.slice(0, 10)}…${n.slice(-6)}` : n;
-  }
 
   async function refresh() {
     try {

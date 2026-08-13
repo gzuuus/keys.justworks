@@ -80,7 +80,3 @@ export async function remove(identifierHash: string): Promise<void> {
   delete all[identifierHash];
   await writeAll(all);
 }
-
-export async function clear(): Promise<void> {
-  await writeAll({});
-}

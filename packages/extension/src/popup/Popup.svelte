@@ -1,8 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { BgReply } from "../lib/protocol";
-
-  type Status = { unlocked: boolean; npub: string | null };
+  import { send, shortNpub, type Status } from "../lib/ui";
 
   let identifier = $state("");
   let password = $state("");
@@ -11,17 +9,6 @@
   let busy = $state(false);
   let error = $state<string | null>(null);
   let copied = $state(false);
-
-  async function send<T>(msg: unknown): Promise<T> {
-    const r = (await chrome.runtime.sendMessage(msg)) as BgReply<T>;
-    if (!r.ok) throw new Error(r.error);
-    return r.result;
-  }
-
-  /** npub1xxxxxxxx…xxxxxx — compact enough for the narrow popup. */
-  function shortNpub(n: string): string {
-    return n.length > 16 ? `${n.slice(0, 10)}…${n.slice(-6)}` : n;
-  }
 
   async function refresh() {
     try {
