@@ -6,6 +6,9 @@
 #   ./scripts/release.sh minor   # 0.1.0 -> 0.2.0
 #   ./scripts/release.sh major   # 0.1.0 -> 1.0.0
 #
+# Set ALLOW_DIRTY=1 to release while carrying parallel WIP; the release commit
+# is scoped to server/Cargo.{toml,lock} so unrelated work is never bundled.
+#
 # Cargo.toml is the single source of truth for releases (the deployable is the
 # server binary; the TS packages are private and unpublished). Cargo.lock is
 # refreshed so release builds stay --locked-clean.
@@ -42,9 +45,11 @@ if [[ "$cur" == "$new" ]]; then
   exit 1
 fi
 
-# never bundle unrelated work into a release commit.
-if [ -n "$(git -C "$root" status --porcelain)" ]; then
-  echo "error: working tree not clean — commit or stash first" >&2
+# never bundle unrelated work into a release commit. The bump commit is scoped
+# to server/Cargo.{toml,lock}, so ALLOW_DIRTY=1 is safe to set when you're
+# intentionally carrying parallel WIP (e.g. in another package).
+if [ -z "${ALLOW_DIRTY:-}" ] && [ -n "$(git -C "$root" status --porcelain)" ]; then
+  echo "error: working tree not clean — commit or stash first, or rerun with ALLOW_DIRTY=1" >&2
   exit 1
 fi
 
