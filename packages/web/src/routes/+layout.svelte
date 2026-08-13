@@ -66,6 +66,13 @@
 
 			<!-- Desktop nav -->
 			<nav class="hidden items-center gap-1.5 md:flex">
+				<a
+					href="/docs"
+					class={cn(
+						'rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-accent hover:text-foreground',
+						active('/docs') ? 'text-foreground' : 'text-muted-foreground'
+					)}>Docs</a
+				>
 				{#if keyholder.locked}
 					<a
 						href="/#how"
@@ -132,6 +139,7 @@
 					<a href="/#how" class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent"
 						>How it works</a
 					>
+					<a href="/docs" class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent">Docs</a>
 					<a href="/get-started" class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent"
 						>Get started</a
 					>
@@ -177,6 +185,11 @@
 						>
 					</li>
 					<li><a class="text-muted-foreground hover:text-foreground" href="/login">Unlock</a></li>
+					<li>
+						<a class="text-muted-foreground hover:text-foreground" href="/docs"
+							>API &amp; integration</a
+						>
+					</li>
 				</ul>
 			</div>
 			<div>

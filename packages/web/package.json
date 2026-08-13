@@ -18,6 +18,7 @@
 		"@kj/core": "workspace:*",
 		"applesauce-relay": "^6.2.1",
 		"applesauce-signers": "^6.2.2",
+		"marked": "^18.0.9",
 		"nostr-tools": "^2.24.1"
 	},
 	"devDependencies": {
@@ -26,6 +27,7 @@
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@tailwindcss/typography": "^0.5.20",
 		"@tailwindcss/vite": "^4.3.0",
 		"bits-ui": "^2.18.1",
 		"clsx": "^2.1.1",
