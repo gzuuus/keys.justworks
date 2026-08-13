@@ -35,13 +35,11 @@ function isCall(d: unknown): d is PageCall {
 }
 
 // Inject the provider into the page (MAIN world via <script src>).
-console.log("[kj] content-script ready at", document.readyState);
 try {
   const s = document.createElement("script");
   s.src = chrome.runtime.getURL("provider.js");
   s.async = false;
   (document.head || document.documentElement).appendChild(s);
-  console.log("[kj] injected provider.js from", s.src);
 } catch (e) {
   console.error("[kj] provider injection failed", e);
 }

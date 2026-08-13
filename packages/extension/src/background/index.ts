@@ -320,7 +320,6 @@ async function handleUi(msg: BgUiMessage): Promise<unknown> {
 
 chrome.runtime.onMessage.addListener((msg: BgMessage, sender, sendResponse) => {
   bump();
-  console.log("[kj] bg message:", msg);
   (async (): Promise<unknown> => {
     try {
       if (typeof msg === "object" && msg !== null && "src" in msg && msg.src === "page") {
