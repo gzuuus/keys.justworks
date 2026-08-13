@@ -42,6 +42,58 @@ export async function register(args: {
   }
 }
 
+/** Update the stored `ncryptsec` (re-encrypted blob). Re-auths with the
+ * CURRENT `passwordSecret`. Pass `newPasswordSecret` to also rotate the
+ * password (the server swaps the stored verifier); omit it to replace the
+ * blob under the same password. The client must re-encrypt `newNcryptsec`
+ * itself — the server can't (no plaintext key, no passphrase). */
+export async function updateBlob(args: {
+  identifierHash: string;
+  passwordSecret: string; // current password, for auth
+  newNcryptsec: string;
+  newPasswordSecret?: string; // present on a password change
+}): Promise<void> {
+  const res = await fetch(`${API_BASE}/blob`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      identifier_hash: args.identifierHash,
+      password_secret: args.passwordSecret,
+      new_ncryptsec: args.newNcryptsec,
+      new_password_secret: args.newPasswordSecret, // omitted by JSON.stringify when undefined
+    }),
+  });
+  if (res.status === 401) {
+    throw new ApiError("unauthorized", "Wrong identifier or password.");
+  }
+  if (!res.ok) {
+    throw new ApiError("update-failed", `Update failed (${res.status}).`);
+  }
+}
+
+/** Permanently delete the account (the encrypted blob). Re-auths with the
+ * current `passwordSecret`. The key is gone from this server — but a user who
+ * saved their nsec backup still owns the key elsewhere. No recovery by design. */
+export async function deleteAccount(args: {
+  identifierHash: string;
+  passwordSecret: string;
+}): Promise<void> {
+  const res = await fetch(`${API_BASE}/account`, {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      identifier_hash: args.identifierHash,
+      password_secret: args.passwordSecret,
+    }),
+  });
+  if (res.status === 401) {
+    throw new ApiError("unauthorized", "Wrong identifier or password.");
+  }
+  if (!res.ok) {
+    throw new ApiError("delete-failed", `Delete failed (${res.status}).`);
+  }
+}
+
 /** Log in and retrieve the stored `ncryptsec`. Throws `ApiError("unauthorized")`.
  * `passwordSecret` is the client-derived `scrypt(password)` — never the raw
  * password. */

@@ -1,6 +1,6 @@
 /** Unit tests for the locker REST client (fetch stubbed; no server). */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, login, register } from "./api";
+import { ApiError, deleteAccount, login, register, updateBlob } from "./api";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -47,6 +47,69 @@ describe("register", () => {
     await expect(
       register({ identifierHash: HEX64, passwordSecret: "secret", ncryptsec: "ncryptsec1x" }),
     ).rejects.toMatchObject({ code: "register-failed" });
+  });
+});
+
+describe("updateBlob", () => {
+  it("PUTs to /api/blob with snake_case body; omits new_password_secret when undefined", async () => {
+    const f = stub(200);
+    await updateBlob({
+      identifierHash: HEX64,
+      passwordSecret: "old",
+      newNcryptsec: "ncryptsec1new",
+    });
+    const [url, init] = f.mock.calls[0];
+    expect(url).toBe("/api/blob");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body)).toEqual({
+      identifier_hash: HEX64,
+      password_secret: "old",
+      new_ncryptsec: "ncryptsec1new",
+    });
+  });
+
+  it("includes new_password_secret on a password change", async () => {
+    const f = stub(200);
+    await updateBlob({
+      identifierHash: HEX64,
+      passwordSecret: "old",
+      newNcryptsec: "ncryptsec1new",
+      newPasswordSecret: "new",
+    });
+    expect(JSON.parse(f.mock.calls[0][1].body)).toEqual({
+      identifier_hash: HEX64,
+      password_secret: "old",
+      new_ncryptsec: "ncryptsec1new",
+      new_password_secret: "new",
+    });
+  });
+
+  it("maps 401 to unauthorized", async () => {
+    stub(401);
+    await expect(
+      updateBlob({ identifierHash: HEX64, passwordSecret: "old", newNcryptsec: "x" }),
+    ).rejects.toMatchObject({ code: "unauthorized" });
+  });
+});
+
+describe("deleteAccount", () => {
+  it("DELETEs to /api/account with snake_case body", async () => {
+    const f = stub(200);
+    await deleteAccount({ identifierHash: HEX64, passwordSecret: "secret" });
+    const [url, init] = f.mock.calls[0];
+    expect(url).toBe("/api/account");
+    expect(init.method).toBe("DELETE");
+    expect(JSON.parse(init.body)).toEqual({
+      identifier_hash: HEX64,
+      password_secret: "secret",
+    });
+  });
+
+  it("maps 401 to unauthorized", async () => {
+    stub(401);
+    await expect(
+      deleteAccount({ identifierHash: HEX64, passwordSecret: "secret" }),
+    ).rejects.toMatchObject({ code: "unauthorized" });
   });
 });
 
