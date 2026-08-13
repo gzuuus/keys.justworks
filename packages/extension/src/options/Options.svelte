@@ -34,6 +34,11 @@
     return r.result;
   }
 
+  /** npub1xxxxxxxx…xxxxxx — compact display. */
+  function shortNpub(n: string): string {
+    return n.length > 16 ? `${n.slice(0, 10)}…${n.slice(-6)}` : n;
+  }
+
   async function refresh() {
     try {
       status = await send<Status>({ src: "ui", cmd: "status" });
@@ -121,7 +126,8 @@
 
   {#if backup}
     <section
-      style="border: 1px solid var(--sun); background: rgba(251,191,36,0.08); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem"
+      class="card"
+      style="border-color: var(--sun); background: rgba(247, 184, 75, 0.08); margin-bottom: 1.5rem"
     >
       <h2 style="color: var(--sun); margin-bottom: 0.5rem">Save your backup key</h2>
       <p class="muted" style="margin: 0 0 0.5rem">
@@ -142,19 +148,19 @@
     </section>
   {/if}
 
-  <section style="margin-bottom: 2rem">
+  <section class="card" style="margin-bottom: 1.25rem">
     <h2>Status</h2>
     {#if status?.unlocked}
-      <p>Unlocked — <span class="muted">{status.npub?.slice(0, 20)}…</span></p>
+      <p>Unlocked — <span class="muted">{shortNpub(status.npub ?? "")}</span></p>
     {:else}
       <p class="muted">Locked. Unlock from the toolbar popup, or create/import a key below.</p>
     {/if}
     {#if imported}
-      <p style="color: var(--mint)">Imported: <span class="muted">{imported.npub.slice(0, 20)}…</span></p>
+      <p style="color: var(--mint-deep)">Imported: <span class="muted">{shortNpub(imported.npub)}</span></p>
     {/if}
   </section>
 
-  <section style="margin-bottom: 2rem">
+  <section class="card" style="margin-bottom: 1.25rem">
     <h2>Onboarding</h2>
     <div class="row" style="margin-bottom: 0.75rem">
       <button class:primary={mode === "create"} onclick={() => (mode = "create")}>
@@ -200,7 +206,7 @@
     </p>
   </section>
 
-  <section style="margin-bottom: 2rem">
+  <section class="card" style="margin-bottom: 1.25rem">
     <h2>Server (API base)</h2>
     <p class="muted" style="margin-top: 0">
       Where your encrypted key is fetched from. Self-hosters override this; default is the
@@ -213,10 +219,10 @@
       </div>
       <button class="primary" onclick={saveConfig}>Save</button>
     </div>
-    {#if savedFlash}<p style="color: var(--mint); margin: 0.5rem 0 0">{savedFlash}</p>{/if}
+    {#if savedFlash}<p style="color: var(--mint-deep); margin: 0.5rem 0 0">{savedFlash}</p>{/if}
   </section>
 
-  <section>
+  <section class="card">
     <h2>Site permissions</h2>
     {#if perms.length === 0}
       <p class="muted">No sites have been granted access yet.</p>
