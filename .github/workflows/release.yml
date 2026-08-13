@@ -91,10 +91,14 @@ jobs:
           mkdir -p dist
           tar -C "server/target/$tgt/release" \
             -czf "dist/keys-justworks-server-$tgt.tar.gz" keys-justworks-server
+          ( cd dist && sha256sum "keys-justworks-server-$tgt.tar.gz" \
+              > "keys-justworks-server-$tgt.tar.gz.sha256" )
       - uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.target }}
-          path: dist/*.tar.gz
+          path: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
 
   release:
     needs: [binaries]
@@ -108,4 +112,6 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: dist/**/keys-justworks-server-*.tar.gz
+          files: |
+            dist/**/keys-justworks-server-*.tar.gz
+            dist/**/keys-justworks-server-*.tar.gz.sha256
