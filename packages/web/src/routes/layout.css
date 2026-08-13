@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @plugin '@tailwindcss/typography';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* bits-ui emits data-state="checked"/"unchecked"/"open"/"closed"; shadcn's
    component classes use the bare data-checked:/data-open: variants. */
@@ -13,10 +13,10 @@
 
 /*
  * keys.justworks design language — matches the sibling justworks.cash: warm
- * paper + ink, with mint / sun / coral accents. Light-first; the paper
- * aesthetic IS the brand, so no .dark theme is applied (shadcn components keep
- * their dark: variants compiling via the custom-variant above; they simply
- * never match without a .dark ancestor).
+ * paper + ink, with mint / sun / coral accents. Light-first by default; a warm
+ * dark theme is provided under .dark (toggle via mode-watcher). Only the
+ * neutral base tokens are redefined in .dark — the brand accents (mint / sun /
+ * coral) stay the same in both themes, so they read on-brand on dark.
  */
 :root {
 	--radius: 0.625rem;
@@ -75,6 +75,31 @@
 	--sidebar-accent-foreground: var(--ink);
 	--sidebar-border: var(--line);
 	--sidebar-ring: var(--mint-deep);
+}
+
+/*
+ * Dark theme — redefines only the neutral base tokens; the semantic tokens in
+ * :root reference these vars, so they flip automatically. Brand accents
+ * (mint / sun / coral / blue) are unchanged so they read on-brand on dark.
+ */
+.dark {
+	--ink: #f1ece0;
+	--paper: #14110d;
+	--paper-strong: #1d1913;
+
+	--muted-ink: #9b9385;
+	--quiet: #756d60;
+	--line: rgba(241, 236, 224, 0.12);
+	--shadow: rgba(0, 0, 0, 0.5);
+
+	--secondary: #2a2318;
+	--accent: #2f2819;
+	--muted: #221d14;
+	--input: rgba(241, 236, 224, 0.16);
+	--ring: var(--mint);
+	--success: var(--mint);
+
+	--sidebar-accent: #2f2819;
 }
 
 @theme inline {
@@ -150,6 +175,12 @@
 			linear-gradient(to right, rgba(97, 205, 187, 0.16) 1px, transparent 1px),
 			linear-gradient(to bottom, rgba(247, 184, 75, 0.16) 1px, transparent 1px);
 		background-size: 46px 46px;
+	}
+	/* the grid hairlines pop more on dark; dim them to match the light subtlety */
+	.dark body {
+		background-image:
+			linear-gradient(to right, rgba(97, 205, 187, 0.05) 1px, transparent 1px),
+			linear-gradient(to bottom, rgba(247, 184, 75, 0.05) 1px, transparent 1px);
 	}
 	::selection {
 		background: rgba(97, 205, 187, 0.32);

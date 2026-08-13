@@ -86,7 +86,7 @@
 	</div>
 
 	{#if keyholder.autoLocked}
-		<Alert class="mt-6 border-sun/40 bg-sun/10 text-[#8a5e10]">
+		<Alert class="mt-6 border-sun/40 bg-sun/10 text-[#8a5e10] dark:text-sun">
 			<TriangleAlert class="size-4" />
 			<AlertDescription>
 				Your key was auto-locked after inactivity. Unlock again to continue.

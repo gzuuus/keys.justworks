@@ -119,7 +119,7 @@
 	</div>
 
 	{#if bunker.autoApprove}
-		<Alert class="border-sun/40 bg-sun/10 text-[#8a5e10]">
+		<Alert class="border-sun/40 bg-sun/10 text-[#8a5e10] dark:text-sun">
 			<TriangleAlert class="size-4" />
 			<AlertTitle>Auto-approve is on</AlertTitle>
 			<AlertDescription>

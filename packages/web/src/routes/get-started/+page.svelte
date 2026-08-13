@@ -279,7 +279,7 @@
 				/>
 			</div>
 
-			<p class="mt-5 rounded-lg bg-sun/10 p-3 text-sm text-[#8a5e10]">
+			<p class="mt-5 rounded-lg bg-sun/10 p-3 text-sm text-[#8a5e10] dark:text-sun">
 				Also save your <strong>identifier</strong> and <strong>password</strong> (a password manager is
 				ideal). You'll need both to log in from any device.
 			</p>

@@ -4,6 +4,8 @@
 	import { keyholder } from '$lib/keyholder/store.svelte';
 	import Logo from '$lib/components/logo.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import ThemeToggle from '$lib/components/theme-toggle.svelte';
+	import { ModeWatcher } from 'mode-watcher';
 	import { cn } from '$lib/utils';
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
@@ -56,6 +58,8 @@
 	<title>keys.justworks — non-custodial Nostr key locker</title>
 </svelte:head>
 
+<ModeWatcher />
+
 <div class="flex min-h-dvh flex-col">
 	<!-- Header -->
 	<header
@@ -104,10 +108,12 @@
 						Lock
 					</Button>
 				{/if}
+				<ThemeToggle />
 			</nav>
 
 			<!-- Mobile: primary CTA + menu toggle -->
 			<div class="flex items-center gap-2 md:hidden">
+				<ThemeToggle />
 				{#if keyholder.locked}
 					<Button href="/get-started" size="sm">Start</Button>
 				{:else}

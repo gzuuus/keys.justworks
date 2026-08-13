@@ -267,7 +267,7 @@
 			class="border-line flex flex-col rounded-2xl border bg-paper-strong p-6 transition-transform hover:-translate-y-1"
 		>
 			<span
-				class="inline-flex size-11 items-center justify-center rounded-xl bg-sun/20 text-[#8a5e10]"
+				class="inline-flex size-11 items-center justify-center rounded-xl bg-sun/20 text-[#8a5e10] dark:text-sun"
 			>
 				<Plug class="size-5" />
 			</span>
