@@ -14,9 +14,10 @@
  * dialog offers once / 5min / 1h / always durations; anything beyond 'once' is
  * persisted via `recordDecision`.
  *
- * Page-scoped by design: instantiated on /bunker, `startAll()` reconnects on
- * mount, `stopAll()` on unmount/lock. Persisted records (apps.svelte.ts) survive
- * across mounts/reloads.
+ * App-scoped singleton: the root layout starts/stops it from the keyholder
+ * lifecycle (startAll on unlock, stopAll on lock), so a connected client can
+ * sign from any page. The approval dialog is rendered globally by the layout.
+ * Persisted records (apps.svelte.ts) survive across reloads.
  */
 import { RelayPool } from 'applesauce-relay';
 import { NostrConnectProvider, PrivateKeySigner } from 'applesauce-signers';
@@ -407,3 +408,7 @@ export class BunkerRuntime {
 		this.logs = [];
 	}
 }
+
+/** App-wide bunker runtime singleton. Started/stopped by the root layout from
+ * the keyholder lifecycle; the approval dialog renders globally. */
+export const bunker = new BunkerRuntime();

@@ -1,13 +1,27 @@
 /**
  * keys.justworks — REST client for the locker API.
  *
- * Same-origin (`/api/*`), so no CORS — the website is bundled into the server
- * binary (one origin). Both surfaces (`web`, `extension`) share this so the
- * JSON field names (`identifier_hash`, `password_secret`, `ncryptsec`) live in
- * one place and never drift.
+ * Same-origin (`/api/*`) by default — the website is bundled into the server
+ * binary (one origin). Third-party apps that embed keys.justworks as their key
+ * backend call cross-origin: set the base with `setApiBase(...)` and list the
+ * integrator's origin in the server's `ALLOWED_ORIGINS` so the browser may read
+ * the responses. Both first-party surfaces (`web`, `extension`) and integrators
+ * share this so the JSON field names (`identifier_hash`, `password_secret`,
+ * `ncryptsec`) live in one place and never drift.
  */
 
-const API_BASE = "/api";
+let API_BASE = "/api";
+
+/**
+ * Override the API base for cross-origin integrators, e.g.
+ * `setApiBase("https://keys.justworks.com/api")`. Same-origin (`/api`) when
+ * unset. Integrators MUST also use `@kj/core` for `identifierHash`/
+ * `passwordSecret`/`encryptSecret`/`decryptSecret` — the byte-identical crypto
+ * contract is what lets a user register in one app and decrypt in another.
+ */
+export function setApiBase(base: string): void {
+  API_BASE = base;
+}
 
 /** Typed error from the locker API. `code` is stable for UI branching. */
 export class ApiError extends Error {

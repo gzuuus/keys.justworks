@@ -15,7 +15,7 @@
  * synchronous, no `$effect.root` timing to reason about.
  */
 import { browser } from '$app/environment';
-import { prune, type Decision } from './policy';
+import { prune, short, type Decision } from './policy';
 
 const STORAGE_KEY = 'kj:bunker:apps:v1';
 
@@ -47,6 +47,11 @@ function loadAll(): StoreShape {
 	} catch {
 		return {};
 	}
+}
+
+/** Human label for a slot: its name, else the short client key, else a fallback. */
+export function displayName(app: BunkerApp): string {
+	return app.name || (app.clientPubkey ? short(app.clientPubkey) : 'Bunker slot');
 }
 
 /** Build a fresh slot record with a new random transport key. */

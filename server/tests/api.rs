@@ -383,3 +383,78 @@ async fn security_headers_present_on_every_response() {
     assert!(csp.contains("frame-ancestors 'none'"), "{csp}");
     assert!(csp.contains("object-src 'none'"), "{csp}");
 }
+
+#[tokio::test]
+async fn cors_preflight_and_echo_for_listed_origin() {
+    use keys_justworks_server::{app_with_cors, cors_layer};
+    assert!(cors_layer(&[]).is_none(), "empty allowlist = no CORS");
+
+    // Preflight (OPTIONS) for an allowlisted origin: echoed, methods listed.
+    let resp = app_with_cors(setup().await, cors_layer(&["https://app.example.com"]))
+        .oneshot(
+            Request::builder()
+                .method("OPTIONS")
+                .uri("/api/login")
+                .header("origin", "https://app.example.com")
+                .header("access-control-request-method", "POST")
+                .header("access-control-request-headers", "content-type")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(resp.status().is_success());
+    assert_eq!(
+        resp.headers().get("access-control-allow-origin").unwrap(),
+        "https://app.example.com"
+    );
+    assert!(resp
+        .headers()
+        .get("access-control-allow-methods")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .contains("POST"));
+    // No credentials header — auth is body-only.
+    assert!(resp
+        .headers()
+        .get("access-control-allow-credentials")
+        .is_none());
+
+    // Actual GET from the allowlisted origin: header present.
+    let resp = app_with_cors(setup().await, cors_layer(&["https://app.example.com"]))
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/api/health")
+                .header("origin", "https://app.example.com")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        resp.headers().get("access-control-allow-origin").unwrap(),
+        "https://app.example.com"
+    );
+}
+
+#[tokio::test]
+async fn cors_unlisted_origin_gets_no_allow_origin() {
+    use keys_justworks_server::{app_with_cors, cors_layer};
+    let resp = app_with_cors(setup().await, cors_layer(&["https://app.example.com"]))
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/api/health")
+                .header("origin", "https://evil.example.com")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(
+        resp.headers().get("access-control-allow-origin").is_none(),
+        "unlisted origin must not get a CORS allow-origin header"
+    );
+}

@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { identifierHash, updateBlob, deleteAccount, ApiError } from '@kj/core';
 	import { keyholder } from '$lib/keyholder/store.svelte';
+	import BunkerPanel from '$lib/components/bunker-panel.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import {
@@ -14,41 +17,32 @@
 		CollapsibleContent,
 		CollapsibleTrigger
 	} from '$lib/components/ui/collapsible';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
 	import LockOpen from '@lucide/svelte/icons/lock-open';
 	import Lock from '@lucide/svelte/icons/lock';
 	import KeyRound from '@lucide/svelte/icons/key-round';
-	import Plug from '@lucide/svelte/icons/plug';
-	import ShieldCheck from '@lucide/svelte/icons/shield-check';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Check from '@lucide/svelte/icons/check';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
-	let verifyOpen = $state(false);
-	let signedEvent = $state<string | null>(null);
-	let signing = $state(false);
-	let signError = $state<string | null>(null);
+	let advancedOpen = $state(false);
 	let copiedNpub = $state(false);
 
-	async function signTest() {
-		if (keyholder.locked) return;
-		signedEvent = null;
-		signError = null;
-		signing = true;
-		try {
-			const evt = await keyholder.signEvent({
-				kind: 1,
-				content: 'signed via keys.justworks worker keyholder',
-				tags: [],
-				created_at: Math.floor(Date.now() / 1000)
-			});
-			signedEvent = JSON.stringify(evt, null, 2);
-		} catch (e) {
-			signError = e instanceof Error ? e.message : 'signing failed';
-		} finally {
-			signing = false;
-		}
-	}
+	// Change-password form state.
+	let pwCurrent = $state('');
+	let pwNew = $state('');
+	let pwConfirm = $state('');
+	let pwBusy = $state(false);
+	let pwError = $state<string | null>(null);
+	let pwDone = $state(false);
+
+	// Erase form state.
+	let delCurrent = $state('');
+	let delConfirm = $state('');
+	let delBusy = $state(false);
+	let delError = $state<string | null>(null);
 
 	async function copyNpub() {
 		if (!keyholder.npub) return;
@@ -62,8 +56,81 @@
 	}
 
 	async function lock() {
-		signedEvent = null;
 		await keyholder.lock();
+	}
+
+	async function changePassword(event: SubmitEvent) {
+		event.preventDefault();
+		pwError = null;
+		pwDone = false;
+		const identifier = keyholder.identifier;
+		if (!identifier) {
+			pwError = 'No key is unlocked.';
+			return;
+		}
+		if (!pwCurrent || !pwNew) {
+			pwError = 'Fill in every field.';
+			return;
+		}
+		if (pwNew !== pwConfirm) {
+			pwError = 'New passwords do not match.';
+			return;
+		}
+		pwBusy = true;
+		try {
+			const ih = await identifierHash(identifier);
+			const current = await keyholder.passwordSecret(identifier, pwCurrent);
+			const { ncryptsec: newBlob } = await keyholder.reencrypt(identifier, pwNew);
+			const next = await keyholder.passwordSecret(identifier, pwNew);
+			await updateBlob({
+				identifierHash: ih,
+				passwordSecret: current,
+				newNcryptsec: newBlob,
+				newPasswordSecret: next
+			});
+			pwDone = true;
+			pwCurrent = pwNew = pwConfirm = '';
+		} catch (e) {
+			pwError =
+				e instanceof ApiError && e.code === 'unauthorized'
+					? 'Your current password is wrong.'
+					: e instanceof ApiError
+						? e.message
+						: 'Something went wrong. Please try again.';
+		} finally {
+			pwBusy = false;
+		}
+	}
+
+	async function erase(event: SubmitEvent) {
+		event.preventDefault();
+		delError = null;
+		const identifier = keyholder.identifier;
+		if (!identifier) {
+			delError = 'No key is unlocked.';
+			return;
+		}
+		if (delConfirm !== 'DELETE') {
+			delError = 'Type DELETE to confirm.';
+			return;
+		}
+		delBusy = true;
+		try {
+			const ih = await identifierHash(identifier);
+			const current = await keyholder.passwordSecret(identifier, delCurrent);
+			await deleteAccount({ identifierHash: ih, passwordSecret: current });
+			keyholder.lock(); // wipe the held key; the nsec backup (if any) is unaffected
+			await goto('/');
+		} catch (e) {
+			delError =
+				e instanceof ApiError && e.code === 'unauthorized'
+					? 'Your password is wrong.'
+					: e instanceof ApiError
+						? e.message
+						: 'Something went wrong. Please try again.';
+		} finally {
+			delBusy = false;
+		}
 	}
 </script>
 
@@ -74,7 +141,7 @@
 <div class="mx-auto max-w-3xl px-4 py-12">
 	{#if keyholder.locked || !keyholder.npub}
 		<!-- Guard: nothing unlocked -->
-		<Card class="mt-6">
+		<Card>
 			<CardContent class="flex flex-col items-center gap-4 py-14 text-center">
 				<span
 					class="inline-flex size-14 items-center justify-center rounded-2xl bg-accent text-muted-foreground"
@@ -84,7 +151,7 @@
 				<div>
 					<h1 class="text-xl font-bold">No key unlocked</h1>
 					<p class="mt-1 text-sm text-muted-foreground">
-						Unlock your locker to hold the key for this session and use the signing tools.
+						Unlock your locker to hold the key for this session and use the tools.
 					</p>
 				</div>
 				<div class="flex gap-3">
@@ -104,14 +171,14 @@
 			</Badge>
 		</div>
 
-		<!-- Identity card -->
+		<!-- Identity -->
 		<Card class="mt-6">
 			<CardHeader>
-				<CardTitle class="flex items-center gap-2"
-					><KeyRound class="size-5 text-mint-deep" /> Identity</CardTitle
-				>
+				<CardTitle class="flex items-center gap-2">
+					<KeyRound class="size-5 text-mint-deep" /> Identity
+				</CardTitle>
 				<CardDescription
-					>Your public key (npub). Share it freely — it can't sign anything.</CardDescription
+					>Your public ID (npub). Share it freely — it can't sign anything.</CardDescription
 				>
 			</CardHeader>
 			<CardContent class="flex flex-col gap-3">
@@ -131,69 +198,129 @@
 				<div class="flex flex-wrap gap-3">
 					<Button variant="destructive" onclick={lock}><Lock class="size-4" /> Lock key</Button>
 					<span class="self-center text-xs text-muted-foreground">
-						The key lives only in the Worker and auto-locks after ~30 min idle.
+						The key lives only in a sealed-off part of your browser and auto-locks after ~30 min
+						idle.
 					</span>
 				</div>
 			</CardContent>
 		</Card>
 
-		<!-- Tools -->
-		<h2 class="mt-10 text-xs font-bold tracking-[0.2em] text-quiet uppercase">Tools</h2>
-		<div class="mt-3 grid gap-4 sm:grid-cols-2">
-			<a
-				href="/bunker"
-				class="group border-line flex flex-col rounded-2xl border bg-paper-strong p-5 transition-transform hover:-translate-y-1"
-			>
-				<span
-					class="inline-flex size-11 items-center justify-center rounded-xl bg-sun/20 text-[#8a5e10]"
-				>
-					<Plug class="size-5" />
-				</span>
-				<h3 class="mt-4 font-bold">
-					Bunker <span class="font-normal text-muted-foreground">NIP-46</span>
-				</h3>
-				<p class="mt-1.5 flex-1 text-sm text-muted-foreground">
-					Let other Nostr apps sign through this tab over a relay. Approve each request.
-				</p>
-				<span class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-mint-deep">
-					Open bunker <ArrowRight class="size-4 transition-transform group-hover:translate-x-0.5" />
-				</span>
-			</a>
-
-			<Collapsible class="border-line rounded-2xl border bg-paper-strong p-5">
-				<CollapsibleTrigger class="flex w-full items-start gap-3 text-left">
-					<span
-						class="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-mint-deep"
-					>
-						<ShieldCheck class="size-5" />
-					</span>
-					<span class="flex-1">
-						<span class="block font-bold">Verify your key</span>
-						<span class="mt-1.5 block text-sm text-muted-foreground">
-							Sign a throwaway test note to confirm the key works.
-						</span>
-					</span>
-					<ChevronDown
-						class="size-5 shrink-0 text-muted-foreground transition-transform {verifyOpen
-							? 'rotate-180'
-							: ''}"
-					/>
-				</CollapsibleTrigger>
-				<CollapsibleContent>
-					<div class="border-line mt-4 border-t pt-4">
-						<Button variant="outline" size="sm" onclick={signTest} disabled={signing}>
-							{signing ? 'Signing…' : 'Sign a test note'}
-						</Button>
-						{#if signError}
-							<p class="mt-3 text-sm text-destructive">{signError}</p>
-						{/if}
-						{#if signedEvent}
-							<pre
-								class="mt-3 max-h-64 overflow-auto rounded-lg bg-ink p-3 font-mono text-xs break-all whitespace-pre-wrap text-paper-strong">{signedEvent}</pre>
-						{/if}
-					</div>
-				</CollapsibleContent>
-			</Collapsible>
+		<!-- Connected apps (NIP-46 bunker) -->
+		<div class="mt-10">
+			<BunkerPanel />
 		</div>
+
+		<!-- Advanced: dangerous / rare operations -->
+		<Collapsible bind:open={advancedOpen} class="mt-10">
+			<CollapsibleTrigger class="flex w-full items-center gap-2 text-left">
+				<h2 class="text-xs font-bold tracking-[0.2em] text-quiet uppercase">Advanced</h2>
+				<ChevronDown
+					class="size-4 text-muted-foreground transition-transform {advancedOpen
+						? 'rotate-180'
+						: ''}"
+				/>
+			</CollapsibleTrigger>
+			<CollapsibleContent>
+				<div class="mt-4 flex flex-col gap-4">
+					<!-- Change password -->
+					<Card>
+						<CardHeader>
+							<CardTitle>Change password</CardTitle>
+							<CardDescription>
+								Re-encrypts your key with a new password. Your identifier stays the same; you'll use
+								the new password to sign in everywhere.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<form class="flex flex-col gap-3" onsubmit={changePassword}>
+								<div class="grid gap-3 sm:grid-cols-3">
+									<div class="flex flex-col gap-1.5">
+										<Label for="pw-cur">Current password</Label>
+										<Input
+											id="pw-cur"
+											type="password"
+											bind:value={pwCurrent}
+											autocomplete="current-password"
+										/>
+									</div>
+									<div class="flex flex-col gap-1.5">
+										<Label for="pw-new">New password</Label>
+										<Input
+											id="pw-new"
+											type="password"
+											bind:value={pwNew}
+											autocomplete="new-password"
+										/>
+									</div>
+									<div class="flex flex-col gap-1.5">
+										<Label for="pw-conf">Confirm new</Label>
+										<Input
+											id="pw-conf"
+											type="password"
+											bind:value={pwConfirm}
+											autocomplete="new-password"
+										/>
+									</div>
+								</div>
+								{#if pwError}
+									<p class="text-sm text-destructive">{pwError}</p>
+								{/if}
+								{#if pwDone}
+									<p class="text-sm font-medium text-mint-deep">
+										Password changed. Use the new password from now on.
+									</p>
+								{/if}
+								<Button type="submit" size="sm" class="self-start" disabled={pwBusy}>
+									{pwBusy ? 'Changing…' : 'Change password'}
+								</Button>
+							</form>
+						</CardContent>
+					</Card>
+
+					<!-- Erase from locker -->
+					<Card class="border-destructive/40">
+						<CardHeader>
+							<CardTitle class="flex items-center gap-2 text-destructive">
+								<TriangleAlert class="size-5" /> Erase from the locker
+							</CardTitle>
+							<CardDescription>
+								Permanently removes your encrypted key from our server — you won't be able to sign
+								in here anymore. If you saved your backup (the nsec), you still own the key
+								elsewhere; we're just no longer holding it. If you didn't, it's gone for good.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<form class="flex flex-col gap-3" onsubmit={erase}>
+								<div class="flex flex-col gap-1.5">
+									<Label for="del-cur">Your password</Label>
+									<Input
+										id="del-cur"
+										type="password"
+										bind:value={delCurrent}
+										autocomplete="current-password"
+									/>
+								</div>
+								<div class="flex flex-col gap-1.5">
+									<Label for="del-conf">Type DELETE to confirm</Label>
+									<Input id="del-conf" bind:value={delConfirm} autocomplete="off" />
+								</div>
+								{#if delError}
+									<p class="text-sm text-destructive">{delError}</p>
+								{/if}
+								<Button
+									type="submit"
+									variant="destructive"
+									size="sm"
+									class="self-start"
+									disabled={delBusy}
+								>
+									{delBusy ? 'Erasing…' : 'Erase my key from the locker'}
+								</Button>
+							</form>
+						</CardContent>
+					</Card>
+				</div>
+			</CollapsibleContent>
+		</Collapsible>
 	{/if}
 </div>

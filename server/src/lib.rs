@@ -10,11 +10,12 @@
 
 use std::str::FromStr;
 use std::sync::OnceLock;
+use std::time::Duration;
 
 use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
 use axum::extract::{Request, State};
-use axum::http::{header, HeaderName, HeaderValue, StatusCode, Uri};
+use axum::http::{header, HeaderName, HeaderValue, Method, StatusCode, Uri};
 use axum::middleware::{from_fn, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post, put};
@@ -27,6 +28,7 @@ use sha2::{Digest, Sha256};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 use sqlx::{Row, SqlitePool};
 use thiserror::Error;
+use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 /// The static site produced by `packages/web` (`make build-web`), embedded at
@@ -72,9 +74,17 @@ pub async fn init_schema(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-/// Build the application router with the given state.
+/// Build the router, reading CORS from `ALLOWED_ORIGINS` (comma-separated
+/// origins, e.g. `https://app1.com,https://app2.com`). Unset → no CORS layer
+/// (same-origin only — the bundled-site default).
 pub fn app(state: AppState) -> Router {
-    Router::new()
+    app_with_cors(state, cors_layer_from_env())
+}
+
+/// Build the router with an explicit CORS layer (or `None` for same-origin).
+/// Split from `app` so tests can exercise CORS without mutating global env.
+pub fn app_with_cors(state: AppState, cors: Option<CorsLayer>) -> Router {
+    let router = Router::new()
         .route("/api/health", get(health))
         .route("/api/register", post(register))
         .route("/api/login", post(login))
@@ -82,8 +92,14 @@ pub fn app(state: AppState) -> Router {
         .route("/api/account", delete(delete_account))
         .fallback(static_handler)
         .layer(TraceLayer::new_for_http())
-        .layer(from_fn(security_headers))
-        .with_state(state)
+        .layer(from_fn(security_headers));
+    // CORS is added last so it is the outermost layer: preflight OPTIONS
+    // short-circuits here, never reaching the handlers.
+    let router = match cors {
+        Some(cors) => router.layer(cors),
+        None => router,
+    };
+    router.with_state(state)
 }
 
 async fn health() -> &'static str {
@@ -406,6 +422,51 @@ async fn static_handler(uri: Uri) -> Response {
         file.data.into_owned(),
     )
         .into_response()
+}
+
+// --- cross-origin integration (opt-in CORS) ---------------------------------
+
+/// CORS allowlist for third-party apps that embed keys.justworks as their key
+/// backend (register/login via `/api/*` from their own origin). Auth lives in
+/// the request body (`identifier_hash`/`password_secret`), never in cookies or
+/// an Authorization header, so CSRF is not a concern (no ambient authority to
+/// forge) and `Access-Control-Allow-Credentials` stays off — we never need it.
+/// Only allowlisted origins are echoed, so a random site can't use the API as a
+/// spam/abuse backend. Same-origin (the bundled site) needs no CORS and is
+/// unaffected. See docs/architecture.md.
+fn cors_layer_from_env() -> Option<CorsLayer> {
+    let raw = std::env::var("ALLOWED_ORIGINS").ok()?;
+    let list: Vec<&str> = raw
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .collect();
+    cors_layer(&list)
+}
+
+/// Build a CORS layer from an explicit origin allowlist. `None` if the list is
+/// empty (no CORS). Public so tests can pass a known list without env mutation.
+pub fn cors_layer(allowed: &[&str]) -> Option<CorsLayer> {
+    let origins: Vec<HeaderValue> = allowed
+        .iter()
+        .filter_map(|s| HeaderValue::from_str(s).ok())
+        .collect();
+    if origins.is_empty() {
+        return None;
+    }
+    Some(
+        CorsLayer::new()
+            .allow_origin(AllowOrigin::list(origins))
+            .allow_methods(AllowMethods::list([
+                Method::GET,
+                Method::POST,
+                Method::PUT,
+                Method::DELETE,
+                Method::OPTIONS,
+            ]))
+            .allow_headers(AllowHeaders::list([header::CONTENT_TYPE]))
+            .max_age(Duration::from_secs(86400)),
+    )
 }
 
 // --- perimeter: CSP + security response headers -----------------------------

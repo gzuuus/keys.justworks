@@ -61,12 +61,31 @@ input and keyholding are both isolated from page JS.
 
 ## Why the website is bundled into the server
 
-One origin, one deploy artifact, one TLS cert. Concrete payoff: **no CORS** —
-the website's fetches to `/api/*` are same-origin. No security regression: the
-operator controls the served JS either way, and the Web Worker keyholder
-isolation is unaffected by how the bytes are delivered. The website remains a
-standalone-buildable package, so moving it to a CDN later (and adding CORS) is a
-deployment change, not an architecture change.
+One origin, one deploy artifact, one TLS cert. Concrete payoff: **no CORS
+needed for the bundled site** — its fetches to `/api/*` are same-origin. No
+security regression: the operator controls the served JS either way, and the Web
+Worker keyholder isolation is unaffected by how the bytes are delivered. The
+website remains a standalone-buildable package, so moving it to a CDN later
+(and adding CORS) is a deployment change, not an architecture change.
+
+## Third-party app integration (opt-in CORS)
+
+Other apps may embed keys.justworks as their key backend — a user registers and
+logs in from the integrator's own origin, calling `/api/*` cross-origin. This
+is **opt-in via `ALLOWED_ORIGINS`** (comma-separated, e.g.
+`https://app1.com,https://app2.com`); unset → same-origin only.
+
+Why it is safe: every endpoint authenticates with `identifier_hash` +
+`password_secret` **in the request body**, never cookies or an Authorization
+header. There is no ambient authority for a cross-site attacker to forge (no
+CSRF vector), and `Access-Control-Allow-Credentials` stays off. The allowlist
+prevents unrelated sites from using the API as a spam backend.
+
+Integrators consume `@kj/core` (`setApiBase(...)` for the cross-origin client,
+plus the byte-identical `identifierHash`/`passwordSecret`/`encryptSecret`/
+`decryptSecret`) so a user who registers on one app can decrypt their blob on
+another. They do not reimplement the crypto — drift would silently break
+cross-surface decryption.
 
 ## API namespacing
 

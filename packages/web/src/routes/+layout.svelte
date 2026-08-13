@@ -11,6 +11,9 @@
 	import Lock from '@lucide/svelte/icons/lock';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import { bunker } from '$lib/bunker/bunkers.svelte';
+	import { bunkerApps } from '$lib/bunker/apps.svelte';
+	import ApprovalDialog from '$lib/components/approval-dialog.svelte';
 
 	let { children } = $props();
 
@@ -28,6 +31,25 @@
 
 	// Short npub for the header chip (first 16 chars of the bech32).
 	const npubShort = $derived(keyholder.npub ? `${keyholder.npub.slice(0, 16)}…` : '');
+
+	// Drive the bunker runtime from the keyholder lifecycle: start (reconnect
+	// persisted slots) on unlock, stop everything on lock. Transition-guarded —
+	// `bunkerOwner` is a plain non-reactive var so the effect only acts on a real
+	// lock/unlock change and can never feed back into itself. The approval dialog
+	// renders globally below, so a connected client can be approved from any page.
+	let bunkerOwner: string | null | undefined = undefined;
+	$effect(() => {
+		const target: string | null = keyholder.locked || !keyholder.npub ? null : keyholder.npub;
+		if (target === bunkerOwner) return;
+		bunkerOwner = target;
+		if (target) {
+			bunkerApps.setOwner(target);
+			void bunker.startAll();
+		} else {
+			bunkerApps.setOwner(null);
+			void bunker.stopAll();
+		}
+	});
 </script>
 
 <svelte:head>
@@ -69,9 +91,6 @@
 					</a>
 					<Button href="/app" variant={active('/app') ? 'secondary' : 'ghost'} size="sm"
 						>Dashboard</Button
-					>
-					<Button href="/bunker" variant={active('/bunker') ? 'secondary' : 'ghost'} size="sm"
-						>Bunker</Button
 					>
 					<Button href="/login" onclick={() => keyholder.lock()} variant="outline" size="sm">
 						<Lock class="size-4" />
@@ -120,8 +139,6 @@
 					{#if !keyholder.locked}
 						<a href="/app" class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent">Dashboard</a
 						>
-						<a href="/bunker" class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent">Bunker</a
-						>
 						<button
 							type="button"
 							onclick={() => keyholder.lock()}
@@ -160,7 +177,6 @@
 						>
 					</li>
 					<li><a class="text-muted-foreground hover:text-foreground" href="/login">Unlock</a></li>
-					<li><a class="text-muted-foreground hover:text-foreground" href="/bunker">Bunker</a></li>
 				</ul>
 			</div>
 			<div>
@@ -197,4 +213,7 @@
 			No recovery by design · Self-hosted · Built on Nostr
 		</div>
 	</footer>
+
+	<!-- Global NIP-46 approval dialog (renders on any page when unlocked). -->
+	<ApprovalDialog />
 </div>
