@@ -1,0 +1,63 @@
+name: release-extension
+
+# Triggered by `make ext-patch|ext-minor|ext-major` (scripts/release-extension.sh),
+# which bumps the extension version, commits, tags ext-vX.Y.Z, and pushes the tag.
+#
+# Builds packages/extension and packs a signed .crx3, then attaches it (with a
+# sha256) to a GitHub Release. The signing key comes from the CRX_PRIVATE_KEY
+# repo secret (base64-encoded PEM) — a STABLE key, so the extension ID never
+# changes between releases (without it, every release is a different extension
+# and in-place updates break). See docs/extension-release.md.
+#
+# Extension releases are decoupled from server releases: the server uses v*
+# tags (release.yml), the extension uses ext-v* tags. They never collide.
+on:
+  push:
+    tags:
+      - "ext-v*"
+
+permissions:
+  contents: write # publish the GitHub Release + the .crx asset
+
+jobs:
+  crx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kj/extension build
+
+      - name: unpack signing key
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        run: |
+          if [ -z "$CRX_PRIVATE_KEY" ]; then
+            echo "::error::CRX_PRIVATE_KEY secret is missing — generate a stable key" \
+                 "and add it base64-encoded (see docs/extension-release.md)."
+            exit 1
+          fi
+          printf '%s' "$CRX_PRIVATE_KEY" | base64 -d > /tmp/crx.pem
+          chmod 600 /tmp/crx.pem
+
+      - name: pack .crx + sha256
+        run: |
+          mkdir -p dist
+          npx -y crx3@2 -o dist/keys-justworks.crx -p /tmp/crx.pem packages/extension/dist
+          ( cd dist && sha256sum keys-justworks.crx > keys-justworks.crx.sha256 )
+
+      - name: shred the key
+        if: always()
+        run: rm -f /tmp/crx.pem
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/keys-justworks.crx
+            dist/keys-justworks.crx.sha256

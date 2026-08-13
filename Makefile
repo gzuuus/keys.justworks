@@ -10,7 +10,7 @@ SERVER_DIR := server
 WEB_DIR    := packages/web
 EXT_DIR    := packages/extension
 
-.PHONY: help install dev dev-api dev-web dev-extension serve build build-web build-server clean patch minor major
+.PHONY: help install dev dev-api dev-web dev-extension serve build build-web build-server clean patch minor major ext-patch ext-minor ext-major crx
 
 help: ## show this help
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -54,3 +54,22 @@ minor: ## release: bump minor (0.1.0 -> 0.2.0), tag, push
 	@./scripts/release.sh minor
 major: ## release: bump major (0.1.0 -> 1.0.0), tag, push
 	@./scripts/release.sh major
+
+# Extension releases are decoupled from server releases (server uses v* tags;
+# extension uses ext-v*). `make ext-patch|ext-minor|ext-major` bumps the
+# extension version, commits, tags ext-vX.Y.Z, and pushes — the tag triggers
+# .github/workflows/release-extension.yml, which packs a signed .crx onto a
+# GitHub Release. `make crx` packs a .crx locally for ad-hoc testing — set
+# CRX_KEY to your private key path (default: extension.pem in the repo root).
+ext-patch: ## ext release: bump patch, tag ext-vX.Y.Z, push (triggers crx CI)
+	@./scripts/release-extension.sh patch
+ext-minor: ## ext release: bump minor, tag ext-vX.Y.Z, push
+	@./scripts/release-extension.sh minor
+ext-major: ## ext release: bump major, tag ext-vX.Y.Z, push
+	@./scripts/release-extension.sh major
+
+CRX ?= keys-justworks.crx
+CRX_KEY ?= extension.pem
+crx: ## build the extension and pack a signed .crx (set CRX_KEY=path/to/key.pem)
+	cd $(EXT_DIR) && pnpm build
+	npx -y crx3@2 -o "$(CRX)" -p "$(CRX_KEY)" $(EXT_DIR)/dist

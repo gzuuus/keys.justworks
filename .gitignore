@@ -24,3 +24,7 @@ references/
 .DS_Store
 .env
 .env.*
+
+# extension release artifacts — NEVER commit signing keys or packed crx
+*.pem
+*.crx
