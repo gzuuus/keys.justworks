@@ -24,6 +24,9 @@ RUN corepack enable
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/ ./packages/
 RUN pnpm install --frozen-lockfile
+# the /docs route imports docs/integration.md via ?raw (relative path escapes the
+# package up to the repo root), so docs/ must be present at /app/docs/ for vite.
+COPY docs/ ./docs/
 RUN pnpm --filter @kj/web build
 
 ###### 2. server build (embeds the web build via rust-embed) ##################
