@@ -337,6 +337,21 @@ The API is namespaced under `/api/*` so it coexists with the bundled static site
   interval (~30 min, configurable) with no keyholder messages, then notifies
   the page so the UI reflects the lock. Generous on purpose to avoid re-login
   footguns; a page reload already drops the key (never persist).
+- **Offline account cache (Tier A):** after a successful unlock the website
+  caches the `ncryptsec` in `localStorage`, keyed by `H(identifier)`, so a
+  returning user can unlock without a server round-trip (and fully offline).
+  **Never the plaintext identifier** — only `H(identifier)` (already on the
+  server), the `ncryptsec` (encrypted with `identifier ‖ password`), and the
+  public `npub`. A cached entry is a duplicate of what a static breach already
+  yields, so the floor does not drop: an attacker reading `localStorage` still
+  needs `identifier ‖ password` to decrypt. After decrypting a cached blob the
+  client asserts the resulting `npub` matches (tamper/stale detection), and any
+  cache miss / mismatch / decrypt-failure falls back to the server-authoritative
+  path — so a password changed on *another* device (stale blob) never falsely
+  rejects a correct password. Erase evicts the entry; a password change
+  refreshes its blob. (Caching the plaintext identifier for one-click unlock is
+  deliberately *not* done — it would spend the keystone to save typing one
+  field.)
 
 ## Hardening summary
 

@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { identifierHash, updateBlob, deleteAccount, ApiError } from '@kj/core';
 	import { keyholder } from '$lib/keyholder/store.svelte';
+	import { accounts } from '$lib/keyholder/accounts.svelte';
 	import BunkerPanel from '$lib/components/bunker-panel.svelte';
 	import SecretField from '$lib/components/secret-field.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -104,6 +105,9 @@
 				newNcryptsec: newBlob,
 				newPasswordSecret: next
 			});
+			// Keep the offline cache fresh: the blob is now re-wrapped under the new
+			// password. Preserves any existing label.
+			accounts.save(ih, newBlob, keyholder.npub!);
 			pwDone = true;
 			pwCurrent = pwNew = pwConfirm = '';
 		} catch (e) {
@@ -135,6 +139,7 @@
 			const ih = await identifierHash(identifier);
 			const current = await keyholder.passwordSecret(identifier, delCurrent);
 			await deleteAccount({ identifierHash: ih, passwordSecret: current });
+			accounts.remove(ih); // evict the offline cache so this account stops appearing
 			keyholder.lock(); // wipe the held key; the nsec backup (if any) is unaffected
 			await goto('/');
 		} catch (e) {
