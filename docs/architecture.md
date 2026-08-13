@@ -131,6 +131,31 @@ Ports: **API** `:3000`, **web** `:5173` (proxies `/api/*` → `:3000`).
 > All targets are live — the packages are scaffolded. `pnpm` is the package manager
 > (lockfile `pnpm-lock.yaml` is committed).
 
+## Releasing
+
+Releases are version-tagged (`vX.Y.Z`); the tag drives
+`.github/workflows/release.yml`, which publishes a Docker image to GHCR
+(`ghcr.io/<owner>/<repo>:vX.Y.Z` + `:latest`, amd64) and cross-built linux
+binaries (amd64, arm64) to the GitHub Release.
+
+`server/Cargo.toml` is the single source of truth for the version — the
+deployable is the server binary, and the private TS packages aren't published,
+so their versions don't track releases. Cut a release with:
+
+| Command      | Effect                                            |
+|--------------|---------------------------------------------------|
+| `make patch` | `0.1.0 → 0.1.1`: bump, commit, tag `vX.Y.Z`, push |
+| `make minor` | `0.1.0 → 0.2.0`: bump, commit, tag, push          |
+| `make major` | `0.1.0 → 1.0.0`: bump, commit, tag, push          |
+
+`scripts/release.sh` refuses on a dirty tree and refreshes `Cargo.lock` so
+release builds stay `--locked`-clean. The push triggers CI; the GitHub Release
+appears when the `release` job finishes.
+
+> The Docker image is amd64-only for now; ARM VPS deploys can use the `aarch64`
+> binary asset. A multi-arch image (buildx/qemu or a native arm64 runner) is the
+> follow-up.
+
 ## Deliberately not added
 
 - **No Cargo workspace** — only one Rust crate; a workspace is YAGNI until there are two.

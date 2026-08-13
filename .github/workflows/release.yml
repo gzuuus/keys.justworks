@@ -1,0 +1,106 @@
+name: release
+
+# Triggered by `make patch|minor|major` (scripts/release.sh), which bumps
+# server/Cargo.toml, commits, tags vX.Y.Z, and pushes the tag.
+#
+# Publishes:
+#   - docker image  -> ghcr.io/<owner>/<repo>:vX.Y.Z (+ :latest)  [amd64]
+#   - binaries      -> GitHub Release assets                       [amd64, arm64]
+#
+# The server embeds the web build at compile time (rust-embed), so every server
+# build below first runs `pnpm --filter @kj/web build`. Release CI is low
+# frequency, so each job rebuilds the site rather than passing it between jobs.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # publish the GitHub Release + assets
+  packages: write # push the image to GHCR
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+      # ponytail: amd64-only image for now. add linux/arm64 via buildx+qemu or a
+      # native arm64 runner if ARM VPS deploys need the image (arm64 hosts can
+      # already use the cross-built binary asset below).
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  binaries:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kj/web build
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "server -> target"
+      - if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - run: >
+          cargo build --release --locked
+          --manifest-path server/Cargo.toml
+          --target ${{ matrix.target }}
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      - name: package
+        run: |
+          tgt=${{ matrix.target }}
+          mkdir -p dist
+          tar -C "server/target/$tgt/release" \
+            -czf "dist/keys-justworks-server-$tgt.tar.gz" keys-justworks-server
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.target }}
+          path: dist/*.tar.gz
+
+  release:
+    needs: [binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/**/keys-justworks-server-*.tar.gz
