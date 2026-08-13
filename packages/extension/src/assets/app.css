@@ -1,0 +1,111 @@
+/* Minimal styling for the extension's own pages. Tailwind + shadcn-svelte land
+   in a follow-up; this keeps the build green and the popup readable meanwhile.
+   Tokens mirror the web's palette (ink/mint). */
+:root {
+  --bg: #0b0d10;
+  --paper: #171a21;
+  --paper-strong: #1f242d;
+  --line: #2a313c;
+  --fg: #e7e9ec;
+  --muted: #9aa3af;
+  --mint: #5eead4;
+  --mint-deep: #0d9488;
+  --sun: #fbbf24;
+  --danger: #f87171;
+  --accent: #1b2330;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+}
+h1 {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+a {
+  color: var(--mint);
+  cursor: pointer;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--accent);
+  color: var(--fg);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+}
+button.primary {
+  background: var(--mint-deep);
+  border-color: var(--mint-deep);
+  color: #04201c;
+  font-weight: 600;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.link {
+  background: none;
+  border: none;
+  color: var(--mint);
+  padding: 0;
+  font-weight: 600;
+  text-decoration: underline;
+}
+label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0 0 0.25rem;
+}
+input,
+textarea {
+  width: 100%;
+  font: inherit;
+  background: var(--paper-strong);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.muted {
+  color: var(--muted);
+}
+.error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+pre {
+  background: var(--paper-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.78rem;
+  max-height: 180px;
+  overflow: auto;
+  margin: 0;
+}

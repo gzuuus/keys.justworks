@@ -1,0 +1,27 @@
+{
+  "name": "@kj/extension",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "keys.justworks — non-custodial Nostr key locker, NIP-07 signer",
+  "scripts": {
+    "dev": "echo '[kj/extension] building dist/ in watch mode — load packages/extension/dist unpacked; after edits it rebuilds (reload the extension at chrome://extensions); Ctrl-C to stop.' && vite build --watch",
+    "build": "vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kj/core": "workspace:*",
+    "nostr-tools": "^2.24.1"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.7.1",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@types/chrome": "^0.0.287",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
+    "typescript": "^5.4.0",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.10"
+  }
+}
