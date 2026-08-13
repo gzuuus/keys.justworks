@@ -49,6 +49,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+        env:
+          # don't upload the .dockerbuild record artifact — it's noise here and
+          # download-artifact chokes on its actions-results blob backend.
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
 
   binaries:
     runs-on: ubuntu-latest
@@ -100,6 +104,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
+          pattern: binary-* # only the release binaries, never build records
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
