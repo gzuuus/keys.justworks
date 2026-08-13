@@ -30,8 +30,8 @@ dev-web: ## run the Vite dev server on :$(WEB_PORT) (proxies /api -> :$(API_PORT
 serve: build-web ## prod-like: build web then run server (serves bundled site on :$(API_PORT))
 	cd $(SERVER_DIR) && cargo run
 
-dev-extension: ## build the extension in watch mode (load unpacked in browser)
-	cd $(EXT_DIR) && pnpm dev
+dev-extension: ## build the extension to dist/ (load unpacked; re-run after edits)
+	cd $(EXT_DIR) && pnpm build
 
 build-web: ## build the static web assets -> packages/web/build
 	cd $(WEB_DIR) && pnpm build
