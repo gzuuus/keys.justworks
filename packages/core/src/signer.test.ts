@@ -6,6 +6,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { generateSecretKey, getPublicKey, validateEvent } from "nostr-tools";
+import * as nip19 from "nostr-tools/nip19";
 import { encryptSecret } from "./index";
 import { SignerCore } from "./signer";
 
@@ -30,7 +31,10 @@ describe("SignerCore", () => {
     expect((unlock as any).result.npub).toMatch(/^npub1/);
 
     const status = await signer.handle(req("status", undefined));
-    expect((status as any).result).toEqual({ unlocked: true, pubkey: expectedPubkey });
+    expect((status as any).result).toEqual({
+      unlocked: true,
+      npub: nip19.npubEncode(expectedPubkey),
+    });
 
     const pk = await signer.handle(req("getPublicKey", undefined));
     expect((pk as any).result).toBe(expectedPubkey);

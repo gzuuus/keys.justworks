@@ -139,7 +139,7 @@ async function cmdChangePassword(
 ): Promise<{ npub: string }> {
   const ih = await identifierHash(identifier);
   const status = await signerCall("status", undefined);
-  if (!status.unlocked || !status.pubkey) throw new Error("unlock first to change password");
+  if (!status.unlocked || !status.npub) throw new Error("unlock first to change password");
   const rewrapped = await signerCall("reencrypt", { identifier, newPassword });
   await updateBlob({
     identifierHash: ih,
@@ -147,8 +147,8 @@ async function cmdChangePassword(
     newNcryptsec: rewrapped.ncryptsec,
     newPasswordSecret: await passwordSecret(identifier, newPassword),
   });
-  await accounts.save(ih, rewrapped.ncryptsec, status.pubkey);
-  return { npub: status.pubkey };
+  await accounts.save(ih, rewrapped.ncryptsec, status.npub);
+  return { npub: status.npub };
 }
 
 async function cmdErase(identifier: string, password: string): Promise<void> {

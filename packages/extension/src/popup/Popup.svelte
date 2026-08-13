@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import type { BgReply } from "../lib/protocol";
 
-  type Status = { unlocked: boolean; pubkey: string | null };
+  type Status = { unlocked: boolean; npub: string | null };
 
   let identifier = $state("");
   let password = $state("");
@@ -20,7 +20,7 @@
   async function refresh() {
     try {
       status = await send<Status>({ src: "ui", cmd: "status" });
-      npub = status?.pubkey ?? "";
+      npub = status?.npub ?? "";
     } catch (e) {
       error = e instanceof Error ? e.message : "status failed";
     }
@@ -31,13 +31,7 @@
     error = null;
     busy = true;
     try {
-      const r = await send<{ npub: string }>({
-        src: "ui",
-        cmd: "login",
-        identifier,
-        password,
-      });
-      npub = r.npub;
+      await send({ src: "ui", cmd: "login", identifier, password });
       password = "";
       await refresh();
     } catch (err) {

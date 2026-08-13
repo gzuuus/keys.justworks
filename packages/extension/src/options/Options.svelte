@@ -4,7 +4,7 @@
   import { PERMISSION_NAMES, type NostrMethod } from "../lib/protocol";
   import type { PermissionEntry } from "../lib/permissions";
 
-  type Status = { unlocked: boolean; pubkey: string | null };
+  type Status = { unlocked: boolean; npub: string | null };
   interface KjConfig {
     apiBase: string;
   }
@@ -145,7 +145,7 @@
   <section style="margin-bottom: 2rem">
     <h2>Status</h2>
     {#if status?.unlocked}
-      <p>Unlocked — <span class="muted">{status.pubkey?.slice(0, 20)}…</span></p>
+      <p>Unlocked — <span class="muted">{status.npub?.slice(0, 20)}…</span></p>
     {:else}
       <p class="muted">Locked. Unlock from the toolbar popup, or create/import a key below.</p>
     {/if}

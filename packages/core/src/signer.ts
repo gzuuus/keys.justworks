@@ -54,7 +54,7 @@ export interface SignerOps {
     res: { ncryptsec: string; npub: string; passwordSecret: string };
   };
   lock: { req: void; res: { locked: true } };
-  status: { req: void; res: { unlocked: boolean; pubkey: string | null } };
+  status: { req: void; res: { unlocked: boolean; npub: string | null } };
   getPublicKey: { req: void; res: string };
   /** Export the held secret as an nsec for at-will backup. Requires an unlocked
    * key. Re-exposure is deliberate and user-initiated. */
@@ -169,8 +169,8 @@ export class SignerCore {
         return { locked: true as const };
       case "status":
         return this.#secret
-          ? { unlocked: true, pubkey: getPublicKey(this.#secret) }
-          : { unlocked: false, pubkey: null };
+          ? { unlocked: true, npub: nip19.npubEncode(getPublicKey(this.#secret)) }
+          : { unlocked: false, npub: null };
       case "getPublicKey":
         return getPublicKey(this.#require());
       case "exportNsec":
