@@ -55,6 +55,10 @@ export interface KeyholderOps {
 	lock: { req: void; res: { locked: true } };
 	status: { req: void; res: { unlocked: boolean; pubkey: string | null } };
 	getPublicKey: { req: void; res: string };
+	/** Export the held secret as an nsec for at-will backup. Requires an unlocked
+	 * key. The plaintext bech32 leaves the Worker (same residual as the one-time
+	 * creation backup) — re-exposure is deliberate and user-initiated. */
+	exportNsec: { req: void; res: { nsec: string } };
 	signEvent: { req: { event: EventTemplate }; res: VerifiedEvent };
 	'nip04.encrypt': { req: { pubkey: string; plaintext: string }; res: string };
 	'nip04.decrypt': { req: { pubkey: string; ciphertext: string }; res: string };
@@ -170,6 +174,8 @@ export class KeyholderCore {
 					: { unlocked: false, pubkey: null };
 			case 'getPublicKey':
 				return getPublicKey(this.#require());
+			case 'exportNsec':
+				return { nsec: nip19.nsecEncode(this.#require()) };
 			case 'signEvent':
 				return finalizeEvent(req.payload.event, this.#require());
 			case 'nip04.encrypt':

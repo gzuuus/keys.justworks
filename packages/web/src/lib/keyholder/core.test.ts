@@ -184,6 +184,19 @@ describe('KeyholderCore NIP-07 signing', () => {
 		await ok(core, msg('unlock', { ncryptsec: NCRYPTSEC, identifier: ID, password: PW }));
 		expect(nip19.npubEncode((await ok(core, msg('getPublicKey'))) as string)).toBe(N_PUB);
 	});
+
+	it('exportNsec returns the held key as an nsec, and refuses while locked', async () => {
+		const core = new KeyholderCore();
+		expect(await err(core, msg('exportNsec'))).toMatch(/locked/);
+		await ok(core, msg('unlock', { ncryptsec: NCRYPTSEC, identifier: ID, password: PW }));
+		const res = (await ok(core, msg('exportNsec'))) as { nsec: string };
+		const dec = nip19.decode(res.nsec);
+		expect(dec.type).toBe('nsec');
+		// The exported nsec is the SAME key (round-trips to the registered pubkey).
+		expect(getPublicKey(dec.data as Uint8Array)).toBe(PUBKEY);
+		// Export is read-only — the key stays held.
+		expect(core.unlocked).toBe(true);
+	});
 });
 
 describe('KeyholderCore nip04 / nip44', () => {

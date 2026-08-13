@@ -3,6 +3,7 @@
 	import { identifierHash, updateBlob, deleteAccount, ApiError } from '@kj/core';
 	import { keyholder } from '$lib/keyholder/store.svelte';
 	import BunkerPanel from '$lib/components/bunker-panel.svelte';
+	import SecretField from '$lib/components/secret-field.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import {
@@ -22,6 +23,7 @@
 	import LockOpen from '@lucide/svelte/icons/lock-open';
 	import Lock from '@lucide/svelte/icons/lock';
 	import KeyRound from '@lucide/svelte/icons/key-round';
+	import Download from '@lucide/svelte/icons/download';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Check from '@lucide/svelte/icons/check';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -43,6 +45,20 @@
 	let delConfirm = $state('');
 	let delBusy = $state(false);
 	let delError = $state<string | null>(null);
+
+	// Backup-at-any-time state.
+	let backupNsec = $state<string | null>(null);
+	let backupBusy = $state(false);
+	async function showBackup() {
+		backupBusy = true;
+		try {
+			backupNsec = (await keyholder.exportNsec()).nsec;
+		} catch {
+			backupNsec = null;
+		} finally {
+			backupBusy = false;
+		}
+	}
 
 	async function copyNpub() {
 		if (!keyholder.npub) return;
@@ -222,6 +238,45 @@
 			</CollapsibleTrigger>
 			<CollapsibleContent>
 				<div class="mt-4 flex flex-col gap-4">
+					<!-- Back up key -->
+					<Card>
+						<CardHeader>
+							<CardTitle class="flex items-center gap-2">
+								<Download class="size-5" /> Back up your key
+							</CardTitle>
+							<CardDescription>
+								Re-show your private key (nsec) to copy somewhere safe. You can do this any time
+								while your key is unlocked.
+							</CardDescription>
+						</CardHeader>
+						<CardContent class="flex flex-col gap-3">
+							{#if backupNsec}
+								<SecretField
+									label="Private key (nsec)"
+									value={backupNsec}
+									danger={true}
+									hint="Anyone with this owns your identity. Store only in a password manager or fully offline."
+								/>
+								<Button
+									variant="outline"
+									size="sm"
+									class="self-start"
+									onclick={() => (backupNsec = null)}>Hide</Button
+								>
+							{:else}
+								<Button
+									variant="outline"
+									size="sm"
+									class="self-start"
+									disabled={backupBusy}
+									onclick={showBackup}
+								>
+									{backupBusy ? 'Revealing…' : 'Reveal my key'}
+								</Button>
+							{/if}
+						</CardContent>
+					</Card>
+
 					<!-- Change password -->
 					<Card>
 						<CardHeader>

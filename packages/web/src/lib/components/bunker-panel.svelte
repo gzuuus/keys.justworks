@@ -34,10 +34,15 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert';
 	import Plug from '@lucide/svelte/icons/plug';
+	import Link from '@lucide/svelte/icons/link';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 
 	let connectUri = $state('');
 	let busy = $state(false);
 	let error = $state<string | null>(null);
+	/** Which connection flow is revealed: null = the two-button chooser. */
+	let mode = $state<'bunker' | 'nostrconnect' | null>(null);
+	let advancedOpen = $state(false);
 	let copiedId = $state<string | null>(null);
 	let editingId = $state<string | null>(null);
 	let draftName = $state('');
@@ -71,6 +76,7 @@
 		error = null;
 		try {
 			await bunker.createBunker();
+			mode = null; // collapse back; the new slot card appears below
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'failed to start bunker';
 		} finally {
@@ -84,6 +90,7 @@
 		try {
 			await bunker.createNostrconnect(connectUri);
 			connectUri = '';
+			mode = null;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'failed to connect';
 		} finally {
@@ -126,60 +133,116 @@
 	<Card>
 		<CardHeader>
 			<CardTitle>Connect an app</CardTitle>
-			<CardDescription>Default servers, approval rules, and how to connect.</CardDescription>
+			<CardDescription>Two ways to link a Nostr app to this key.</CardDescription>
 		</CardHeader>
 		<CardContent class="flex flex-col gap-4">
-			<div class="flex flex-col gap-2">
-				<Label for="relay">Default relays (Nostr servers)</Label>
-				<Input id="relay" bind:value={bunker.sharedRelays} placeholder="wss://a, wss://b" />
-				<p class="text-xs text-muted-foreground">
-					Comma-separated. Apps that give you a nostrconnect:// link use their own.
-				</p>
-			</div>
-
-			<div class="flex items-center gap-3">
-				<Switch id="auto" bind:checked={bunker.autoApprove} />
-				<Label for="auto" class="cursor-pointer">
-					Auto-approve (all apps)
-					<span class="block text-xs font-normal text-muted-foreground">
-						Off = you approve each request. On = everything is signed automatically.
-					</span>
-				</Label>
-			</div>
+			{#if mode === null}
+				<div class="grid gap-3 sm:grid-cols-2">
+					<button
+						type="button"
+						class="border-line flex items-start gap-3 rounded-xl border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
+						onclick={() => (mode = 'bunker')}
+					>
+						<Link class="mt-0.5 size-5 shrink-0 text-mint-deep" />
+						<span class="flex flex-col gap-1">
+							<span class="text-sm font-semibold">Create a connection link</span>
+							<span class="text-xs text-muted-foreground">
+								You start it. Paste the link into your app's "remote signer" field.
+							</span>
+						</span>
+					</button>
+					<button
+						type="button"
+						class="border-line flex items-start gap-3 rounded-xl border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
+						onclick={() => (mode = 'nostrconnect')}
+					>
+						<Plug class="mt-0.5 size-5 shrink-0 text-mint-deep" />
+						<span class="flex flex-col gap-1">
+							<span class="text-sm font-semibold">Connect to an app</span>
+							<span class="text-xs text-muted-foreground">
+								Your app gives you a nostrconnect:// link to paste here.
+							</span>
+						</span>
+					</button>
+				</div>
+			{:else}
+				<div class="flex flex-col gap-3">
+					<button
+						type="button"
+						class="inline-flex items-center gap-1 self-start text-sm text-muted-foreground hover:text-foreground"
+						onclick={() => (mode = null)}
+					>
+						<ArrowLeft class="size-4" /> Back
+					</button>
+					{#if mode === 'bunker'}
+						<div class="flex flex-col gap-2">
+							<p class="text-sm font-medium">Create a connection link</p>
+							<p class="text-xs text-muted-foreground">
+								We'll generate a link you paste into your app's "remote signer" or "bunker" field.
+								The app then sends signing requests here for you to approve.
+							</p>
+							<Button onclick={addBunker} disabled={busy} class="self-start">
+								{busy ? 'Starting…' : 'Create connection'}
+							</Button>
+						</div>
+					{:else}
+						<div class="flex flex-col gap-2">
+							<p class="text-sm font-medium">Connect to an app</p>
+							<p class="text-xs text-muted-foreground">
+								Paste the nostrconnect:// link your app gave you. We'll connect and ask you to
+								approve each request.
+							</p>
+							<Input
+								bind:value={connectUri}
+								placeholder="nostrconnect://…"
+								onkeydown={(e) => e.key === 'Enter' && connectUri.trim() && addNostrconnect()}
+							/>
+							<Button
+								variant="outline"
+								onclick={addNostrconnect}
+								disabled={busy || !connectUri.trim()}
+								class="self-start"
+							>
+								Connect
+							</Button>
+						</div>
+					{/if}
+					{#if error}
+						<p class="text-sm text-destructive">{error}</p>
+					{/if}
+				</div>
+			{/if}
 
 			<Separator />
 
-			<div class="flex flex-col gap-2">
-				<Label>Connection link — you start it</Label>
-				<p class="text-xs text-muted-foreground">
-					Create a link, then paste it into your app's "remote signer" or "bunker" field.
-				</p>
-				<Button onclick={addBunker} disabled={busy} class="self-start">
-					{busy && !connectUri ? 'Starting…' : 'Create connection'}
-				</Button>
-			</div>
-
-			<div class="flex flex-col gap-2">
-				<Label for="connect-uri">Or paste a nostrconnect:// link</Label>
-				<Input
-					id="connect-uri"
-					bind:value={connectUri}
-					placeholder="nostrconnect://…"
-					onkeydown={(e) => e.key === 'Enter' && connectUri.trim() && addNostrconnect()}
-				/>
-				<Button
-					variant="outline"
-					onclick={addNostrconnect}
-					disabled={busy || !connectUri.trim()}
-					class="self-start"
+			<Collapsible bind:open={advancedOpen}>
+				<CollapsibleTrigger
+					class="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
 				>
-					Connect
-				</Button>
-			</div>
-
-			{#if error}
-				<p class="text-sm text-destructive">{error}</p>
-			{/if}
+					Advanced
+					<ChevronDown class="size-4 transition-transform {advancedOpen ? 'rotate-180' : ''}" />
+				</CollapsibleTrigger>
+				<CollapsibleContent>
+					<div class="mt-3 flex flex-col gap-4">
+						<div class="flex flex-col gap-2">
+							<Label for="relay">Default relays (Nostr servers)</Label>
+							<Input id="relay" bind:value={bunker.sharedRelays} placeholder="wss://a, wss://b" />
+							<p class="text-xs text-muted-foreground">
+								Comma-separated. Apps that give you a nostrconnect:// link use their own.
+							</p>
+						</div>
+						<div class="flex items-center gap-3">
+							<Switch id="auto" bind:checked={bunker.autoApprove} />
+							<Label for="auto" class="cursor-pointer">
+								Auto-approve (all apps)
+								<span class="block text-xs font-normal text-muted-foreground">
+									Off = you approve each request. On = everything is signed automatically.
+								</span>
+							</Label>
+						</div>
+					</div>
+				</CollapsibleContent>
+			</Collapsible>
 		</CardContent>
 	</Card>
 

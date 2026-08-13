@@ -100,6 +100,11 @@ export class Keyholder {
 	getPublicKey() {
 		return this.#send('getPublicKey', undefined);
 	}
+	/** Export the held key as an nsec for at-will backup (key is already in Worker
+	 * memory — no password needed, just a deliberate reveal). */
+	exportNsec() {
+		return this.#send('exportNsec', undefined);
+	}
 	signEvent(event: EventTemplate) {
 		return this.#send('signEvent', { event });
 	}

@@ -173,11 +173,12 @@
 	<div class="mx-auto max-w-3xl px-4 py-16 text-center sm:py-20">
 		<p class="text-xs font-bold tracking-[0.2em] text-sun uppercase">The problem</p>
 		<p class="mt-5 text-2xl leading-snug font-bold text-balance sm:text-3xl">
-			Nostr hands you the key. Lose it, and you lose your identity, followers, and reputation.
+			Nostr keys are hard to manage safely.
 		</p>
 		<p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-			Other key-storage services are convenient — but they hold your actual key, making them a
-			target for hackers. keys.justworks gives you the convenience without handing anyone your key.
+			Your identity is a key: lose it and your handle, follows, and reputation are gone. The easy
+			ways to use it — paste it into apps, hand it to a signer, trust a plugin — all put your key
+			somewhere it can be stolen. keys.justworks is the easy way that doesn't.
 		</p>
 	</div>
 </section>

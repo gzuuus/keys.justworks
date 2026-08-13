@@ -87,6 +87,10 @@ class KeyholderStore {
 	getPublicKey() {
 		return this.holder.getPublicKey();
 	}
+	/** Re-show the held key as an nsec for backup (no password — already unlocked). */
+	exportNsec() {
+		return this.holder.exportNsec();
+	}
 	signEvent(event: EventTemplate) {
 		return this.holder.signEvent(event);
 	}
