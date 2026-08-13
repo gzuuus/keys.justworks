@@ -1,11 +1,21 @@
 /**
- * Content script — ISOLATED world. Bridges the page's `window.nostr` calls
- * (posted from the MAIN-world provider) to the service worker over
- * `chrome.runtime`, and relays the response back.
+ * Content script — ISOLATED world, the ONLY content script. Does two things:
  *
- * It shares `window` with the MAIN-world provider, so they communicate via
- * `postMessage`. Only messages shaped like a CALL (`{ ext, method }`) are
- * forwarded; replies (`{ ext, response }`) are ignored here so there's no loop.
+ *   1. Injects `public/provider.js` into the page's MAIN world as a `<script
+ *      src>`. As an external extension resource (web_accessible_resources) it
+ *      runs in the page context and is exempt from page CSP, so it works on
+ *      every site and every Chrome version. This replaces a `world: "MAIN"`
+ *      content script, which crxjs mis-handles
+ *      (github.com/crxjs/chrome-extension-tools/issues/695).
+ *
+ *   2. Bridges the page's `window.nostr` calls (posted from the provider) to
+ *      the service worker over `chrome.runtime`, and relays the response back.
+ *      Only messages shaped like a CALL (`{ ext, method }`) are forwarded;
+ *      replies (`{ ext, response }`) are ignored here so there's no loop.
+ *
+ * Runs at `document_start` so `window.nostr` exists before page scripts — the
+ * correct NIP-07 timing for reliable detection. At document_start `<head>` may
+ * not exist yet, so append to `documentElement`.
  */
 
 interface PageCall {
@@ -23,6 +33,12 @@ function isCall(d: unknown): d is PageCall {
     typeof (d as { method?: unknown }).method === "string"
   );
 }
+
+// Inject the provider into the page (MAIN world via <script src>).
+const s = document.createElement("script");
+s.src = chrome.runtime.getURL("provider.js");
+s.async = false;
+(document.head || document.documentElement).appendChild(s);
 
 window.addEventListener("message", async (message) => {
   if (message.source !== window) return;
