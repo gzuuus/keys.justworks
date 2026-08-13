@@ -61,25 +61,29 @@ input and keyholding are both isolated from page JS.
 
 ## Why the website is bundled into the server
 
-One origin, one deploy artifact, one TLS cert. Concrete payoff: **no CORS
-needed for the bundled site** — its fetches to `/api/*` are same-origin. No
-security regression: the operator controls the served JS either way, and the Web
-Worker keyholder isolation is unaffected by how the bytes are delivered. The
-website remains a standalone-buildable package, so moving it to a CDN later
-(and adding CORS) is a deployment change, not an architecture change.
+One origin, one deploy artifact, one TLS cert. The bundled site needs no CORS —
+its fetches to `/api/*` are same-origin (the open-CORS layer below is harmless
+on top). No security regression: the operator controls the served JS either
+way, and the Web Worker keyholder isolation is unaffected by how the bytes are
+delivered. The website remains a standalone-buildable package, so moving it to
+a CDN later is a deployment change, not an architecture change.
 
-## Third-party app integration (opt-in CORS)
+## Third-party app integration (open CORS)
 
 Other apps may embed keys.justworks as their key backend — a user registers and
-logs in from the integrator's own origin, calling `/api/*` cross-origin. This
-is **opt-in via `ALLOWED_ORIGINS`** (comma-separated, e.g.
-`https://app1.com,https://app2.com`); unset → same-origin only.
+logs in from the integrator's own origin, calling `/api/*` cross-origin. The
+server runs an **open CORS policy** (`Access-Control-Allow-Origin: *`) so any
+app can integrate without per-origin onboarding.
 
-Why it is safe: every endpoint authenticates with `identifier_hash` +
+Why this is safe: every endpoint authenticates with `identifier_hash` +
 `password_secret` **in the request body**, never cookies or an Authorization
 header. There is no ambient authority for a cross-site attacker to forge (no
-CSRF vector), and `Access-Control-Allow-Credentials` stays off. The allowlist
-prevents unrelated sites from using the API as a spam backend.
+CSRF vector), and `Access-Control-Allow-Credentials` is off (incompatible with
+`*`, and we don't need it — auth is body-only). A malicious origin calling
+`/api/login` gets 401: the user's browser attaches nothing on their behalf, and
+the secret must be supplied in the body. The residual is anonymous register
+spam, which rate limiting covers (per-IP at the reverse proxy, per-account
+in-app before scale) — not CORS config.
 
 Integrators consume `@kj/core` (`setApiBase(...)` for the cross-origin client,
 plus the byte-identical `identifierHash`/`passwordSecret`/`encryptSecret`/
