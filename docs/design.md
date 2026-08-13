@@ -199,8 +199,8 @@ The server stores exactly three fields per account, plus bookkeeping:
 | `ncryptsec` | The encrypted private key | NIP-49 blob, `ncryptsec1…`, passphrase = `identifier ‖ password`. |
 
 Plus: created/updated timestamps, a KDF/version byte on the blob for future
-upgrades, login-rate-limit counters. **No plaintext identifier, no plaintext
-password, no npub, no email ever stored.**
+upgrades. **No plaintext identifier, no plaintext password, no npub, no email
+is ever stored.** (Rate limiting is in-memory, not persisted — see "Hardening".)
 
 SQLite is sufficient for the MVP.
 
@@ -281,7 +281,7 @@ the extension when you can.*
 - **Responsibility:** store and serve `ncryptsec` blobs behind identifier/password auth. Never decrypt. Never sign.
 - **Auth:** **stateless**. Every request that touches an account re-verifies `{ identifier_hash, password }` inline against the stored verifier; `POST /login` returns the `ncryptsec` directly. No sessions, no tokens — nothing to steal, store, or expire. The server is a locker, not a session host.
 - **Hardening:**
-  - Per-account **and** per-IP login rate-limiting (the only online brute-force defense). Deferred past first cut; `argon2`'s deliberately slow verify is the floor throttle meanwhile.
+  - **Rate limiting (in-memory token buckets):** per-`identifier_hash` (bounds targeted brute-force on one account regardless of attacker IPs/compute), a global auth bucket (bounds total `argon2` throughput — the DoS ceiling), and a global register bucket (bounds anonymous account creation / DB pollution). Per-IP limiting is the **operator's** responsibility at the reverse proxy (nginx `limit_req` / Caddy) — it sees the real client IP natively, and per-IP-in-the-app would be a NAT/VPN shared-IP footgun. `argon2`'s deliberately slow verify (off the async worker via `spawn_blocking`) is the floor throttle underneath.
   - TLS everywhere; HSTS.
   - Strong `argon2id` parameters; never lower them.
   - A version byte on the blob for future NIP-49 / KDF upgrades.
@@ -295,7 +295,7 @@ PUT  /api/blob         { identifier_hash, password, new_ncryptsec [, new_passwor
 DELETE /api/account    { identifier_hash, password }
 ```
 
-The API is namespaced under `/api/*` so it coexists with the bundled static site served at `/*` by the same Rust binary — same-origin by default, with cross-origin access for third-party integrators opt-in via `ALLOWED_ORIGINS` (see [architecture.md](architecture.md)). `identifier_hash` is computed client-side as `H(identifier)`; the server never receives the plaintext identifier. **The server owns argon2**: `register` and `PUT` receive the client-derived `password_secret` (`scrypt(password)` — the raw password never reaches the server) and hash it server-side — never a client-supplied verifier, which would let a client store a hash for a different password. Every endpoint except `register` verifies `argon2(password_secret)` against the stored `password_verifier` inline — there is no separate auth layer and no session (PAKE upgrade deferred). `PUT /api/blob` covers both a plain re-encrypt and a password change: the client re-encrypts the `ncryptsec` with the new passphrase and, when rotating the password, also supplies `new_password_secret` (`scrypt(new_password)`) so both stored fields update atomically.
+The API is namespaced under `/api/*` so it coexists with the bundled static site served at `/*` by the same Rust binary — same-origin for the bundled site, with an open CORS policy (`*`) so third-party apps can integrate cross-origin (see [architecture.md](architecture.md)). `identifier_hash` is computed client-side as `H(identifier)`; the server never receives the plaintext identifier. **The server owns argon2**: `register` and `PUT` receive the client-derived `password_secret` (`scrypt(password)` — the raw password never reaches the server) and hash it server-side — never a client-supplied verifier, which would let a client store a hash for a different password. Every endpoint except `register` verifies `argon2(password_secret)` against the stored `password_verifier` inline — there is no separate auth layer and no session (PAKE upgrade deferred). `PUT /api/blob` covers both a plain re-encrypt and a password change: the client re-encrypts the `ncryptsec` with the new passphrase and, when rotating the password, also supplies `new_password_secret` (`scrypt(new_password)`) so both stored fields update atomically.
 
 ### 2. Browser extension (JS, NIP-07)
 

@@ -10,10 +10,15 @@
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use axum::Router;
-use keys_justworks_server::{app, init_schema, AppState};
+use keys_justworks_server::{
+    app, init_schema, AppState, Clock, LimiterParams, RateLimiter, SystemClock,
+};
 use serde_json::{json, Value};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::SqlitePool;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tower::ServiceExt;
 
 /// A valid-looking 64-hex `identifier_hash` (the server only checks the wire
@@ -28,7 +33,7 @@ fn secret(n: u32) -> String {
     format!("{n:0>64x}")
 }
 
-async fn setup() -> AppState {
+async fn pool() -> SqlitePool {
     let opts = SqliteConnectOptions::from_str("sqlite::memory:")
         .unwrap()
         .create_if_missing(true)
@@ -39,7 +44,46 @@ async fn setup() -> AppState {
         .await
         .unwrap();
     init_schema(&db).await.unwrap();
-    AppState { db }
+    db
+}
+
+/// Default limiter (production params, real clock). Existing tests do few
+/// requests and never trip these generous defaults.
+async fn setup() -> AppState {
+    AppState {
+        db: pool().await,
+        limiter: Arc::new(RateLimiter::new(
+            LimiterParams::default(),
+            Arc::new(SystemClock),
+        )),
+    }
+}
+
+/// Test AppState with a custom limiter + mock clock (tiny buckets so behavior is
+/// exercisable without sleeping).
+async fn setup_limited(params: LimiterParams, clock: Arc<dyn Clock>) -> AppState {
+    AppState {
+        db: pool().await,
+        limiter: Arc::new(RateLimiter::new(params, clock)),
+    }
+}
+
+/// Injectable monotonic clock for deterministic rate-limit tests.
+#[derive(Clone)]
+struct MockClock(Arc<Mutex<Instant>>);
+impl MockClock {
+    fn new() -> Self {
+        Self(Arc::new(Mutex::new(Instant::now())))
+    }
+    fn advance(&self, d: Duration) {
+        let mut guard = self.0.lock().unwrap();
+        *guard += d;
+    }
+}
+impl Clock for MockClock {
+    fn now(&self) -> Instant {
+        *self.0.lock().unwrap()
+    }
 }
 
 async fn send(router: Router, method: &str, uri: &str, body: Value) -> (StatusCode, Value) {
@@ -385,17 +429,15 @@ async fn security_headers_present_on_every_response() {
 }
 
 #[tokio::test]
-async fn cors_preflight_and_echo_for_listed_origin() {
-    use keys_justworks_server::{app_with_cors, cors_layer};
-    assert!(cors_layer(&[]).is_none(), "empty allowlist = no CORS");
-
-    // Preflight (OPTIONS) for an allowlisted origin: echoed, methods listed.
-    let resp = app_with_cors(setup().await, cors_layer(&["https://app.example.com"]))
+async fn cors_open_wildcard_for_any_origin() {
+    // Open CORS (`*`): any origin is allowed. Body-auth means no CSRF risk and
+    // no credentials header (`*` and credentials are incompatible anyway).
+    let resp = app(setup().await)
         .oneshot(
             Request::builder()
                 .method("OPTIONS")
                 .uri("/api/login")
-                .header("origin", "https://app.example.com")
+                .header("origin", "https://any.example.com")
                 .header("access-control-request-method", "POST")
                 .header("access-control-request-headers", "content-type")
                 .body(Body::empty())
@@ -406,43 +448,19 @@ async fn cors_preflight_and_echo_for_listed_origin() {
     assert!(resp.status().is_success());
     assert_eq!(
         resp.headers().get("access-control-allow-origin").unwrap(),
-        "https://app.example.com"
+        "*"
     );
-    assert!(resp
-        .headers()
-        .get("access-control-allow-methods")
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .contains("POST"));
-    // No credentials header — auth is body-only.
+    assert_eq!(
+        resp.headers().get("access-control-allow-methods").unwrap(),
+        "*"
+    );
     assert!(resp
         .headers()
         .get("access-control-allow-credentials")
         .is_none());
 
-    // Actual GET from the allowlisted origin: header present.
-    let resp = app_with_cors(setup().await, cors_layer(&["https://app.example.com"]))
-        .oneshot(
-            Request::builder()
-                .method("GET")
-                .uri("/api/health")
-                .header("origin", "https://app.example.com")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    assert_eq!(
-        resp.headers().get("access-control-allow-origin").unwrap(),
-        "https://app.example.com"
-    );
-}
-
-#[tokio::test]
-async fn cors_unlisted_origin_gets_no_allow_origin() {
-    use keys_justworks_server::{app_with_cors, cors_layer};
-    let resp = app_with_cors(setup().await, cors_layer(&["https://app.example.com"]))
+    // Any origin gets `*` on a real request too.
+    let resp = app(setup().await)
         .oneshot(
             Request::builder()
                 .method("GET")
@@ -453,8 +471,199 @@ async fn cors_unlisted_origin_gets_no_allow_origin() {
         )
         .await
         .unwrap();
-    assert!(
-        resp.headers().get("access-control-allow-origin").is_none(),
-        "unlisted origin must not get a CORS allow-origin header"
+    assert_eq!(
+        resp.headers().get("access-control-allow-origin").unwrap(),
+        "*"
     );
+}
+
+#[tokio::test]
+async fn rate_limits_per_account_then_refills() {
+    let clock = Arc::new(MockClock::new());
+    let params = LimiterParams {
+        account_capacity: 2.0,
+        account_refill_per_sec: 1.0, // 1 token/sec
+        auth_global_capacity: 100.0,
+        auth_global_refill_per_sec: 100.0,
+        register_global_capacity: 100.0,
+        register_global_refill_per_sec: 100.0,
+    };
+    let s = setup_limited(params, clock.clone()).await;
+    let id = hash(101);
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/register",
+        json!({ "identifier_hash": id, "password_secret": secret(1), "ncryptsec": "ncryptsec1a" }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::CREATED);
+
+    // Two wrong-password logins drain the per-account bucket (2 tokens).
+    for n in [2, 3] {
+        let (st, _) = send(
+            app(s.clone()),
+            "POST",
+            "/api/login",
+            json!({ "identifier_hash": id, "password_secret": secret(n) }),
+        )
+        .await;
+        assert_eq!(st, StatusCode::UNAUTHORIZED);
+    }
+
+    // Bucket empty → 429 even with the right secret.
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/login",
+        json!({ "identifier_hash": id, "password_secret": secret(1) }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::TOO_MANY_REQUESTS);
+
+    // 2s later → 2 tokens refilled → correct login succeeds.
+    clock.advance(Duration::from_secs(2));
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/login",
+        json!({ "identifier_hash": id, "password_secret": secret(1) }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn rate_limit_refunds_on_successful_auth() {
+    let clock = Arc::new(MockClock::new());
+    let params = LimiterParams {
+        account_capacity: 2.0,
+        account_refill_per_sec: 0.0, // no refill — isolate refund behavior
+        auth_global_capacity: 100.0,
+        auth_global_refill_per_sec: 100.0,
+        register_global_capacity: 100.0,
+        register_global_refill_per_sec: 100.0,
+    };
+    let s = setup_limited(params, clock.clone()).await;
+    let id = hash(102);
+    send(
+        app(s.clone()),
+        "POST",
+        "/api/register",
+        json!({ "identifier_hash": id, "password_secret": secret(1), "ncryptsec": "ncryptsec1a" }),
+    )
+    .await;
+
+    // Three correct logins: each consumes 1 then refunds 1 → never throttled.
+    for _ in 0..3 {
+        let (st, _) = send(
+            app(s.clone()),
+            "POST",
+            "/api/login",
+            json!({ "identifier_hash": id, "password_secret": secret(1) }),
+        )
+        .await;
+        assert_eq!(st, StatusCode::OK);
+    }
+
+    // Two wrong logins drain the bucket (no refill).
+    for n in [2, 3] {
+        let (st, _) = send(
+            app(s.clone()),
+            "POST",
+            "/api/login",
+            json!({ "identifier_hash": id, "password_secret": secret(n) }),
+        )
+        .await;
+        assert_eq!(st, StatusCode::UNAUTHORIZED);
+    }
+
+    // Bucket empty → even the correct secret gets 429.
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/login",
+        json!({ "identifier_hash": id, "password_secret": secret(1) }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::TOO_MANY_REQUESTS);
+}
+
+#[tokio::test]
+async fn rate_limits_register_globally() {
+    let clock = Arc::new(MockClock::new());
+    let params = LimiterParams {
+        account_capacity: 100.0,
+        account_refill_per_sec: 100.0,
+        auth_global_capacity: 100.0,
+        auth_global_refill_per_sec: 100.0,
+        register_global_capacity: 1.0,
+        register_global_refill_per_sec: 1.0, // 1/sec
+    };
+    let s = setup_limited(params, clock.clone()).await;
+
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/register",
+        json!({ "identifier_hash": hash(201), "password_secret": secret(1), "ncryptsec": "ncryptsec1a" }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::CREATED);
+
+    // Global register bucket empty → second register (different account) is 429.
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/register",
+        json!({ "identifier_hash": hash(202), "password_secret": secret(1), "ncryptsec": "ncryptsec1b" }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::TOO_MANY_REQUESTS);
+
+    // 1s later → 1 token → register succeeds.
+    clock.advance(Duration::from_secs(1));
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/register",
+        json!({ "identifier_hash": hash(203), "password_secret": secret(1), "ncryptsec": "ncryptsec1c" }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::CREATED);
+}
+
+#[tokio::test]
+async fn rate_limits_random_hash_spray_via_global_auth() {
+    let clock = Arc::new(MockClock::new());
+    let params = LimiterParams {
+        account_capacity: 100.0, // generous — per-account never trips (fresh hashes)
+        account_refill_per_sec: 100.0,
+        auth_global_capacity: 1.0,
+        auth_global_refill_per_sec: 0.0, // no refill — isolate
+        register_global_capacity: 100.0,
+        register_global_refill_per_sec: 100.0,
+    };
+    let s = setup_limited(params, clock.clone()).await;
+
+    // First spray attempt: 401 (missing account, dummy verify), consumes the 1
+    // global auth token.
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/login",
+        json!({ "identifier_hash": hash(301), "password_secret": secret(1) }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::UNAUTHORIZED);
+
+    // Second spray attempt: global auth empty → 429 (no argon2 even runs).
+    let (st, _) = send(
+        app(s.clone()),
+        "POST",
+        "/api/login",
+        json!({ "identifier_hash": hash(302), "password_secret": secret(1) }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::TOO_MANY_REQUESTS);
 }

@@ -8,14 +8,15 @@
 //! (the raw password never reaches the server — see @kj/core); the server
 //! applies argon2 on top, so the stored verifier is never the wire value.
 
+use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::OnceLock;
-use std::time::Duration;
+use std::sync::{Arc, Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
 use axum::extract::{Request, State};
-use axum::http::{header, HeaderName, HeaderValue, Method, StatusCode, Uri};
+use axum::http::{header, HeaderName, HeaderValue, StatusCode, Uri};
 use axum::middleware::{from_fn, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post, put};
@@ -25,10 +26,10 @@ use rand_core::OsRng;
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
 use sqlx::{Row, SqlitePool};
 use thiserror::Error;
-use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 /// The static site produced by `packages/web` (`make build-web`), embedded at
@@ -38,10 +39,12 @@ use tower_http::trace::TraceLayer;
 #[folder = "../packages/web/build/"]
 struct WebAssets;
 
-/// Server state: a SQLite connection pool. Cloned cheaply (pool is `Arc`d).
+/// Server state: a SQLite connection pool + the in-memory rate limiter. Both
+/// are `Arc`d internally, so `AppState` clones cheaply (it's cloned per request).
 #[derive(Clone)]
 pub struct AppState {
     pub db: SqlitePool,
+    pub limiter: Arc<RateLimiter>,
 }
 
 /// Connect to SQLite at `database_url` (e.g. `sqlite:keys.db`), enable WAL, and
@@ -49,8 +52,20 @@ pub struct AppState {
 pub async fn connect(database_url: &str) -> Result<SqlitePool, sqlx::Error> {
     let options = SqliteConnectOptions::from_str(database_url)?
         .create_if_missing(true)
-        .journal_mode(SqliteJournalMode::Wal);
-    let pool = SqlitePoolOptions::new().connect_with(options).await?;
+        .journal_mode(SqliteJournalMode::Wal)
+        // Wait (up to 5s) on write contention instead of erroring into a 500 —
+        // SQLite serializes writers; in WAL mode reads don't block.
+        .busy_timeout(Duration::from_secs(5))
+        // Durability is sacred here ("no recovery by design"): never trade the
+        // last committed txn away for speed. Writes are argon2-bound anyway.
+        .synchronous(SqliteSynchronous::Full);
+    // Small pool: SQLite is single-writer, extra connections only invite
+    // contention; `busy_timeout` handles the rare overlap. ponytail: bump if a
+    // read-heavy profile measurably benefits, or move to Postgres at scale.
+    let pool = SqlitePoolOptions::new()
+        .max_connections(4)
+        .connect_with(options)
+        .await?;
     init_schema(&pool).await?;
     Ok(pool)
 }
@@ -74,17 +89,9 @@ pub async fn init_schema(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-/// Build the router, reading CORS from `ALLOWED_ORIGINS` (comma-separated
-/// origins, e.g. `https://app1.com,https://app2.com`). Unset → no CORS layer
-/// (same-origin only — the bundled-site default).
+/// Build the application router with the given state.
 pub fn app(state: AppState) -> Router {
-    app_with_cors(state, cors_layer_from_env())
-}
-
-/// Build the router with an explicit CORS layer (or `None` for same-origin).
-/// Split from `app` so tests can exercise CORS without mutating global env.
-pub fn app_with_cors(state: AppState, cors: Option<CorsLayer>) -> Router {
-    let router = Router::new()
+    Router::new()
         .route("/api/health", get(health))
         .route("/api/register", post(register))
         .route("/api/login", post(login))
@@ -92,14 +99,13 @@ pub fn app_with_cors(state: AppState, cors: Option<CorsLayer>) -> Router {
         .route("/api/account", delete(delete_account))
         .fallback(static_handler)
         .layer(TraceLayer::new_for_http())
-        .layer(from_fn(security_headers));
-    // CORS is added last so it is the outermost layer: preflight OPTIONS
-    // short-circuits here, never reaching the handlers.
-    let router = match cors {
-        Some(cors) => router.layer(cors),
-        None => router,
-    };
-    router.with_state(state)
+        .layer(from_fn(security_headers))
+        // Open CORS (`*`): any origin may integrate — auth is body-only, so no
+        // CSRF vector and no credentials needed (and `*` forbids them anyway).
+        // Added last → outermost, so preflight OPTIONS short-circuits here.
+        // See docs/architecture.md.
+        .layer(CorsLayer::permissive().max_age(Duration::from_secs(86400)))
+        .with_state(state)
 }
 
 async fn health() -> &'static str {
@@ -149,10 +155,14 @@ enum AppError {
     Unauthorized,
     #[error("conflict")]
     Conflict,
+    #[error("rate limited")]
+    RateLimited(Duration),
     #[error("database error")]
     Database(#[from] sqlx::Error),
     #[error("password hash error: {0}")]
     Argon2(String),
+    #[error("internal error")]
+    Internal,
 }
 
 impl From<argon2::password_hash::Error> for AppError {
@@ -163,14 +173,32 @@ impl From<argon2::password_hash::Error> for AppError {
     }
 }
 
+/// Rate-limit miss (`retry_after`) → 429. Lets handlers do `limiter.check(..)?`.
+impl From<Duration> for AppError {
+    fn from(retry_after: Duration) -> Self {
+        AppError::RateLimited(retry_after)
+    }
+}
+
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = match self {
             AppError::BadRequest(msg) => return (StatusCode::BAD_REQUEST, msg).into_response(),
+            AppError::RateLimited(retry) => {
+                let mut res = (StatusCode::TOO_MANY_REQUESTS, "rate limited").into_response();
+                // `Retry-After` in whole seconds (>=1 so clients back off).
+                let secs = retry.as_secs().max(1).to_string();
+                if let Ok(v) = HeaderValue::from_str(&secs) {
+                    res.headers_mut().insert(header::RETRY_AFTER, v);
+                }
+                return res;
+            }
             AppError::Unauthorized => StatusCode::UNAUTHORIZED,
             AppError::Conflict => StatusCode::CONFLICT,
             // Don't leak internal detail (DB / argon2 internals) to clients.
-            AppError::Database(_) | AppError::Argon2(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Database(_) | AppError::Argon2(_) | AppError::Internal => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         };
         (status, status.canonical_reason().unwrap_or("error")).into_response()
     }
@@ -190,7 +218,10 @@ async fn register(
     validate_hash(&body.identifier_hash)?;
     validate_secret(&body.password_secret)?;
     validate_ncryptsec(&body.ncryptsec)?;
-    let verifier = hash_secret(&body.password_secret)?;
+    // Global register bucket: bounds anonymous account creation / DB pollution
+    // (per-account is meaningless for register — it creates the account).
+    state.limiter.check_register()?;
+    let verifier = hash_secret_blocking(body.password_secret).await?;
 
     let res = sqlx::query(
         "INSERT INTO accounts (identifier_hash, password_verifier, ncryptsec) VALUES (?, ?, ?)",
@@ -218,6 +249,10 @@ async fn login(
 ) -> Result<Json<NcryptsecResp>, AppError> {
     validate_hash(&body.identifier_hash)?;
     validate_secret(&body.password_secret)?;
+    // Per-account (targeted brute-force) + global auth (argons/sec DoS ceiling).
+    // Checked before the argon2 work so the throttle protects CPU, not just the
+    // DB. Missing-account spray is bounded by the global bucket.
+    state.limiter.check_authed(&body.identifier_hash)?;
 
     let row =
         sqlx::query("SELECT password_verifier, ncryptsec FROM accounts WHERE identifier_hash = ?")
@@ -226,19 +261,23 @@ async fn login(
             .await?;
 
     let Some(row) = row else {
-        // ponytail: timing equalization, not a constant-time guarantee. The
-        // real online brute-force defense (per-account/per-IP rate-limiting)
-        // is deferred — argon2's slow verify is the floor throttle until then.
-        let _ = verify_secret(&body.password_secret, dummy_verifier());
+        // Timing equalization (not constant-time): do the argon2 work on the
+        // missing path too, off the async thread.
+        let _ = verify_secret_blocking(body.password_secret.clone(), dummy_verifier().to_string())
+            .await?;
         return Err(AppError::Unauthorized);
     };
 
     let verifier: String = row.try_get("password_verifier")?;
     let ncryptsec: String = row.try_get("ncryptsec")?;
 
-    if !verify_secret(&body.password_secret, &verifier)? {
+    if !verify_secret_blocking(body.password_secret.clone(), verifier).await? {
         return Err(AppError::Unauthorized);
     }
+    // Success: refund the per-account token so a legit user logging in never
+    // throttles their own account. (Global is NOT refunded — it bounds total
+    // throughput, not per-user fairness.)
+    state.limiter.refund_authed(&body.identifier_hash);
     Ok(Json(NcryptsecResp { ncryptsec }))
 }
 
@@ -252,13 +291,14 @@ async fn update_blob(
     validate_hash(&body.identifier_hash)?;
     validate_secret(&body.password_secret)?;
     validate_ncryptsec(&body.new_ncryptsec)?;
+    state.limiter.check_authed(&body.identifier_hash)?;
 
     authenticated_verifier(&state.db, &body.identifier_hash, &body.password_secret).await?;
 
     match body.new_password_secret {
         Some(new_password_secret) => {
             validate_secret(&new_password_secret)?;
-            let new_verifier = hash_secret(&new_password_secret)?;
+            let new_verifier = hash_secret_blocking(new_password_secret).await?;
             sqlx::query(
                 "UPDATE accounts SET password_verifier = ?, ncryptsec = ?, updated_at = datetime('now') WHERE identifier_hash = ?",
             )
@@ -278,6 +318,7 @@ async fn update_blob(
             .await?;
         }
     }
+    state.limiter.refund_authed(&body.identifier_hash);
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -288,12 +329,14 @@ async fn delete_account(
 ) -> Result<StatusCode, AppError> {
     validate_hash(&body.identifier_hash)?;
     validate_secret(&body.password_secret)?;
+    state.limiter.check_authed(&body.identifier_hash)?;
     authenticated_verifier(&state.db, &body.identifier_hash, &body.password_secret).await?;
 
     sqlx::query("DELETE FROM accounts WHERE identifier_hash = ?")
         .bind(&body.identifier_hash)
         .execute(&state.db)
         .await?;
+    state.limiter.refund_authed(&body.identifier_hash);
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -313,11 +356,12 @@ async fn authenticated_verifier(
         .fetch_optional(db)
         .await?;
     let Some(row) = row else {
-        let _ = verify_secret(password_secret, dummy_verifier());
+        let _ = verify_secret_blocking(password_secret.to_string(), dummy_verifier().to_string())
+            .await?;
         return Err(AppError::Unauthorized);
     };
     let verifier: String = row.try_get("password_verifier")?;
-    if !verify_secret(password_secret, &verifier)? {
+    if !verify_secret_blocking(password_secret.to_string(), verifier).await? {
         return Err(AppError::Unauthorized);
     }
     Ok(())
@@ -395,6 +439,205 @@ fn validate_ncryptsec(s: &str) -> Result<(), AppError> {
     }
 }
 
+// --- argon2 off the async thread --------------------------------------------
+
+/// `hash_secret` run on the blocking pool, so argon2 (~tens of ms) never stalls
+/// a tokio worker thread. Takes owned strings — `spawn_blocking` needs `'static`.
+async fn hash_secret_blocking(secret: String) -> Result<String, AppError> {
+    tokio::task::spawn_blocking(move || hash_secret(&secret))
+        .await
+        .map_err(|_| AppError::Internal)?
+}
+
+async fn verify_secret_blocking(secret: String, verifier: String) -> Result<bool, AppError> {
+    tokio::task::spawn_blocking(move || verify_secret(&secret, &verifier))
+        .await
+        .map_err(|_| AppError::Internal)?
+}
+
+// --- rate limiting (in-memory token bucket) ---------------------------------
+//
+// Per-`identifier_hash` (targeted brute-force) + two keyless global buckets
+// (auth argon2 throughput, registrations). No per-IP: that's the NAT/VPN
+// footgun, and the operator's reverse proxy is the right place for it. All
+// state is process-local. ponytail: per-instance, not shared — fine for one
+// VPS; add a shared store only when scaling horizontally.
+
+/// Injectable monotonic clock so the bucket time logic is testable without
+/// `tokio::time::sleep`. The one earned abstraction here: time is otherwise
+/// untestable.
+pub trait Clock: Send + Sync {
+    fn now(&self) -> Instant;
+}
+
+/// Real wallclock-monotonic clock.
+pub struct SystemClock;
+impl Clock for SystemClock {
+    fn now(&self) -> Instant {
+        Instant::now()
+    }
+}
+
+/// Token-bucket parameters. Defaults suit a single-VPS deployment. ponytail:
+/// not env-configured yet — add when an operator actually needs to tune live.
+pub struct LimiterParams {
+    /// Per-`identifier_hash`: bounds targeted brute-force on one account.
+    pub account_capacity: f64,
+    pub account_refill_per_sec: f64,
+    /// Global: bounds total login/blob/account argon2 throughput (DoS ceiling).
+    pub auth_global_capacity: f64,
+    pub auth_global_refill_per_sec: f64,
+    /// Global: bounds anonymous registration / DB pollution.
+    pub register_global_capacity: f64,
+    pub register_global_refill_per_sec: f64,
+}
+
+impl Default for LimiterParams {
+    fn default() -> Self {
+        Self {
+            // Per account: burst 5, then ~1 token / 10s (~6/min). Futile against
+            // any decent password, especially since each attempt also costs the
+            // attacker a client-side scrypt.
+            account_capacity: 5.0,
+            account_refill_per_sec: 0.1,
+            // Total argons/sec ceiling: burst 20, ~5/s sustained. Keeps a small
+            // VPS's CPU bounded under a spray of identifier hashes.
+            auth_global_capacity: 20.0,
+            auth_global_refill_per_sec: 5.0,
+            // Registrations: burst 10, ~1/s sustained. Bounds pollution without
+            // gating legit signups.
+            register_global_capacity: 10.0,
+            register_global_refill_per_sec: 1.0,
+        }
+    }
+}
+
+/// One token bucket. Refilled lazily on each `check` (no timer): elapsed time
+/// since `last` adds `elapsed * refill_per_sec` tokens, capped at `capacity`.
+struct Bucket {
+    tokens: f64,
+    last: Instant,
+}
+
+impl Bucket {
+    fn new(capacity: f64, now: Instant) -> Self {
+        Self {
+            tokens: capacity,
+            last: now,
+        }
+    }
+
+    /// Lazily refill, then try to consume one token. `Ok(())` on success;
+    /// `Err(retry_after)` if empty.
+    fn check(&mut self, capacity: f64, refill_per_sec: f64, now: Instant) -> Result<(), Duration> {
+        let elapsed = now.saturating_duration_since(self.last).as_secs_f64();
+        self.tokens = (self.tokens + elapsed * refill_per_sec).min(capacity);
+        self.last = now;
+        if self.tokens >= 1.0 {
+            self.tokens -= 1.0;
+            Ok(())
+        } else {
+            let needed = 1.0 - self.tokens;
+            // Guard the 0-refill case (would divide by zero); clamp to 1h.
+            let secs = if refill_per_sec > 0.0 {
+                (needed / refill_per_sec).min(3600.0)
+            } else {
+                3600.0
+            };
+            Err(Duration::from_secs_f64(secs))
+        }
+    }
+
+    /// Refund one token (capped at capacity) — used on successful auth.
+    fn refund(&mut self, capacity: f64) {
+        self.tokens = (self.tokens + 1.0).min(capacity);
+    }
+}
+
+pub struct RateLimiter {
+    params: LimiterParams,
+    clock: Arc<dyn Clock>,
+    inner: Mutex<Inner>,
+}
+
+/// Per-account buckets idle longer than this are dropped (bounds memory under
+/// identifier-hash spray). ponytail: fixed const; expose as a param if tuning
+/// ever matters.
+const EVICT_IDLE_AFTER: Duration = Duration::from_secs(600);
+
+struct Inner {
+    accounts: HashMap<String, Bucket>,
+    auth_global: Bucket,
+    register_global: Bucket,
+    last_eviction: Instant,
+}
+
+impl RateLimiter {
+    pub fn new(params: LimiterParams, clock: Arc<dyn Clock>) -> Self {
+        let now = clock.now();
+        Self {
+            inner: Mutex::new(Inner {
+                accounts: HashMap::new(),
+                auth_global: Bucket::new(params.auth_global_capacity, now),
+                register_global: Bucket::new(params.register_global_capacity, now),
+                last_eviction: now,
+            }),
+            params,
+            clock,
+        }
+    }
+
+    /// Check per-account + global auth buckets. Call before argon2 on login,
+    /// `PUT /api/blob`, `DELETE /api/account`. Returns `Err(retry_after)` → 429.
+    pub fn check_authed(&self, identifier_hash: &str) -> Result<(), Duration> {
+        let now = self.clock.now();
+        let cap = self.params.account_capacity;
+        let refill = self.params.account_refill_per_sec;
+        let gcap = self.params.auth_global_capacity;
+        let grefill = self.params.auth_global_refill_per_sec;
+        let mut inner = self.inner.lock().unwrap();
+        maybe_evict(&mut inner, now);
+        // Global first: a miss here means no argon2 work runs at all.
+        inner.auth_global.check(gcap, grefill, now)?;
+        let bucket = inner
+            .accounts
+            .entry(identifier_hash.to_string())
+            .or_insert_with(|| Bucket::new(cap, now));
+        bucket.check(cap, refill, now)
+    }
+
+    /// Refund the per-account token on successful auth (NOT the global bucket).
+    pub fn refund_authed(&self, identifier_hash: &str) {
+        let cap = self.params.account_capacity;
+        let mut inner = self.inner.lock().unwrap();
+        if let Some(b) = inner.accounts.get_mut(identifier_hash) {
+            b.refund(cap);
+        }
+    }
+
+    /// Check the global register bucket (per-account is meaningless for register).
+    pub fn check_register(&self) -> Result<(), Duration> {
+        let now = self.clock.now();
+        let cap = self.params.register_global_capacity;
+        let refill = self.params.register_global_refill_per_sec;
+        let mut inner = self.inner.lock().unwrap();
+        maybe_evict(&mut inner, now);
+        inner.register_global.check(cap, refill, now)
+    }
+}
+
+/// Sweep per-account buckets idle longer than `EVICT_IDLE_AFTER`, at most every
+/// 60s. O(n) but bounded by active-account volume.
+fn maybe_evict(inner: &mut Inner, now: Instant) {
+    if now.saturating_duration_since(inner.last_eviction) < Duration::from_secs(60) {
+        return;
+    }
+    inner.last_eviction = now;
+    inner
+        .accounts
+        .retain(|_, b| now.saturating_duration_since(b.last) < EVICT_IDLE_AFTER);
+}
+
 // --- static site -------------------------------------------------------------
 
 /// Serve an embedded asset by path; fall back to `index.html` for client-side
@@ -422,51 +665,6 @@ async fn static_handler(uri: Uri) -> Response {
         file.data.into_owned(),
     )
         .into_response()
-}
-
-// --- cross-origin integration (opt-in CORS) ---------------------------------
-
-/// CORS allowlist for third-party apps that embed keys.justworks as their key
-/// backend (register/login via `/api/*` from their own origin). Auth lives in
-/// the request body (`identifier_hash`/`password_secret`), never in cookies or
-/// an Authorization header, so CSRF is not a concern (no ambient authority to
-/// forge) and `Access-Control-Allow-Credentials` stays off — we never need it.
-/// Only allowlisted origins are echoed, so a random site can't use the API as a
-/// spam/abuse backend. Same-origin (the bundled site) needs no CORS and is
-/// unaffected. See docs/architecture.md.
-fn cors_layer_from_env() -> Option<CorsLayer> {
-    let raw = std::env::var("ALLOWED_ORIGINS").ok()?;
-    let list: Vec<&str> = raw
-        .split(',')
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .collect();
-    cors_layer(&list)
-}
-
-/// Build a CORS layer from an explicit origin allowlist. `None` if the list is
-/// empty (no CORS). Public so tests can pass a known list without env mutation.
-pub fn cors_layer(allowed: &[&str]) -> Option<CorsLayer> {
-    let origins: Vec<HeaderValue> = allowed
-        .iter()
-        .filter_map(|s| HeaderValue::from_str(s).ok())
-        .collect();
-    if origins.is_empty() {
-        return None;
-    }
-    Some(
-        CorsLayer::new()
-            .allow_origin(AllowOrigin::list(origins))
-            .allow_methods(AllowMethods::list([
-                Method::GET,
-                Method::POST,
-                Method::PUT,
-                Method::DELETE,
-                Method::OPTIONS,
-            ]))
-            .allow_headers(AllowHeaders::list([header::CONTENT_TYPE]))
-            .max_age(Duration::from_secs(86400)),
-    )
 }
 
 // --- perimeter: CSP + security response headers -----------------------------
