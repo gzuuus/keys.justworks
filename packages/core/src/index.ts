@@ -29,6 +29,7 @@ import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 
 export * from "./api";
+export * from "./signer"; // shared in-memory signer (web + extension)
 
 /**
  * The keystone passphrase feeds NIP-49 scrypt.
