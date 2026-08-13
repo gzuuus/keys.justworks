@@ -3,11 +3,12 @@
  *
  * Same-origin (`/api/*`) by default — the website is bundled into the server
  * binary (one origin). Third-party apps that embed keys.justworks as their key
- * backend call cross-origin: set the base with `setApiBase(...)` and list the
- * integrator's origin in the server's `ALLOWED_ORIGINS` so the browser may read
- * the responses. Both first-party surfaces (`web`, `extension`) and integrators
- * share this so the JSON field names (`identifier_hash`, `password_secret`,
- * `ncryptsec`) live in one place and never drift.
+ * backend call cross-origin: set the base with `setApiBase(...)` and they're in
+ * — the server runs an open CORS policy (`*`) so any origin may integrate
+ * (safe because auth is body-only; see docs/architecture.md). First-party
+ * surfaces (`web`, `extension`) and integrators share this so the JSON field
+ * names (`identifier_hash`, `password_secret`, `ncryptsec`) live in one place
+ * and never drift.
  */
 
 let API_BASE = "/api";
