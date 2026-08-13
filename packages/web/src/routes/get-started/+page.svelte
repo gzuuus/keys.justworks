@@ -119,8 +119,8 @@
 		</h1>
 		<p class="mt-2 text-muted-foreground">
 			{mode === 'create'
-				? 'A fresh key is generated in your browser, encrypted with your identifier + password, and stored. The server never sees the plaintext key.'
-				: 'Wrap a key you already hold into the locker, encrypted with a new identifier + password.'}
+				? 'A fresh key is generated in your browser, encrypted with your identifier + password, and stored. The server never sees your actual key — only the encrypted version.'
+				: 'Add a key you already have to the locker, encrypted with a new identifier + password.'}
 		</p>
 	</div>
 
@@ -156,15 +156,13 @@
 		{#if mode === 'import'}
 			<Alert variant="destructive" class="mt-5">
 				<TriangleAlert class="size-4" />
-				<AlertTitle>Riskiest operation on this site</AlertTitle>
+				<AlertTitle>Use the browser extension if you can</AlertTitle>
 				<AlertDescription>
-					Importing an <strong>established</strong> key puts the raw nsec in page JS briefly — a
-					compromised page at that moment leaks a key with your existing followers and reputation.
-					If you have the <strong>browser extension</strong>, import there instead. Here, the key is
-					encrypted inside a Worker and the input is wiped the moment it's handed off, but the
-					residual is real.
+					Importing a key you already use elsewhere briefly exposes it on this page — if anything
+					here were compromised at that moment, that key could be stolen. We recommend the
+					<strong>browser extension</strong> (coming soon) for imports.
 					<button type="button" class="font-semibold underline" onclick={() => switchMode('create')}
-						>New here? Generate a fresh key instead.</button
+						>New here? Generating a fresh key is the safest option.</button
 					>
 				</AlertDescription>
 			</Alert>
@@ -192,8 +190,8 @@
 				<Label for="identifier">Identifier</Label>
 				<Input id="identifier" bind:value={identifier} autocomplete="username" required />
 				<p class="text-xs text-muted-foreground">
-					Defense-in-depth, not required to be strong — but a private, hard-to-guess identifier adds
-					a layer the server can't see. We never enforce or reject it.
+					Pick something private and hard to guess — it adds a layer of safety the server can't see.
+					We'll never reject a “weak” one; that's your call.
 				</p>
 			</div>
 
@@ -268,14 +266,14 @@
 
 				{#if outNsec}
 					<SecretField
-						label="nsec"
+						label="Private key (nsec)"
 						value={outNsec}
 						danger={true}
 						hint="Anyone with this owns your identity. Store only in a password manager or fully offline."
 					/>
 				{/if}
 				<SecretField
-					label="ncryptsec"
+					label="Encrypted backup (ncryptsec)"
 					value={outNcryptsec ?? ''}
 					hint="Encrypted — safe to store in a cloud note or on a second device. Still needs your password."
 				/>

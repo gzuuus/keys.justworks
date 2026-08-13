@@ -62,7 +62,7 @@
 		<h1 class="mt-4 text-3xl font-black tracking-tight">Unlock</h1>
 		<p class="mt-2 text-sm text-muted-foreground">
 			Your encrypted key is fetched and decrypted <strong class="font-semibold text-foreground"
-				>inside a Web Worker</strong
+				>in a sealed-off part of your browser</strong
 			> — the raw key never reaches this page.
 		</p>
 	</div>

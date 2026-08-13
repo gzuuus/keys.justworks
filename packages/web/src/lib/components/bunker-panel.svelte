@@ -107,7 +107,7 @@
 		<Plug class="size-5 text-mint-deep" />
 		<h2 class="text-lg font-bold">Connected apps</h2>
 		<span class="text-sm text-muted-foreground">
-			Let other Nostr apps sign through this tab over a relay.
+			Let other Nostr apps sign through this browser tab.
 		</span>
 	</div>
 
@@ -116,33 +116,33 @@
 			<TriangleAlert class="size-4" />
 			<AlertTitle>Auto-approve is on</AlertTitle>
 			<AlertDescription>
-				Every connect / sign / encrypt request is accepted automatically across all slots. Only run
-				this against relays and clients you trust — a connected client can sign anything as your key
-				until you stop the slot or the key locks.
+				Every request is signed automatically across all apps. Only use this with relays and apps
+				you trust — a connected app can sign anything as your key until you stop it or the key
+				locks.
 			</AlertDescription>
 		</Alert>
 	{/if}
 
 	<Card>
 		<CardHeader>
-			<CardTitle>Add a client</CardTitle>
-			<CardDescription>Default relays, approval policy, and how to connect.</CardDescription>
+			<CardTitle>Connect an app</CardTitle>
+			<CardDescription>Default servers, approval rules, and how to connect.</CardDescription>
 		</CardHeader>
 		<CardContent class="flex flex-col gap-4">
 			<div class="flex flex-col gap-2">
-				<Label for="relay">Default relays (bunker:// slots)</Label>
+				<Label for="relay">Default relays (Nostr servers)</Label>
 				<Input id="relay" bind:value={bunker.sharedRelays} placeholder="wss://a, wss://b" />
 				<p class="text-xs text-muted-foreground">
-					Comma-separated. nostrconnect:// slots use the client's own relays.
+					Comma-separated. Apps that give you a nostrconnect:// link use their own.
 				</p>
 			</div>
 
 			<div class="flex items-center gap-3">
 				<Switch id="auto" bind:checked={bunker.autoApprove} />
 				<Label for="auto" class="cursor-pointer">
-					Auto-approve (all slots)
+					Auto-approve (all apps)
 					<span class="block text-xs font-normal text-muted-foreground">
-						Off = approve each unresolved request. On = sign everything automatically.
+						Off = you approve each request. On = everything is signed automatically.
 					</span>
 				</Label>
 			</div>
@@ -150,17 +150,17 @@
 			<Separator />
 
 			<div class="flex flex-col gap-2">
-				<Label>Bunker URI (provider-initiated)</Label>
+				<Label>Connection link — you start it</Label>
 				<p class="text-xs text-muted-foreground">
-					Start a slot and hand its URI to a client's "add remote signer / bunker" field.
+					Create a link, then paste it into your app's "remote signer" or "bunker" field.
 				</p>
 				<Button onclick={addBunker} disabled={busy} class="self-start">
-					{busy && !connectUri ? 'Starting…' : 'Start bunker slot'}
+					{busy && !connectUri ? 'Starting…' : 'Create connection'}
 				</Button>
 			</div>
 
 			<div class="flex flex-col gap-2">
-				<Label for="connect-uri">nostrconnect:// URI (client-initiated)</Label>
+				<Label for="connect-uri">Or paste a nostrconnect:// link</Label>
 				<Input
 					id="connect-uri"
 					bind:value={connectUri}
@@ -173,7 +173,7 @@
 					disabled={busy || !connectUri.trim()}
 					class="self-start"
 				>
-					Connect to client
+					Connect
 				</Button>
 			</div>
 
@@ -197,7 +197,7 @@
 								<Input
 									bind:value={draftName}
 									class="h-8 max-w-[14rem]"
-									placeholder="Slot name"
+									placeholder="App name"
 									onkeydown={(e) => {
 										if (e.key === 'Enter') saveEdit();
 										if (e.key === 'Escape') editingId = null;
@@ -229,9 +229,9 @@
 					<CardDescription class="flex flex-col gap-0.5">
 						<span>{app.relays.join(', ')}</span>
 						{#if app.clientPubkey}
-							<span class="font-mono text-xs">client {short(app.clientPubkey)}</span>
+							<span class="font-mono text-xs">app {short(app.clientPubkey)}</span>
 						{:else}
-							<span class="text-xs">no client connected yet</span>
+							<span class="text-xs">no app connected yet</span>
 						{/if}
 					</CardDescription>
 				</CardHeader>
@@ -244,16 +244,16 @@
 								onCheckedChange={(v) => bunkerApps.setTrust(app.id, v)}
 							/>
 							<Label for="trust-{app.id}" class="cursor-pointer">
-								Trust this client
+								Trust this app
 								<span class="block text-xs font-normal text-muted-foreground">
-									Auto-approve every request from this slot.
+									Auto-approve every request from this app.
 								</span>
 							</Label>
 						</div>
 
 						{#if bunker.slots[app.id]?.bunkerUri}
 							<div class="flex flex-col gap-2">
-								<Label>Bunker URI</Label>
+								<Label>Connection link</Label>
 								<code
 									class="block max-h-32 overflow-auto rounded-md bg-muted p-2 font-mono text-xs break-all"
 									>{bunker.slots[app.id]!.bunkerUri}</code
@@ -264,12 +264,12 @@
 										size="sm"
 										onclick={() => copyUri(app.id, bunker.slots[app.id]!.bunkerUri!)}
 									>
-										{copiedId === app.id ? 'Copied' : 'Copy URI'}
+										{copiedId === app.id ? 'Copied' : 'Copy link'}
 									</Button>
 								</div>
 								<p class="text-xs text-muted-foreground">
-									The pubkey in the URI is this slot's transport identity; the client learns your
-									real npub after connecting.
+									The link shows a throwaway ID, not your real one. The app learns your real npub
+									only after you approve the connection.
 								</p>
 							</div>
 						{/if}
@@ -280,7 +280,7 @@
 
 						{#if Object.keys(app.permissions).length}
 							<div class="flex flex-col gap-1.5">
-								<span class="text-xs font-medium text-muted-foreground">Remembered grants</span>
+								<span class="text-xs font-medium text-muted-foreground">Saved approvals</span>
 								{#each Object.entries(app.permissions) as [key, d] (key)}
 									<div class="flex items-center gap-2 text-xs">
 										<span class="flex-1 break-all">{permLabel(key)}</span>
@@ -324,7 +324,8 @@
 	{:else}
 		<Card class="border-dashed">
 			<CardContent class="py-8 text-center text-sm text-muted-foreground">
-				No apps connected yet. Start a bunker slot above, or paste a nostrconnect URI from a client.
+				No apps connected yet. Create a connection above, or paste a nostrconnect:// link from an
+				app.
 			</CardContent>
 		</Card>
 	{/each}
@@ -335,7 +336,7 @@
 				<div>
 					<CardTitle>Activity</CardTitle>
 					<CardDescription>
-						Relay/provider events and incoming client requests across all slots.
+						Connection events and signing requests across your apps.
 					</CardDescription>
 				</div>
 				{#if bunker.logs.length}
@@ -346,7 +347,7 @@
 		<CardContent>
 			{#if bunker.logs.length === 0}
 				<p class="py-6 text-center text-sm text-muted-foreground">
-					No activity yet. Add a slot, then connect a client.
+					No activity yet. Create a connection, then connect an app.
 				</p>
 			{:else}
 				<ScrollArea class="h-80">

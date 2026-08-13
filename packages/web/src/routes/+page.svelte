@@ -22,21 +22,21 @@
 			icon: KeyRound,
 			accent: 'mint',
 			title: 'Encrypt locally',
-			body: 'A fresh key is generated in your browser and wrapped into an ncryptsec with your identifier + password (NIP-49). Only the encrypted blob is uploaded.'
+			body: 'A fresh key is generated in your browser and encrypted with your identifier + password. Only the encrypted key is uploaded — never the key itself.'
 		},
 		{
 			n: '02',
 			icon: RefreshCw,
 			accent: 'sun',
 			title: 'Retrieve anywhere',
-			body: 'Log in from any device with your identifier + password. The blob is fetched and decrypted inside a Web Worker — the key never touches the server, or the page.'
+			body: 'Log in from any device with your identifier + password. The encrypted key is fetched and decrypted in a sealed-off part of your browser — it never touches the server, or this page.'
 		},
 		{
 			n: '03',
 			icon: ShieldCheck,
 			accent: 'mint-deep',
 			title: 'Sign without custody',
-			body: "Hold the key for the session and sign locally, or expose a NIP-46 bunker for other apps. The server can't sign — and can't even name you."
+			body: "Hold the key for the session and sign, or let other apps ask this tab to sign for you. The server can't sign — and can't even name you."
 		}
 	];
 
@@ -44,17 +44,17 @@
 		{
 			icon: ShieldCheck,
 			title: "Server can't decrypt",
-			body: 'Only an encrypted ncryptsec is stored. Without your identifier + password the blob is useless — even to a fully-compromised server.'
+			body: 'Only an encrypted key is stored. Without your identifier + password it is useless — even to a fully-compromised server.'
 		},
 		{
 			icon: Server,
 			title: "Server can't name you",
-			body: 'No npub, no email, no metadata. Accounts are looked up by a one-way hash of your identifier. The server cannot link you to your Nostr identity.'
+			body: "No npub, no email, no metadata. Accounts are looked up by a scrambled, one-way version of your identifier. The server can't link you to your Nostr identity."
 		},
 		{
 			icon: CloudOff,
 			title: 'No custody',
-			body: 'The server never sees your raw key or your raw password. It stores a blob and a verifier — nothing it could sign with, even if it wanted to.'
+			body: 'The server never sees your raw key or your raw password. It stores an encrypted key and a check value — nothing it could sign with, even if it wanted to.'
 		},
 		{
 			icon: TriangleAlert,
@@ -85,7 +85,7 @@
 					class="font-semibold text-foreground">can't decrypt it</strong
 				>
 				and <strong class="font-semibold text-foreground">can't link it to your identity</strong>.
-				Retrieve and sign from any device — no custody, no honeypot.
+				Retrieve and sign from any device — no custody, no target.
 			</p>
 			<div class="mt-8 flex flex-wrap items-center gap-3">
 				{#if keyholder.locked}
@@ -146,7 +146,7 @@
 				<div class="border-line mt-4 space-y-2.5 border-t pt-4 text-sm">
 					<div class="flex items-center gap-2.5">
 						<Server class="size-4 shrink-0 text-quiet" />
-						<span class="text-muted-foreground">Server stores the blob</span>
+						<span class="text-muted-foreground">Server stores the encrypted key</span>
 						<span
 							class="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-mint-deep"
 							><Lock class="size-3" />can't decrypt</span
@@ -176,8 +176,8 @@
 			Nostr hands you the key. Lose it, and you lose your identity, followers, and reputation.
 		</p>
 		<p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-			Remote-signer services fix the UX — but they hold your key in plaintext, becoming a honeypot
-			waiting to be breached. keys.justworks takes the convenience and removes the custody.
+			Other key-storage services are convenient — but they hold your actual key, making them a
+			target for hackers. keys.justworks gives you the convenience without handing anyone your key.
 		</p>
 	</div>
 </section>
@@ -262,7 +262,7 @@
 			</span>
 		</a>
 		<a
-			href="/bunker"
+			href="/app"
 			class="border-line flex flex-col rounded-2xl border bg-paper-strong p-6 transition-transform hover:-translate-y-1"
 		>
 			<span
@@ -270,15 +270,13 @@
 			>
 				<Plug class="size-5" />
 			</span>
-			<h3 class="mt-5 text-lg font-bold">
-				Bunker <span class="text-muted-foreground">(NIP-46)</span>
-			</h3>
+			<h3 class="mt-5 text-lg font-bold">Remote signer</h3>
 			<p class="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-				Turn this tab into a remote signer. Other Nostr apps send signing requests over a relay; you
-				approve each one.
+				Let other Nostr apps sign through this browser tab. They send a request over a relay (a
+				Nostr server) and you approve each one.
 			</p>
 			<span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-mint-deep">
-				Open bunker <ArrowRight class="size-4" />
+				Open dashboard <ArrowRight class="size-4" />
 			</span>
 		</a>
 		<div class="border-line flex flex-col rounded-2xl border border-dashed bg-paper-strong/50 p-6">
@@ -291,9 +289,8 @@
 				Browser extension <Badge variant="secondary" class="ml-1 align-middle">soon</Badge>
 			</h3>
 			<p class="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-				The strongest surface: isolated input and keyholding, exposing <code
-					class="font-mono text-xs">window.nostr</code
-				> (NIP-07) to every site.
+				The strongest surface: your key stays walled off from the page, and it can sign for you on
+				any Nostr site.
 			</p>
 		</div>
 	</div>
