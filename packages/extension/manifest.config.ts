@@ -12,7 +12,7 @@ import { defineManifest } from "@crxjs/vite-plugin";
 export default defineManifest({
   manifest_version: 3,
   name: "keys.justworks",
-  version: "0.0.1",
+  version: "0.0.2",
   description: "Non-custodial Nostr key locker — NIP-07 signer.",
   action: {
     default_title: "keys.justworks",
