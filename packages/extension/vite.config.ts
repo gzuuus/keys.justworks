@@ -11,6 +11,11 @@ export default defineConfig({
   plugins: [svelte(), crx({ manifest })],
   build: {
     target: "chrome111",
-    sourcemap: true,
+    // ponytail: sourcemaps off — crxjs 2.7.1 mis-emits content-script bundles
+    // with sourcemaps on: the //# sourceMappingURL line strands the IIFE's
+    // invocation (})()) on the same line, commenting it out -> SyntaxError ->
+    // the script never runs (no window.nostr). Re-enable (try "hidden") once
+    // crxjs fixes it.
+    sourcemap: false,
   },
 });
