@@ -63,4 +63,5 @@
       },
     },
   };
+  console.log("[kj] window.nostr installed");
 })();
