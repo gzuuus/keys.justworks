@@ -15,7 +15,7 @@ let API_BASE = "/api";
 
 /**
  * Override the API base for cross-origin integrators, e.g.
- * `setApiBase("https://keys.justworks.com/api")`. Same-origin (`/api`) when
+ * `setApiBase("https://keys.justworks.cash/api")`. Same-origin (`/api`) when
  * unset. Integrators MUST also use `@kj/core` for `identifierHash`/
  * `passwordSecret`/`encryptSecret`/`decryptSecret` — the byte-identical crypto
  * contract is what lets a user register in one app and decrypt in another.
@@ -32,6 +32,29 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Fetch wrapper that aborts after `REQUEST_TIMEOUT_MS`, so an unreachable or
+ * misconfigured API base fails fast with a clear `unreachable` error instead of
+ * hanging the caller (a cross-origin surface like the extension can otherwise
+ * wait tens of seconds on DNS/TCP timeout before the OS gives up).
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+async function request(url: string, init: RequestInit): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } catch (e) {
+    throw new ApiError(
+      "unreachable",
+      `Could not reach the server. Check the API base. (${e instanceof Error ? e.message : "network error"})`,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Register a new account. Throws `ApiError("conflict")` if it already exists.
  * `passwordSecret` is the client-derived `scrypt(password)` — never the raw
  * password (see `passwordSecret` in index.ts). */
@@ -40,7 +63,7 @@ export async function register(args: {
   passwordSecret: string;
   ncryptsec: string;
 }): Promise<void> {
-  const res = await fetch(`${API_BASE}/register`, {
+  const res = await request(`${API_BASE}/register`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -68,7 +91,7 @@ export async function updateBlob(args: {
   newNcryptsec: string;
   newPasswordSecret?: string; // present on a password change
 }): Promise<void> {
-  const res = await fetch(`${API_BASE}/blob`, {
+  const res = await request(`${API_BASE}/blob`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -93,7 +116,7 @@ export async function deleteAccount(args: {
   identifierHash: string;
   passwordSecret: string;
 }): Promise<void> {
-  const res = await fetch(`${API_BASE}/account`, {
+  const res = await request(`${API_BASE}/account`, {
     method: "DELETE",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -116,7 +139,7 @@ export async function login(args: {
   identifierHash: string;
   passwordSecret: string;
 }): Promise<string> {
-  const res = await fetch(`${API_BASE}/login`, {
+  const res = await request(`${API_BASE}/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
