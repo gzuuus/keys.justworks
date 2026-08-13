@@ -17,5 +17,13 @@ export default defineConfig({
     // the script never runs (no window.nostr). Re-enable (try "hidden") once
     // crxjs fixes it.
     sourcemap: false,
+    rollupOptions: {
+      // crxjs compiles HTML in manifest fields (popup/options) but only COPIES
+      // web_accessible_resources verbatim. The approval prompt is opened at
+      // runtime via chrome.runtime.getURL, so declare it as a rollup input to
+      // make Vite compile it (rewrite ./main.ts to a built chunk) — otherwise
+      // main.ts 404s and the prompt renders blank.
+      input: { prompt: "src/prompt/index.html" },
+    },
   },
 });
