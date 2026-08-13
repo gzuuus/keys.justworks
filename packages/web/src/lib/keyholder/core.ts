@@ -38,6 +38,13 @@ export interface KeyholderOps {
 		req: { ncryptsec: string; identifier: string; password: string };
 		res: { npub: string };
 	};
+	/** Re-wrap the held key under a new passphrase (password change). Requires an
+	 * unlocked key; returns the new ncryptsec. The held secret itself is
+	 * unchanged (same key, new wrapper). CPU-bound (NIP-49 scrypt) → Worker. */
+	reencrypt: {
+		req: { identifier: string; newPassword: string };
+		res: { ncryptsec: string };
+	};
 	/** One-shot: decode an existing nsec, wrap it as an ncryptsec, and derive the
 	 * auth secret + npub — all in-Worker so the raw established key never lingers
 	 * in page JS. Does not hold. Mirrors `create` minus key generation. */
@@ -131,6 +138,12 @@ export class KeyholderCore {
 				this.#secret?.fill(0); // wipe any previously-held key
 				this.#secret = secret;
 				return { npub: nip19.npubEncode(getPublicKey(secret)) };
+			}
+			case 'reencrypt': {
+				// Password change: re-wrap the held key under a new passphrase. The
+				// held 32-byte secret is identical (same key) — only its wrapper changes.
+				const { identifier, newPassword } = req.payload;
+				return { ncryptsec: encryptSecret(this.#require(), identifier, newPassword) };
 			}
 			case 'import': {
 				const { nsec, identifier, password } = req.payload;

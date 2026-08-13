@@ -24,6 +24,10 @@ class KeyholderStore {
 
 	/** The held key's npub, or null when no key is held. */
 	npub = $state<string | null>(null);
+	/** The identifier the key was unlocked with (a locator, not a secret). Kept so
+	 * the dashboard's Advanced ops (change password / erase) can re-derive
+	 * `identifierHash` without re-asking. Cleared on lock. */
+	identifier = $state<string | null>(null);
 	/** False only while a key is held in the Worker. */
 	locked = $state(true);
 	/** True after the Worker auto-locked on idle (cleared by unlock/manual lock). */
@@ -36,6 +40,7 @@ class KeyholderStore {
 			this.#holder.onAutoLock = () => {
 				this.locked = true;
 				this.npub = null;
+				this.identifier = null;
 				this.autoLocked = true;
 			};
 		}
@@ -53,12 +58,17 @@ class KeyholderStore {
 	passwordSecret(identifier: string, password: string) {
 		return this.holder.passwordSecret(identifier, password);
 	}
+	/** Re-wrap the held key under a new passphrase (password change). */
+	reencrypt(identifier: string, newPassword: string) {
+		return this.holder.reencrypt(identifier, newPassword);
+	}
 
 	/** Lifecycle — holds the key, updates reactive state. */
 
 	async unlock(ncryptsec: string, identifier: string, password: string) {
 		const res = await this.holder.unlock(ncryptsec, identifier, password);
 		this.npub = res.npub;
+		this.identifier = identifier;
 		this.locked = false;
 		this.autoLocked = false;
 		return res;
@@ -68,6 +78,7 @@ class KeyholderStore {
 		this.holder.lock();
 		this.locked = true;
 		this.npub = null;
+		this.identifier = null;
 		this.autoLocked = false; // manual lock isn't an idle auto-lock
 	}
 

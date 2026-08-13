@@ -105,6 +105,26 @@ describe('KeyholderCore lifecycle', () => {
 		expect(await err(core, msg('getPublicKey'))).toMatch(/locked/);
 	});
 
+	it('reencrypt re-wraps the held key under a new passphrase (password change)', async () => {
+		const core = new KeyholderCore();
+		await ok(core, msg('unlock', { ncryptsec: NCRYPTSEC, identifier: ID, password: PW }));
+		const NEW_PW = 'new password 123';
+		const res = (await ok(core, msg('reencrypt', { identifier: ID, newPassword: NEW_PW }))) as {
+			ncryptsec: string;
+		};
+		// New blob decrypts under the NEW password to the same key.
+		expect(getPublicKey(decryptSecret(res.ncryptsec, ID, NEW_PW))).toBe(PUBKEY);
+		// The held key is unchanged — still signs as the same identity.
+		expect(await ok(core, msg('getPublicKey'))).toBe(PUBKEY);
+	});
+
+	it('reencrypt refuses while locked', async () => {
+		const core = new KeyholderCore();
+		expect(await err(core, msg('reencrypt', { identifier: ID, newPassword: 'x' }))).toMatch(
+			/locked/
+		);
+	});
+
 	it('IDLE_LOCK_MS is the generous ~30 min idle window', () => {
 		expect(IDLE_LOCK_MS).toBe(30 * 60 * 1000);
 	});

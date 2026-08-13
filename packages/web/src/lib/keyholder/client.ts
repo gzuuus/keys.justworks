@@ -85,6 +85,10 @@ export class Keyholder {
 	import(nsec: string, identifier: string, password: string) {
 		return this.#send('import', { nsec, identifier, password });
 	}
+	/** Re-wrap the held key under a new passphrase (password change). */
+	reencrypt(identifier: string, newPassword: string) {
+		return this.#send('reencrypt', { identifier, newPassword });
+	}
 	lock() {
 		return this.#send('lock', undefined);
 	}
