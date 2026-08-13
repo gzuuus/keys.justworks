@@ -3,20 +3,23 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/gzuuus/keys.justworks/main/scripts/setup.sh | sudo bash
 #
-# Downloads the release binary for this architecture, verifies its sha256,
-# installs it under /usr/local/bin, writes a hardened systemd unit, and
-# enables + (re)starts the service. Re-running upgrades in place (data in
-# /var/lib/keys-justworks-server is preserved).
+# Downloads the release binary for this arch (sha256-verified), installs it,
+# creates a dedicated system user, writes a hardened systemd unit, enables +
+# (re)starts the service, and installs the backup script on an hourly cron.
+# Re-running upgrades in place (db + backups are preserved).
 #
-#   VERSION=v0.1.1 ... | sudo bash   # pin a release (default: latest)
+#   VERSION=v0.1.1 ... | sudo bash    # pin a release (default: latest)
 #
-# Does NOT configure TLS / reverse proxy — see the final message. Must be root.
+# Must be root. Does NOT do TLS — see the final message.
 set -euo pipefail
 
 OWNER_REPO="gzuuus/keys.justworks"
 BIN_NAME="keys-justworks-server"
+USER_NAME="keys-justworks"
 INSTALL_DIR="/usr/local/bin"
-STATE_DIR="/var/lib/keys-justworks-server"      # matches StateDirectory= in the unit
+LIB_DIR="/opt/keys.justworks"                  # holds the backup script
+STATE_DIR="/var/lib/keys-justworks-server"     # the sqlite db lives here
+BACKUP_DIR="/var/backups/keys-justworks"
 VERSION="${VERSION:-latest}"
 
 [ "$(id -u)" -eq 0 ] || { echo "run as root (use: ... | sudo bash)" >&2; exit 1; }
@@ -29,24 +32,31 @@ esac
 
 if [ "$VERSION" = "latest" ]; then
   base="https://github.com/$OWNER_REPO/releases/latest/download"
+  raw="https://raw.githubusercontent.com/$OWNER_REPO/main"
 else
   base="https://github.com/$OWNER_REPO/releases/download/$VERSION"
+  raw="https://raw.githubusercontent.com/$OWNER_REPO/$VERSION"
 fi
 asset="$BIN_NAME-$target.tar.gz"
 
+# --- binary: download + sha256-verify + atomic swap ---
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 echo "downloading $asset ($VERSION)..."
 curl -fsSL "$base/$asset"        -o "$tmp/$asset"
 curl -fsSL "$base/$asset.sha256" -o "$tmp/$asset.sha256"
 ( cd "$tmp" && sha256sum -c "$asset.sha256" >/dev/null && echo "checksum ok" )
-
 tar -xzf "$tmp/$asset" -C "$tmp"
-
-# atomic swap: rename over a running binary is fine (truncate isn't — ETXTBSY)
 install -m 0755 "$tmp/$BIN_NAME" "$INSTALL_DIR/.${BIN_NAME}.new"
-mv -f "$INSTALL_DIR/.${BIN_NAME}.new" "$INSTALL_DIR/$BIN_NAME"
+mv -f "$INSTALL_DIR/.${BIN_NAME}.new" "$INSTALL_DIR/$BIN_NAME"   # rename over a running binary is safe
 
-cat > /etc/systemd/system/keys-justworks-server.service <<'UNIT'
+# --- dedicated system user: a fixed uid gives a predictable /var/lib path that
+#     backups and debugging can rely on (DynamicUser hides state under /var/lib/private) ---
+getent group "$USER_NAME" >/dev/null || groupadd --system "$USER_NAME"
+getent passwd "$USER_NAME" >/dev/null || useradd --system --gid "$USER_NAME" \
+  --no-create-home --shell /usr/sbin/nologin "$USER_NAME"
+
+# --- hardened systemd unit ---
+cat > /etc/systemd/system/keys-justworks-server.service <<UNIT
 [Unit]
 Description=keys.justworks server
 After=network-online.target
@@ -54,13 +64,14 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-DynamicUser=yes
+User=$USER_NAME
+Group=$USER_NAME
 StateDirectory=keys-justworks-server
-WorkingDirectory=/var/lib/keys-justworks-server
+WorkingDirectory=$STATE_DIR
 Environment=DATABASE_URL=sqlite:keys.db
 Environment=LISTEN_ADDR=127.0.0.1:3000
 Environment=RUST_LOG=info
-ExecStart=/usr/local/bin/keys-justworks-server
+ExecStart=$INSTALL_DIR/$BIN_NAME
 Restart=on-failure
 RestartSec=2
 
@@ -89,12 +100,26 @@ systemctl daemon-reload
 systemctl enable keys-justworks-server >/dev/null
 systemctl restart keys-justworks-server
 
+# --- backups: ensure sqlite3, install the script, hourly cron ---
+if ! command -v sqlite3 >/dev/null 2>&1; then
+  echo "installing sqlite3 (backup tool)..."
+  apt-get update -qq && apt-get install -y -qq sqlite3
+fi
+mkdir -p "$LIB_DIR"
+curl -fsSL "$raw/scripts/backup.sh" -o "$LIB_DIR/backup.sh"
+chmod 0755 "$LIB_DIR/backup.sh"
+cat > /etc/cron.d/keys-justworks-backup <<CRON
+# hourly online backup of the keys.justworks sqlite store (keep 168 ~= a week)
+5 * * * * root DATABASE_URL=sqlite:$STATE_DIR/keys.db BACKUP_DIR=$BACKUP_DIR BACKUP_KEEP=168 $LIB_DIR/backup.sh >> /var/log/keys-justworks-backup.log 2>&1
+CRON
+chmod 0644 /etc/cron.d/keys-justworks-backup
+
 echo
 echo "installed $BIN_NAME ($VERSION) -> listening on 127.0.0.1:3000"
-echo "db:     $STATE_DIR/keys.db"
-echo "status: systemctl status keys-justworks-server"
-echo "logs:   journalctl -u keys-justworks-server -f"
+echo "db:       $STATE_DIR/keys.db (user: $USER_NAME)"
+echo "status:   systemctl status keys-justworks-server"
+echo "logs:     journalctl -u keys-justworks-server -f"
+echo "backups:  hourly -> $BACKUP_DIR (keep ~168); log: /var/log/keys-justworks-backup.log"
 echo
 echo "next — terminate TLS with a reverse proxy. Caddy:"
 echo "    keys.example.com { reverse_proxy 127.0.0.1:3000 }"
-echo "backups — cron scripts/backup.sh with DATABASE_URL=sqlite:$STATE_DIR/keys.db"
