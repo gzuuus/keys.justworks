@@ -308,7 +308,7 @@
 		</h2>
 		<p class="mx-auto mt-3 max-w-xl text-paper-strong/70">
 			Generate a fresh key or import an existing one. Either way, the server only ever sees the
-			encrypted blob.
+			encrypted key.
 		</p>
 		<div class="mt-8 flex flex-wrap justify-center gap-3">
 			{#if keyholder.locked}

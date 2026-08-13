@@ -28,7 +28,7 @@
 
 	function appName(id: string): string {
 		const app = bunkerApps.get(id);
-		return app ? displayName(app) : 'Bunker slot';
+		return app ? displayName(app) : 'An app';
 	}
 </script>
 
@@ -45,10 +45,8 @@
 				<DialogTitle>Approve {req.kind.replace('_', ' ')}?</DialogTitle>
 			</DialogHeader>
 			<div class="flex flex-col gap-2 text-sm">
-				<p class="text-muted-foreground">
-					{appName(req.appId)} · client
-					<code class="font-mono">{short(req.client)}</code> · {req.summary}
-				</p>
+				<p class="text-muted-foreground">{appName(req.appId)} · {req.summary}</p>
+				<p class="font-mono text-xs text-muted-foreground">from app {short(req.client)}</p>
 				{#if req.detail}
 					<pre
 						class="max-h-64 overflow-auto rounded-md bg-muted p-2 font-mono text-xs break-all whitespace-pre-wrap">{req.detail}</pre>

@@ -161,7 +161,7 @@
 			<div class="sm:col-span-2 lg:col-span-2">
 				<Logo size={30} />
 				<p class="mt-3 max-w-sm text-sm text-muted-foreground">
-					A non-custodial Nostr key locker. The server stores only an encrypted blob — it can't
+					A non-custodial Nostr key locker. The server stores only an encrypted key — it can't
 					decrypt your key and can't link it to your identity.
 				</p>
 			</div>
