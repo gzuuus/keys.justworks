@@ -97,6 +97,8 @@
 	];
 	// One-switch experiment: set false to restore the original flat black service wells/fob inset.
 	const blackPaintGlossEnabled = true;
+	// One-switch timing control: set to 1 to restore the authored intro pace.
+	const introTimeScale = 1.25;
 	// The opening reveal and service-to-key stack run at double their authored pace.
 	const openingTimeScale = 2;
 	const openingDurationFactor = 1 / openingTimeScale;
@@ -198,13 +200,13 @@
 		if (!ready || introStarted) return;
 		introStarted = true;
 		if (!intake) return;
-		if (intake.progress() >= 0.999) copyTimeline?.play(0);
+		if (intake.progress() >= 0.999) copyTimeline?.timeScale(introTimeScale).play(0);
 		else
 			intake
 				.eventCallback('onComplete', () => {
-					copyTimeline?.play(0);
+					copyTimeline?.timeScale(introTimeScale).play(0);
 				})
-				.timeScale(1)
+				.timeScale(introTimeScale)
 				.play();
 	}
 
@@ -343,7 +345,7 @@
 
 			gsap
 				.timeline()
-				.timeScale(openingTimeScale)
+				.timeScale(openingTimeScale * introTimeScale)
 				.to(key, { opacity: 1, duration: 0.82, ease: 'power2.out' })
 				.to(
 					orbs,
@@ -628,7 +630,7 @@
 			});
 			copySequence.to(root, { opacity: 0, duration: 0.42, ease: 'power2.in' });
 			ready = true;
-			autoplayTimer = gsap.delayedCall(2.55 * openingDurationFactor, startIntro);
+			autoplayTimer = gsap.delayedCall((2.55 * openingDurationFactor) / introTimeScale, startIntro);
 		})().catch(() => {
 			if (active) finish();
 		});
