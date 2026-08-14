@@ -42,10 +42,10 @@
 			<stop offset="1" stop-color="var(--hero-groove-core)" stop-opacity="0.36" />
 		</linearGradient>
 		<linearGradient id="hero-fob-light-backing" x1="0" y1="0" x2="0.85" y2="1">
-			<stop offset="0" stop-color="#e4790b" />
-			<stop offset="0.5" stop-color="#a94300" />
-			<stop offset="0.78" stop-color="#d56200" />
-			<stop offset="1" stop-color="#762500" />
+			<stop offset="0" stop-color="#b83f00" />
+			<stop offset="0.48" stop-color="#651a00" />
+			<stop offset="0.76" stop-color="#cf5000" />
+			<stop offset="1" stop-color="#451000" />
 		</linearGradient>
 		<linearGradient id="hero-fob-dark-backing" x1="0" y1="0" x2="0.85" y2="1">
 			<stop offset="0" stop-color="#191919" />
@@ -237,26 +237,20 @@
 
 	<path
 		class="hero-key__light-underlay"
-		d="M 0 -108 C 62 -108 108 -61 108 2 C 108 54 84 87 52 104 L 42 134 Q 0 148 -42 134 L -52 104 C -84 87 -108 54 -108 2 C -108 -61 -62 -108 0 -108 Z"
+		d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
 		fill="url(#hero-fob-light-backing)"
-		stroke="#7a2900"
-		stroke-width="2"
-		stroke-linejoin="round"
-		transform="scale(1.12)"
+		transform="translate(6 7) scale(1.14)"
 	/>
-	<g class="hero-key__fob-light">
+	<g class="hero-key__fob-light" transform="scale(1.105)">
 		<RubberFob prefix="hero-fob-light" tone="orange" glossy={true} />
 	</g>
 	<path
 		class="hero-key__dark-underlay"
-		d="M 0 -108 C 62 -108 108 -61 108 2 C 108 54 84 87 52 104 L 42 134 Q 0 148 -42 134 L -52 104 C -84 87 -108 54 -108 2 C -108 -61 -62 -108 0 -108 Z"
+		d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
 		fill="url(#hero-fob-dark-backing)"
-		stroke="#000000"
-		stroke-width="2"
-		stroke-linejoin="round"
-		transform="scale(1.12)"
+		transform="translate(6 7) scale(1.14)"
 	/>
-	<g class="hero-key__fob-dark">
+	<g class="hero-key__fob-dark" transform="scale(1.105)">
 		<RubberFob prefix="hero-fob-dark" tone="black" glossy={kammergutBlackPaintGlossEnabled} />
 	</g>
 	<image
@@ -296,22 +290,24 @@
 		--hero-groove-light: #fafafa;
 		--hero-groove-shadow: #59606a;
 		--hero-groove-core: #252a31;
-		--fob-shell-0: #ef8213;
-		--fob-shell-1: #d86805;
-		--fob-shell-2: #a94300;
-		--fob-inset-0: #d96a06;
-		--fob-inset-1: #c25700;
-		--fob-inset-2: #a13d00;
-		--fob-shadow: #7a2900;
-		--fob-shadow-width: 3;
-		--fob-inset-stroke: #963600;
-		--fob-inset-width: 3;
-		--fob-outline: #7a2900;
-		--fob-outline-width: 2.4;
-		--fob-seam: #ffc479;
-		--fob-seam-opacity: 0.18;
-		--fob-gloss-opacity: 0.38;
-		--fob-edge-gloss-opacity: 0.26;
+		--fob-shell-0: #f0871a;
+		--fob-shell-1: #ce5700;
+		--fob-shell-mid: #a93400;
+		--fob-shell-2: #6f1b00;
+		--fob-inset-0: #dd6908;
+		--fob-inset-1: #b83e00;
+		--fob-inset-2: #731b00;
+		--fob-fluid-light: #ffc178;
+		--fob-fluid-shade: #3f0c00;
+		--fob-fluid-sheen: #ffb45b;
+		--fob-fluid-sheen-opacity: 0.2;
+		--fob-inset-light: #ff9d38;
+		--fob-shadow: #681900;
+		--fob-shadow-width: 0;
+		--fob-inset-stroke: #8a2600;
+		--fob-inset-width: 0;
+		--fob-outline: #681900;
+		--fob-outline-width: 0.4;
 		--hero-nostr-flat-filter: brightness(0);
 		--hero-nostr-filter: brightness(0) drop-shadow(0 1.2px 0 rgb(255 214 160 / 0.38));
 	}
@@ -352,6 +348,7 @@
 		--hero-groove-core: #421500;
 		--fob-shell-0: #181818;
 		--fob-shell-1: #0a0a0a;
+		--fob-shell-mid: #070707;
 		--fob-shell-2: #030303;
 		--fob-inset-0: #181818;
 		--fob-inset-1: #0a0a0a;
@@ -365,7 +362,7 @@
 		--fob-seam: #050505;
 		--fob-seam-opacity: 0.34;
 		--fob-gloss-opacity: 0.16;
-		--fob-edge-gloss-opacity: 0.14;
+		--fob-shell-gloss-opacity: 0.1;
 		--hero-nostr-flat-filter: brightness(0) invert(1);
 		--hero-nostr-filter: brightness(0) invert(1) drop-shadow(0 1.4px 1px rgb(0 0 0 / 0.92));
 	}

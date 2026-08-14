@@ -277,7 +277,7 @@
 				root.querySelectorAll<SVGGElement>('[data-rain-layer="breach"]')
 			);
 			const nostrRain = Array.from(root.querySelectorAll<SVGGElement>('[data-rain-layer="nostr"]'));
-			const glitchBands = Array.from(root.querySelectorAll<SVGRectElement>('[data-glitch-band]'));
+			const glitchBands = Array.from(root.querySelectorAll<SVGGElement>('[data-glitch-band]'));
 			const circuitPaths = Array.from(root.querySelectorAll<SVGPathElement>('[data-key-circuit]'));
 			const circuitNodes = Array.from(
 				root.querySelectorAll<SVGCircleElement>('[data-key-circuit-node]')
@@ -303,7 +303,7 @@
 				rainStreams.length !== rainStreamCount ||
 				breachRain.length !== rainStreamCount ||
 				nostrRain.length !== rainStreamCount ||
-				glitchBands.length !== 3 ||
+				glitchBands.length !== 5 ||
 				!network ||
 				orbs.length !== services.length ||
 				serviceLogos.length !== services.length ||
@@ -512,61 +512,72 @@
 				{ opacity: 1, duration: 0.28, ease: 'sine.out' },
 				afterOpening(4.55)
 			);
+			const glitchStart = afterOpening(4.88);
 			intakeSequence.to(
 				breachRain,
 				{
-					x: (index: number) => (index % 2 === 0 ? 9 : -7),
-					opacity: 0.38,
-					duration: 0.065,
-					stagger: 0.0015,
-					ease: 'none'
+					x: (index: number) => (index % 2 === 0 ? 15 : -12),
+					opacity: 0.55,
+					duration: 0.18,
+					stagger: 0.006,
+					ease: 'steps(3)'
 				},
-				afterOpening(4.88)
+				glitchStart
 			);
 			intakeSequence.fromTo(
 				glitchBands,
-				{ x: -viewport.width, opacity: 0 },
+				{ x: -viewport.width * 0.7, opacity: 0 },
 				{
-					x: viewport.width,
-					opacity: 0.18,
-					duration: 0.18,
-					stagger: 0.025,
-					ease: 'none'
+					x: viewport.width * 0.72,
+					opacity: 0.42,
+					duration: 0.92,
+					stagger: 0.07,
+					ease: 'power1.inOut'
 				},
-				afterOpening(4.88)
+				glitchStart
 			);
-			intakeSequence.to(dataField, { x: 8, duration: 0.055, ease: 'none' }, afterOpening(4.94));
-			intakeSequence.to(
-				breachRain,
-				{ x: 0, opacity: 0.78, duration: 0.055, stagger: 0.001, ease: 'none' },
-				afterOpening(4.96)
-			);
-			intakeSequence.to(dataField, { x: -6, duration: 0.055, ease: 'none' }, afterOpening(5.0));
+			intakeSequence.to(dataField, { x: 12, duration: 0.14, ease: 'steps(2)' }, glitchStart + 0.12);
 			intakeSequence.to(
 				breachRain,
 				{
-					x: (index: number) => (index % 3 === 0 ? -12 : 6),
+					x: (index: number) => (index % 3 === 0 ? -28 : index % 3 === 1 ? 22 : -8),
+					opacity: 0.3,
+					duration: 0.34,
+					stagger: 0.012,
+					ease: 'steps(4)'
+				},
+				glitchStart + 0.24
+			);
+			intakeSequence.to(dataField, { x: -9, duration: 0.16, ease: 'steps(2)' }, glitchStart + 0.3);
+			intakeSequence.to(
+				breachRain,
+				{
+					x: (index: number) => (index % 2 === 0 ? -36 : 30),
 					opacity: 0,
-					duration: 0.14,
-					stagger: 0.0015,
-					ease: 'steps(2)'
+					duration: 0.68,
+					stagger: 0.018,
+					ease: 'power2.in'
 				},
-				afterOpening(5.03)
+				glitchStart + 0.42
 			);
 			intakeSequence.fromTo(
 				nostrRain,
 				{
-					x: (index: number) => (index % 2 === 0 ? -10 : 8),
+					x: (index: number) => (index % 2 === 0 ? -24 : 20),
 					opacity: 0
 				},
-				{ x: 0, opacity: 1, duration: 0.34, stagger: 0.004, ease: 'steps(3)' },
-				afterOpening(5.06)
+				{ x: 0, opacity: 1, duration: 0.82, stagger: 0.02, ease: 'power2.out' },
+				glitchStart + 0.48
 			);
-			intakeSequence.to(dataField, { x: 0, duration: 0.1, ease: 'power1.out' }, afterOpening(5.08));
+			intakeSequence.to(
+				dataField,
+				{ x: 0, duration: 0.34, ease: 'power2.out' },
+				glitchStart + 0.74
+			);
 			intakeSequence.to(
 				glitchBands,
-				{ opacity: 0, duration: 0.12, ease: 'none' },
-				afterOpening(5.1)
+				{ opacity: 0, duration: 0.38, stagger: 0.035, ease: 'sine.out' },
+				glitchStart + 0.98
 			);
 
 			const copySequence = gsap.timeline({ paused: true, onComplete: finish });
@@ -688,6 +699,9 @@
 				<filter id="quiet-glow" x="-80%" y="-80%" width="260%" height="260%">
 					<feGaussianBlur stdDeviation="4" result="blur" />
 					<feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+				</filter>
+				<filter id="matrix-glitch-soft" x="-8%" y="-90%" width="116%" height="280%">
+					<feGaussianBlur stdDeviation={viewport.compact ? '2.4 1.8' : '4.2 2.6'} />
 				</filter>
 				<filter id="metal-texture" x="-15%" y="-15%" width="130%" height="130%">
 					<feTurbulence
@@ -865,15 +879,37 @@
 						{/each}
 					</g>
 				{/each}
-				{#each [0.31, 0.53, 0.74] as bandY}
-					<rect
+				{#each [0.18, 0.34, 0.51, 0.68, 0.84] as bandY, bandIndex}
+					<g
 						data-glitch-band
-						x={-viewport.width * 0.72}
-						y={viewport.height * bandY}
-						width={viewport.width * 0.68}
-						height={viewport.compact ? 2 : 3}
-						fill="#f7931a"
-					/>
+						transform={`translate(0 ${viewport.height * bandY})`}
+						filter="url(#matrix-glitch-soft)"
+					>
+						<rect
+							x={-viewport.width * 0.36}
+							y={viewport.compact ? -5 : -8}
+							width={viewport.width * (0.42 + (bandIndex % 2) * 0.08)}
+							height={viewport.compact ? 10 : 16}
+							fill="#f7931a"
+							opacity="0.08"
+						/>
+						<rect
+							x={-viewport.width * 0.4}
+							y="-1"
+							width={viewport.width * 0.58}
+							height={viewport.compact ? 1 : 1.5}
+							fill="#f7931a"
+							opacity="0.8"
+						/>
+						<rect
+							x={viewport.width * (0.02 + bandIndex * 0.014)}
+							y={viewport.compact ? -3 : -5}
+							width={viewport.width * 0.07}
+							height={viewport.compact ? 6 : 10}
+							fill="#ffd0a0"
+							opacity="0.13"
+						/>
+					</g>
 				{/each}
 			</g>
 
@@ -1071,7 +1107,7 @@
 						<g data-guard>
 							<g data-guard-shell transform="scale(1.045)">
 								<path
-									d="M 0 -108 C 62 -108 108 -61 108 2 C 108 54 84 87 52 104 L 42 134 Q 0 148 -42 134 L -52 104 C -84 87 -108 54 -108 2 C -108 -61 -62 -108 0 -108 Z"
+									d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
 									fill="#030303"
 									transform="scale(1.072)"
 									clip-path="url(#intro-fob-fill-clip)"

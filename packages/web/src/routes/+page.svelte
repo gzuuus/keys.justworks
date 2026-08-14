@@ -112,7 +112,7 @@
 	</div>
 
 	<div
-		class="relative order-1 flex flex-col justify-center overflow-hidden bg-[#FAFAFA] px-6 py-16 text-[#0A0A0A] sm:px-10 lg:order-2 lg:px-[clamp(3rem,7vw,8rem)] dark:bg-[#0A0A0A] dark:text-[#FAFAFA]"
+		class="relative order-1 flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden bg-[#FAFAFA] px-6 py-16 text-[#0A0A0A] sm:px-10 lg:order-2 lg:min-h-0 lg:px-[clamp(3rem,7vw,8rem)] dark:bg-[#0A0A0A] dark:text-[#FAFAFA]"
 	>
 		<div
 			data-home-key
