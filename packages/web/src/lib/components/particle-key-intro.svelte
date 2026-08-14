@@ -103,6 +103,8 @@
 	const openingTimeScale = 2;
 	const openingDurationFactor = 1 / openingTimeScale;
 	const compressedOpeningOffset = 3.04 * (1 - openingDurationFactor);
+	// Authored-time hold that becomes one real second after the global 1.25x time scale.
+	const centralStackHold = introTimeScale;
 	const introSessionKey = 'keys.justworks:intro-seen';
 
 	let root = $state<HTMLDivElement>();
@@ -494,90 +496,27 @@
 			intakeSequence.to(
 				fobFillReveal,
 				{ scale: 1, duration: 1.08, ease: 'power3.inOut' },
-				afterOpening(3.72)
+				afterOpening(3.72) + centralStackHold
 			);
 			intakeSequence.to(
 				fobShadow,
 				{ opacity: 1, duration: 0.58, ease: 'sine.out' },
-				afterOpening(3.86)
+				afterOpening(3.86) + centralStackHold
 			);
-			intakeSequence.to(orbs, { opacity: 0, duration: 0.46, ease: 'sine.in' }, afterOpening(4.18));
+			intakeSequence.to(
+				orbs,
+				{ opacity: 0, duration: 0.46, ease: 'sine.in' },
+				afterOpening(4.18) + centralStackHold
+			);
 			intakeSequence.to(
 				nostr,
 				{ opacity: 1, scale: 1, duration: 0.68, ease: 'power3.out' },
-				afterOpening(4.24)
+				afterOpening(4.24) + centralStackHold
 			);
 			intakeSequence.to(
 				fobOutline,
 				{ opacity: 1, duration: 0.28, ease: 'sine.out' },
-				afterOpening(4.55)
-			);
-			const glitchStart = afterOpening(4.88);
-			intakeSequence.to(
-				breachRain,
-				{
-					x: (index: number) => (index % 2 === 0 ? 15 : -12),
-					opacity: 0.55,
-					duration: 0.18,
-					stagger: 0.006,
-					ease: 'steps(3)'
-				},
-				glitchStart
-			);
-			intakeSequence.fromTo(
-				glitchBands,
-				{ x: -viewport.width * 0.7, opacity: 0 },
-				{
-					x: viewport.width * 0.72,
-					opacity: 0.42,
-					duration: 0.92,
-					stagger: 0.07,
-					ease: 'power1.inOut'
-				},
-				glitchStart
-			);
-			intakeSequence.to(dataField, { x: 12, duration: 0.14, ease: 'steps(2)' }, glitchStart + 0.12);
-			intakeSequence.to(
-				breachRain,
-				{
-					x: (index: number) => (index % 3 === 0 ? -28 : index % 3 === 1 ? 22 : -8),
-					opacity: 0.3,
-					duration: 0.34,
-					stagger: 0.012,
-					ease: 'steps(4)'
-				},
-				glitchStart + 0.24
-			);
-			intakeSequence.to(dataField, { x: -9, duration: 0.16, ease: 'steps(2)' }, glitchStart + 0.3);
-			intakeSequence.to(
-				breachRain,
-				{
-					x: (index: number) => (index % 2 === 0 ? -36 : 30),
-					opacity: 0,
-					duration: 0.68,
-					stagger: 0.018,
-					ease: 'power2.in'
-				},
-				glitchStart + 0.42
-			);
-			intakeSequence.fromTo(
-				nostrRain,
-				{
-					x: (index: number) => (index % 2 === 0 ? -24 : 20),
-					opacity: 0
-				},
-				{ x: 0, opacity: 1, duration: 0.82, stagger: 0.02, ease: 'power2.out' },
-				glitchStart + 0.48
-			);
-			intakeSequence.to(
-				dataField,
-				{ x: 0, duration: 0.34, ease: 'power2.out' },
-				glitchStart + 0.74
-			);
-			intakeSequence.to(
-				glitchBands,
-				{ opacity: 0, duration: 0.38, stagger: 0.035, ease: 'sine.out' },
-				glitchStart + 0.98
+				afterOpening(4.55) + centralStackHold
 			);
 
 			const copySequence = gsap.timeline({ paused: true, onComplete: finish });
@@ -588,14 +527,76 @@
 				{
 					y: viewport.height * 0.88,
 					opacity: 0,
-					duration: 0.92,
+					duration: 1.48,
 					ease: 'power3.in'
 				}
 			);
 			copySequence.to(
 				dataField,
-				{ y: -viewport.height * 0.045, duration: 0.92, ease: 'power2.inOut' },
+				{ y: -viewport.height * 0.045, duration: 1.48, ease: 'power2.inOut' },
 				0
+			);
+			copySequence.to(
+				breachRain,
+				{
+					x: (index: number) => (index % 2 === 0 ? 15 : -12),
+					opacity: 0.55,
+					duration: 0.18,
+					stagger: 0.006,
+					ease: 'steps(3)'
+				},
+				0
+			);
+			copySequence.fromTo(
+				glitchBands,
+				{ x: -viewport.width * 0.7, opacity: 0 },
+				{
+					x: viewport.width * 0.72,
+					opacity: 0.42,
+					duration: 0.92,
+					stagger: 0.07,
+					ease: 'power1.inOut'
+				},
+				0
+			);
+			copySequence.to(dataField, { x: 12, duration: 0.14, ease: 'steps(2)' }, 0.12);
+			copySequence.to(
+				breachRain,
+				{
+					x: (index: number) => (index % 3 === 0 ? -28 : index % 3 === 1 ? 22 : -8),
+					opacity: 0.3,
+					duration: 0.34,
+					stagger: 0.012,
+					ease: 'steps(4)'
+				},
+				0.24
+			);
+			copySequence.to(dataField, { x: -9, duration: 0.16, ease: 'steps(2)' }, 0.3);
+			copySequence.to(
+				breachRain,
+				{
+					x: (index: number) => (index % 2 === 0 ? -36 : 30),
+					opacity: 0,
+					duration: 0.68,
+					stagger: 0.018,
+					ease: 'power2.in'
+				},
+				0.42
+			);
+			copySequence.fromTo(
+				nostrRain,
+				{
+					x: (index: number) => (index % 2 === 0 ? -24 : 20),
+					opacity: 0
+				},
+				{ x: 0, opacity: 1, duration: 0.82, stagger: 0.02, ease: 'power2.out' },
+				0.48
+			);
+			copySequence.to(dataField, { x: 0, duration: 0.34, ease: 'power2.out' }, 0.74);
+			copySequence.to(
+				glitchBands,
+				{ opacity: 0, duration: 0.38, stagger: 0.035, ease: 'sine.out' },
+				0.98
 			);
 			copySequence.set(network, { opacity: 0 });
 			wordLines.forEach((line, index) => {
