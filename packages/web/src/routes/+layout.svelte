@@ -17,6 +17,7 @@
 	import { bunker } from '$lib/bunker/bunkers.svelte';
 	import { bunkerApps } from '$lib/bunker/apps.svelte';
 	import ApprovalDialog from '$lib/components/approval-dialog.svelte';
+	import ProfileChip from '$lib/components/profile-chip.svelte';
 
 	let { children } = $props();
 
@@ -32,8 +33,6 @@
 		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
 	}
 
-	// Short npub for the header chip (first 16 chars of the bech32).
-	const npubShort = $derived(keyholder.npub ? `${keyholder.npub.slice(0, 16)}…` : '');
 
 	// Drive the bunker runtime from the keyholder lifecycle: start (reconnect
 	// persisted slots) on unlock, stop everything on lock. Transition-guarded —
@@ -100,13 +99,13 @@
 					<a
 						href="/app"
 						class={cn(
-							'border-line inline-flex items-center gap-1.5 rounded-lg border bg-paper-strong/70 px-2.5 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground',
+							'border-line inline-flex items-center gap-2 rounded-lg border bg-paper-strong/70 px-2 py-1 text-muted-foreground transition-colors hover:text-foreground',
 							active('/app') && 'border-ink/30 text-foreground'
 						)}
 						title={keyholder.npub ?? ''}
 					>
-						<span class="size-1.5 rounded-full bg-mint"></span>
-						{npubShort}
+						<span class="size-1.5 shrink-0 rounded-full bg-mint"></span>
+						<ProfileChip npub={keyholder.npub!} />
 					</a>
 					<Button href="/app" variant={active('/app') ? 'secondary' : 'ghost'} size="sm"
 						>Dashboard</Button
