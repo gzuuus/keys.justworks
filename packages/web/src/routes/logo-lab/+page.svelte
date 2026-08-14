@@ -1,6 +1,9 @@
 <svelte:head>
 	<title>keys.justworks — Nostr key identity study</title>
-	<meta name="description" content="Ten professional Nostr and key identity concepts." />
+	<meta
+		name="description"
+		content="Ten refined Expanded N key logo iterations for keys.justworks."
+	/>
 </svelte:head>
 
 <iframe
