@@ -41,18 +41,6 @@
 			<stop offset="0.7" stop-color="var(--hero-groove-shadow)" stop-opacity="0.88" />
 			<stop offset="1" stop-color="var(--hero-groove-core)" stop-opacity="0.36" />
 		</linearGradient>
-		<linearGradient id="hero-fob-light-backing" x1="0" y1="0" x2="0.85" y2="1">
-			<stop offset="0" stop-color="#b83f00" />
-			<stop offset="0.48" stop-color="#651a00" />
-			<stop offset="0.76" stop-color="#cf5000" />
-			<stop offset="1" stop-color="#451000" />
-		</linearGradient>
-		<linearGradient id="hero-fob-dark-backing" x1="0" y1="0" x2="0.85" y2="1">
-			<stop offset="0" stop-color="#191919" />
-			<stop offset="0.48" stop-color="#030303" />
-			<stop offset="0.76" stop-color="#101010" />
-			<stop offset="1" stop-color="#000000" />
-		</linearGradient>
 		<filter id="hero-key-invert" color-interpolation-filters="sRGB">
 			<feComponentTransfer>
 				<feFuncR type="table" tableValues="1 0" />
@@ -235,21 +223,14 @@
 		</g>
 	</g>
 
-	<g class="hero-key__light-underlay">
-		<path
-			d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 20 145 3 145 L 1 158 C -13 164 -32 165 -49 158 L -51 137 C -51 128 -52 112 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
-			fill="url(#hero-fob-light-backing)"
-			transform="translate(5.8 8) scale(1.105)"
-		/>
-	</g>
 	<g class="hero-key__fob-light" transform="scale(1.105)">
-		<RubberFob prefix="hero-fob-light" tone="orange" glossy={true} socket={true} />
-	</g>
-	<g class="hero-key__dark-underlay">
-		<path
-			d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 20 145 3 145 L 1 158 C -13 164 -32 165 -49 158 L -51 137 C -51 128 -52 112 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
-			fill="url(#hero-fob-dark-backing)"
-			transform="translate(5.8 8) scale(1.105)"
+		<RubberFob
+			prefix="hero-fob-light"
+			tone="orange"
+			glossy={true}
+			socket={true}
+			depthX={3.2}
+			depthY={4.5}
 		/>
 	</g>
 	<g class="hero-key__fob-dark" transform="scale(1.105)">
@@ -258,6 +239,8 @@
 			tone="black"
 			glossy={kammergutBlackPaintGlossEnabled}
 			socket={true}
+			depthX={3.2}
+			depthY={4.5}
 		/>
 	</g>
 	<image
@@ -324,12 +307,6 @@
 	.hero-key__fob-dark {
 		display: none;
 	}
-	.hero-key__light-underlay {
-		display: block;
-	}
-	.hero-key__dark-underlay {
-		display: none;
-	}
 	.hero-key__nostr-shadow {
 		filter: brightness(0);
 	}
@@ -376,13 +353,7 @@
 	:global(.dark) .hero-key__fob-light {
 		display: none;
 	}
-	:global(.dark) .hero-key__light-underlay {
-		display: none;
-	}
 	:global(.dark) .hero-key__fob-dark {
-		display: block;
-	}
-	:global(.dark) .hero-key__dark-underlay {
 		display: block;
 	}
 	:global(.dark) .hero-key__nostr-shadow {
