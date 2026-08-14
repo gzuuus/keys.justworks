@@ -43,7 +43,7 @@
 		{/if}
 		<AvatarFallback
 			style="background-color: {hexColor(hex ?? npub)}"
-			class={size === 'xs' ? 'text-[0.65rem]' : 'text-xs'} font-semibold text-white
+			class="font-semibold text-white {size === 'xs' ? 'text-[0.65rem]' : 'text-xs'}"
 		>
 			{name.slice(0, 1).toUpperCase()}
 		</AvatarFallback>
