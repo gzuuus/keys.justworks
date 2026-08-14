@@ -2,7 +2,7 @@
 	<title>keys.justworks — Nostr key identity study</title>
 	<meta
 		name="description"
-		content="Ten refined Expanded N key logo iterations for keys.justworks."
+		content="Ten refined Double-sided N key logo iterations for keys.justworks."
 	/>
 </svelte:head>
 
