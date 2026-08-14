@@ -280,20 +280,22 @@
 				Open dashboard <ArrowRight class="size-4" />
 			</span>
 		</a>
-		<div class="border-line flex flex-col rounded-2xl border border-dashed bg-paper-strong/50 p-6">
-			<span
-				class="inline-flex size-11 items-center justify-center rounded-xl bg-accent text-muted-foreground"
-			>
+		<a
+			href="/download"
+			class="border-line flex flex-col rounded-2xl border bg-paper-strong p-6 transition-transform hover:-translate-y-1"
+		>
+			<span class="inline-flex size-11 items-center justify-center rounded-xl bg-mint/20 text-mint-deep">
 				<Puzzle class="size-5" />
 			</span>
-			<h3 class="mt-5 text-lg font-bold">
-				Browser extension <Badge variant="secondary" class="ml-1 align-middle">soon</Badge>
-			</h3>
+			<h3 class="mt-5 text-lg font-bold">Browser extension</h3>
 			<p class="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
 				The strongest surface: your key stays walled off from the page, and it can sign for you on
 				any Nostr site.
 			</p>
-		</div>
+			<span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-mint-deep">
+				Get the .crx <ArrowRight class="size-4" />
+			</span>
+		</a>
 	</div>
 </section>
 

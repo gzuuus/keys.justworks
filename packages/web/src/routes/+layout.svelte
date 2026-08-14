@@ -77,6 +77,13 @@
 						active('/docs') ? 'text-foreground' : 'text-muted-foreground'
 					)}>Docs</a
 				>
+				<a
+					href="/download"
+					class={cn(
+						'rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-accent hover:text-foreground',
+						active('/download') ? 'text-foreground' : 'text-muted-foreground'
+					)}>Extension</a
+				>
 				{#if keyholder.locked}
 					<a
 						href="/#how"
@@ -146,6 +153,9 @@
 						>How it works</a
 					>
 					<a href="/docs" class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent">Docs</a>
+					<a href="/download" class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent"
+						>Extension</a
+					>
 					<a href="/get-started" class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent"
 						>Get started</a
 					>
@@ -195,6 +205,9 @@
 						<a class="text-muted-foreground hover:text-foreground" href="/docs"
 							>API &amp; integration</a
 						>
+					</li>
+					<li>
+						<a class="text-muted-foreground hover:text-foreground" href="/download">Extension</a>
 					</li>
 				</ul>
 			</div>
