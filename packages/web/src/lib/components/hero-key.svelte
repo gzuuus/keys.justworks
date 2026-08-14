@@ -235,21 +235,27 @@
 		</g>
 	</g>
 
-	<path
-		class="hero-key__light-underlay"
-		d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
-		fill="url(#hero-fob-light-backing)"
-		transform="translate(6 7) scale(1.14)"
-	/>
+	<g class="hero-key__light-underlay">
+		{#each [8, 6, 4, 2] as depth}
+			<path
+				d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
+				fill="url(#hero-fob-light-backing)"
+				transform={`translate(${depth * 0.72} ${depth}) scale(1.105)`}
+			/>
+		{/each}
+	</g>
 	<g class="hero-key__fob-light" transform="scale(1.105)">
 		<RubberFob prefix="hero-fob-light" tone="orange" glossy={true} />
 	</g>
-	<path
-		class="hero-key__dark-underlay"
-		d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
-		fill="url(#hero-fob-dark-backing)"
-		transform="translate(6 7) scale(1.14)"
-	/>
+	<g class="hero-key__dark-underlay">
+		{#each [8, 6, 4, 2] as depth}
+			<path
+				d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
+				fill="url(#hero-fob-dark-backing)"
+				transform={`translate(${depth * 0.72} ${depth}) scale(1.105)`}
+			/>
+		{/each}
+	</g>
 	<g class="hero-key__fob-dark" transform="scale(1.105)">
 		<RubberFob prefix="hero-fob-dark" tone="black" glossy={kammergutBlackPaintGlossEnabled} />
 	</g>

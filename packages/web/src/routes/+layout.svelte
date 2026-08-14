@@ -70,7 +70,7 @@
 <div class="flex min-h-dvh flex-col">
 	<!-- Header -->
 	<header
-		class="sticky top-0 z-40 border-b border-border bg-[#FAFAFA] [--control-height:var(--nav-control-height)] dark:bg-[#0A0A0A]"
+		class="sticky top-0 z-40 border-b-0 border-border bg-[#FAFAFA] [--control-height:var(--nav-control-height)] md:border-b dark:bg-[#0A0A0A]"
 	>
 		<div
 			class="mx-auto flex h-16 w-full max-w-none items-center justify-between gap-4 px-6 sm:px-10 lg:px-[clamp(2.5rem,5vw,5.5rem)]"

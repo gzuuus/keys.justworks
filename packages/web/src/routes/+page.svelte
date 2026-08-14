@@ -116,9 +116,13 @@
 	>
 		<div
 			data-home-key
-			class="pointer-events-none absolute right-[-1rem] bottom-[-7rem] h-[min(58vh,28rem)] rotate-[10deg] opacity-78 sm:right-0 sm:bottom-[-8rem] sm:h-[min(62vh,32rem)] sm:opacity-85 lg:right-[-2.5rem] lg:bottom-[-7rem] lg:h-[min(72vh,44rem)] lg:opacity-100 2xl:right-[1rem]"
+			class="pointer-events-none absolute right-[-5rem] bottom-[-8rem] h-[min(68vh,34rem)] rotate-[7deg] sm:right-0 sm:h-[min(62vh,32rem)] sm:rotate-[10deg] lg:right-[-2.5rem] lg:bottom-[-7rem] lg:h-[min(72vh,44rem)] 2xl:right-[1rem]"
 		>
-			<HeroKey class="h-full w-auto" />
+			<div
+				class="h-full opacity-30 sm:opacity-85 lg:opacity-100 dark:opacity-40 sm:dark:opacity-85 lg:dark:opacity-100"
+			>
+				<HeroKey class="h-full w-auto" />
+			</div>
 		</div>
 		<div class="relative z-10 max-w-3xl">
 			<h1
