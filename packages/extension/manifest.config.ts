@@ -14,6 +14,12 @@ export default defineManifest({
   name: "keys.justworks",
   version: "0.0.2",
   description: "Non-custodial Nostr key locker — NIP-07 signer.",
+  // Self-hosted auto-update: Chrome polls this GUpdate manifest and pulls the
+  // new .crx from the same origin when the version bumps. Release CI packs it
+  // (crx3 -x); deployments serve it via scripts/sync-extension.sh — see
+  // docs/extension-release.md. The Web Store overrides update_url, so this is
+  // harmless if we ever publish there.
+  update_url: "https://keys.justworks.cash/extension/update.xml",
   icons: { 16: "icons/icon-16.png", 32: "icons/icon-32.png", 48: "icons/icon-48.png", 128: "icons/icon-128.png" },
   action: {
     default_title: "keys.justworks",

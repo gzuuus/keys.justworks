@@ -89,8 +89,32 @@ This is exactly the command CI runs (same `crx3` version, same flags).
 
 ## Auto-update
 
-Not implemented. A sideloaded `.crx` with no `update_url` does **not** auto-update
-— users re-download each release. Wiring auto-update needs: an `update_url`
-pointing at a hosted **update XML** (crx3 emits one via its `-x` flag), hosted
-e.g. at `keys.justworks.cash`, plus a version-check endpoint. Add it when the
-manual-sideload flow starts to hurt.
+Implemented. The manifest carries `update_url` → `https://keys.justworks.cash/extension/update.xml`;
+release CI packs the GUpdate manifest (`update.xml`, with the `appid` derived from the
+signing key) alongside the `.crx`; a deployment serves both under `/extension/*` and Chrome
+polls for updates (~every 5h), pulling the new `.crx` when the version bumps.
+
+Deploy-side, once per extension release:
+
+1. Sync the artifacts into the dir the server reads (`KJ_EXTENSION_DIR`):
+
+   ```sh
+   ./scripts/sync-extension.sh /srv/keys/extension              # newest ext-v* release
+   ./scripts/sync-extension.sh /srv/keys/extension ext-v0.0.3   # or pin a tag
+   ```
+
+   The `.sha256` is verified before the live files are replaced, so a truncated
+download can't break auto-update.
+
+2. Set `KJ_EXTENSION_DIR=/srv/keys/extension` on the server. Unset → `/extension/*`
+   returns 404 and the download page degrades gracefully (no download links).
+
+Self-hosters serving their *own* `/extension` still can't redirect the official build's
+updates at themselves: `update_url` is baked into the signed `.crx`. That's fine — a
+self-hosted *extension* build means a different signing key (different appid) anyway.
+
+**Caveats.** Unpacked ("load unpacked") installs never auto-update — steer users to the
+`.crx`. And Chrome is progressively hostile to off-Store extensions; if drag-dropped
+installs get flagged, the supported org-wide route is enterprise policy
+(`ExtensionInstallForcelist` with `<appid>;<update_url>`), which installs *and* updates
+silently. The appid is in `update.xml`.

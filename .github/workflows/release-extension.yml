@@ -3,11 +3,17 @@ name: release-extension
 # Triggered by `make ext-patch|ext-minor|ext-major` (scripts/release-extension.sh),
 # which bumps the extension version, commits, tags ext-vX.Y.Z, and pushes the tag.
 #
-# Builds packages/extension and packs a signed .crx3, then attaches it (with a
-# sha256) to a GitHub Release. The signing key comes from the CRX_PRIVATE_KEY
-# repo secret (base64-encoded PEM) — a STABLE key, so the extension ID never
-# changes between releases (without it, every release is a different extension
-# and in-place updates break). See docs/extension-release.md.
+# Builds packages/extension and packs a signed .crx3 plus the GUpdate manifest
+# (update.xml) that drives self-hosted auto-update: the manifest's update_url
+# points at <site>/extension/update.xml, Chrome polls it (~5h), and pulls the
+# .crx from <site>/extension/keys-justworks.crx when the version bumps.
+# Deployments sync these artifacts with scripts/sync-extension.sh — see
+# docs/extension-release.md.
+#
+# The signing key comes from the CRX_PRIVATE_KEY repo secret (base64-encoded
+# PEM) — a STABLE key, so the extension ID (and the appid in update.xml) never
+# change between releases; without it every release is a different extension
+# and in-place updates break.
 #
 # Extension releases are decoupled from server releases: the server uses v*
 # tags (release.yml), the extension uses ext-v* tags. They never collide.
@@ -17,13 +23,18 @@ on:
       - "ext-v*"
 
 permissions:
-  contents: write # publish the GitHub Release + the .crx asset
+  contents: write # publish the GitHub Release + assets
+
+env:
+  CRX_URL: https://keys.justworks.cash/extension/keys-justworks.crx
 
 jobs:
   crx:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: scope the changelog to the previous ext-v* tag
       - uses: pnpm/action-setup@v4
         with:
           version: 10.29.3
@@ -45,19 +56,42 @@ jobs:
           printf '%s' "$CRX_PRIVATE_KEY" | base64 -d > /tmp/crx.pem
           chmod 600 /tmp/crx.pem
 
-      - name: pack .crx + sha256
+      - name: pack .crx + update.xml + sha256
         run: |
+          ver="${GITHUB_REF_NAME#ext-v}"
           mkdir -p dist
-          npx -y crx3@2 -o dist/keys-justworks.crx -p /tmp/crx.pem packages/extension/dist
+          npx -y crx3@2 \
+            -o dist/keys-justworks.crx \
+            -p /tmp/crx.pem \
+            -x dist/update.xml \
+            --appVersion "$ver" \
+            --crxURL "$CRX_URL" \
+            packages/extension/dist
           ( cd dist && sha256sum keys-justworks.crx > keys-justworks.crx.sha256 )
 
       - name: shred the key
         if: always()
         run: rm -f /tmp/crx.pem
 
+      # generate_release_notes is prefix-blind: it diffs against the newest
+      # release overall (a server v* tag), producing nonsense like
+      # "Full Changelog: v0.1.4...ext-v0.0.2". Scope to the previous ext-v* tag.
+      - name: release notes
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          prev=$(git describe --tags --abbrev=0 --match 'ext-v*' "$tag^" 2>/dev/null || true)
+          {
+            echo "Install: download \`keys-justworks.crx\` → \`chrome://extensions\` → Developer mode → drag it in. Auto-updates from the server once installed."
+            if [ -n "$prev" ]; then
+              echo
+              echo "Full Changelog: ${prev}...${tag}"
+            fi
+          } > dist/notes.md
+
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: dist/notes.md
           files: |
             dist/keys-justworks.crx
             dist/keys-justworks.crx.sha256
+            dist/update.xml
