@@ -97,6 +97,10 @@
 	];
 	// One-switch experiment: set false to restore the original flat black service wells/fob inset.
 	const blackPaintGlossEnabled = true;
+	// The opening reveal and service-to-key stack run at double their authored pace.
+	const openingTimeScale = 2;
+	const openingDurationFactor = 1 / openingTimeScale;
+	const compressedOpeningOffset = 3.04 * (1 - openingDurationFactor);
 	const introSessionKey = 'keys.justworks:intro-seen';
 
 	let root = $state<HTMLDivElement>();
@@ -161,6 +165,10 @@
 		const targetX = centre.x + offsetX;
 		const targetY = centre.y + offsetY;
 		return `${curvePath(item, index)} C ${port.x + (targetX - port.x) * 0.34} ${port.y + (targetY - port.y) * 0.08}, ${port.x + (targetX - port.x) * 0.76} ${port.y + (targetY - port.y) * 0.88}, ${targetX} ${targetY}`;
+	}
+
+	function afterOpening(authoredTime: number) {
+		return authoredTime - compressedOpeningOffset;
 	}
 
 	function rainStreamX(index: number) {
@@ -249,7 +257,7 @@
 			const flash = root.querySelector<SVGCircleElement>('[data-flash]');
 			const guardShell = root.querySelector<SVGGElement>('[data-guard-shell]');
 			const fobOutline = root.querySelector<SVGPathElement>('[data-fob-outline]');
-			const fobFillReveal = root.querySelector<SVGPathElement>('[data-fob-fill-reveal]');
+			const fobFillReveal = root.querySelector<SVGGraphicsElement>('[data-fob-fill-reveal]');
 			const fobShadow = root.querySelector<SVGPathElement>('[data-fob-shadow]');
 			const depthLayers = Array.from(root.querySelectorAll<SVGRectElement>('[data-key-depth]'));
 			const network = root.querySelector<SVGGElement>('[data-network]');
@@ -317,11 +325,9 @@
 			gsap.set(basePaths, { opacity: 0 });
 			gsap.set(nostr, { opacity: 0, scale: 0.76, transformOrigin: '50% 50%' });
 			gsap.set(guardShell, { opacity: 1 });
-			gsap.set(fobOutline, { drawSVG: '0% 0%', opacity: 1 });
+			gsap.set(fobOutline, { drawSVG: '0% 100%', opacity: 0 });
 			gsap.set(fobFillReveal, {
-				x: -18,
-				y: 300,
-				rotation: -3,
+				scale: 0,
 				transformOrigin: '50% 50%'
 			});
 			gsap.set(fobShadow, { opacity: 0 });
@@ -337,6 +343,7 @@
 
 			gsap
 				.timeline()
+				.timeScale(openingTimeScale)
 				.to(key, { opacity: 1, duration: 0.82, ease: 'power2.out' })
 				.to(
 					orbs,
@@ -400,7 +407,13 @@
 			intakeSequence
 				.to(
 					orderedServiceLogos,
-					{ opacity: 0, scale: 0.58, rotation: -12, duration: 0.24, stagger: 0.075 },
+					{
+						opacity: 0,
+						scale: 0.58,
+						rotation: -12,
+						duration: 0.24 * openingDurationFactor,
+						stagger: 0.075 * openingDurationFactor
+					},
 					0
 				)
 				.to(
@@ -409,28 +422,41 @@
 						opacity: 1,
 						scale: 1,
 						rotation: 0,
-						duration: 0.3,
-						stagger: 0.075,
+						duration: 0.3 * openingDurationFactor,
+						stagger: 0.075 * openingDurationFactor,
 						ease: 'back.out(1.6)'
 					},
-					0.04
+					0.04 * openingDurationFactor
 				);
 			serviceSequence.forEach((index, sequenceIndex) => {
 				const orb = orbs[index];
-				const at = 0.42 + sequenceIndex * 0.16;
+				const at = (0.42 + sequenceIndex * 0.16) * openingDurationFactor;
 				intakeSequence
 					.to(
 						orb.querySelector('[data-orb-ring]'),
-						{ rotation: 210, duration: 1.18, ease: 'sine.inOut', svgOrigin: '0 0' },
+						{
+							rotation: 210,
+							duration: 1.18 * openingDurationFactor,
+							ease: 'sine.inOut',
+							svgOrigin: '0 0'
+						},
 						at
 					)
-					.to(flowPaths[index], { drawSVG: '100% 100%', duration: 1.28, ease: 'sine.inOut' }, at)
-					.to(basePaths[index], { opacity: 0, duration: 0.94, ease: 'sine.in' }, at + 0.22)
+					.to(
+						flowPaths[index],
+						{ drawSVG: '100% 100%', duration: 1.28 * openingDurationFactor, ease: 'sine.inOut' },
+						at
+					)
+					.to(
+						basePaths[index],
+						{ opacity: 0, duration: 0.94 * openingDurationFactor, ease: 'sine.in' },
+						at + 0.22 * openingDurationFactor
+					)
 					.to(
 						orb,
 						{
 							scale: viewport.compact ? 0.68 : 0.74,
-							duration: 1.62,
+							duration: 1.62 * openingDurationFactor,
 							ease: 'power2.inOut',
 							motionPath: {
 								path: intakePaths[index],
@@ -438,36 +464,52 @@
 								alignOrigin: [0.5, 0.5]
 							}
 						},
-						at + 0.06
+						at + 0.06 * openingDurationFactor
 					)
-					.to(pulses[index], { opacity: 0, duration: 0.4, ease: 'sine.in' }, at + 0.82)
-					.to(circuitPaths[index], { opacity: 0.68, duration: 0.38, ease: 'power2.out' }, at + 0.74)
+					.to(
+						pulses[index],
+						{ opacity: 0, duration: 0.4 * openingDurationFactor, ease: 'sine.in' },
+						at + 0.82 * openingDurationFactor
+					)
+					.to(
+						circuitPaths[index],
+						{ opacity: 0.68, duration: 0.38 * openingDurationFactor, ease: 'power2.out' },
+						at + 0.74 * openingDurationFactor
+					)
 					.to(
 						circuitNodes[index],
 						{
 							opacity: 0.86,
 							scale: 1.42,
-							duration: 0.2,
+							duration: 0.2 * openingDurationFactor,
 							repeat: 1,
 							yoyo: true,
 							ease: 'sine.inOut'
 						},
-						at + 1.12
+						at + 1.12 * openingDurationFactor
 					);
 			});
 			intakeSequence.to(
-				fobOutline,
-				{ drawSVG: '0% 100%', duration: 0.94, ease: 'power2.inOut' },
-				3.04
+				fobFillReveal,
+				{ scale: 1, duration: 1.08, ease: 'power3.inOut' },
+				afterOpening(3.72)
 			);
 			intakeSequence.to(
-				fobFillReveal,
-				{ x: 0, y: 0, rotation: 0, duration: 1.08, ease: 'power2.inOut' },
-				3.72
+				fobShadow,
+				{ opacity: 1, duration: 0.58, ease: 'sine.out' },
+				afterOpening(3.86)
 			);
-			intakeSequence.to(fobShadow, { opacity: 1, duration: 0.58, ease: 'sine.out' }, 3.86);
-			intakeSequence.to(orbs, { opacity: 0, duration: 0.46, ease: 'sine.in' }, 4.18);
-			intakeSequence.to(nostr, { opacity: 1, scale: 1, duration: 0.68, ease: 'power3.out' }, 4.24);
+			intakeSequence.to(orbs, { opacity: 0, duration: 0.46, ease: 'sine.in' }, afterOpening(4.18));
+			intakeSequence.to(
+				nostr,
+				{ opacity: 1, scale: 1, duration: 0.68, ease: 'power3.out' },
+				afterOpening(4.24)
+			);
+			intakeSequence.to(
+				fobOutline,
+				{ opacity: 1, duration: 0.28, ease: 'sine.out' },
+				afterOpening(4.55)
+			);
 			intakeSequence.to(
 				breachRain,
 				{
@@ -477,7 +519,7 @@
 					stagger: 0.0015,
 					ease: 'none'
 				},
-				4.88
+				afterOpening(4.88)
 			);
 			intakeSequence.fromTo(
 				glitchBands,
@@ -489,15 +531,15 @@
 					stagger: 0.025,
 					ease: 'none'
 				},
-				4.88
+				afterOpening(4.88)
 			);
-			intakeSequence.to(dataField, { x: 8, duration: 0.055, ease: 'none' }, 4.94);
+			intakeSequence.to(dataField, { x: 8, duration: 0.055, ease: 'none' }, afterOpening(4.94));
 			intakeSequence.to(
 				breachRain,
 				{ x: 0, opacity: 0.78, duration: 0.055, stagger: 0.001, ease: 'none' },
-				4.96
+				afterOpening(4.96)
 			);
-			intakeSequence.to(dataField, { x: -6, duration: 0.055, ease: 'none' }, 5.0);
+			intakeSequence.to(dataField, { x: -6, duration: 0.055, ease: 'none' }, afterOpening(5.0));
 			intakeSequence.to(
 				breachRain,
 				{
@@ -507,7 +549,7 @@
 					stagger: 0.0015,
 					ease: 'steps(2)'
 				},
-				5.03
+				afterOpening(5.03)
 			);
 			intakeSequence.fromTo(
 				nostrRain,
@@ -516,10 +558,14 @@
 					opacity: 0
 				},
 				{ x: 0, opacity: 1, duration: 0.34, stagger: 0.004, ease: 'steps(3)' },
-				5.06
+				afterOpening(5.06)
 			);
-			intakeSequence.to(dataField, { x: 0, duration: 0.1, ease: 'power1.out' }, 5.08);
-			intakeSequence.to(glitchBands, { opacity: 0, duration: 0.12, ease: 'none' }, 5.1);
+			intakeSequence.to(dataField, { x: 0, duration: 0.1, ease: 'power1.out' }, afterOpening(5.08));
+			intakeSequence.to(
+				glitchBands,
+				{ opacity: 0, duration: 0.12, ease: 'none' },
+				afterOpening(5.1)
+			);
 
 			const copySequence = gsap.timeline({ paused: true, onComplete: finish });
 			copyTimeline = copySequence;
@@ -582,7 +628,7 @@
 			});
 			copySequence.to(root, { opacity: 0, duration: 0.42, ease: 'power2.in' });
 			ready = true;
-			autoplayTimer = gsap.delayedCall(2.55, startIntro);
+			autoplayTimer = gsap.delayedCall(2.55 * openingDurationFactor, startIntro);
 		})().catch(() => {
 			if (active) finish();
 		});
@@ -625,6 +671,12 @@
 					<stop offset="0.52" stop-color="#FAFAFA" stop-opacity="0.5" />
 					<stop offset="0.61" stop-color="#FAFAFA" stop-opacity="0" />
 					<stop offset="1" stop-color="#FAFAFA" stop-opacity="0" />
+				</linearGradient>
+				<linearGradient id="keyway-recess" x1="0" y1="0" x2="1" y2="0">
+					<stop offset="0" stop-color="#ffbd65" stop-opacity="0.64" />
+					<stop offset="0.16" stop-color="#421500" stop-opacity="0.58" />
+					<stop offset="0.7" stop-color="#713000" stop-opacity="0.88" />
+					<stop offset="1" stop-color="#421500" stop-opacity="0.36" />
 				</linearGradient>
 				<linearGradient id="current" x1="0" y1="0" x2="1" y2="0">
 					<stop offset="0" stop-color="#FAFAFA" stop-opacity="0.16" />
@@ -874,47 +926,42 @@
 										fill="url(#metal-sheen)"
 										opacity="0.24"
 									/>
-									<g fill="none" stroke="#FAFAFA" stroke-linecap="round" stroke-opacity="0.13">
-										<path d="M -47 128 C -44 210 -47 303 -42 398" stroke-width="0.7" />
-										<path d="M -29 121 C -27 218 -31 314 -27 407" stroke-width="0.42" />
-										<path d="M -8 123 C -5 203 -9 307 -4 406" stroke-width="0.55" />
-									</g>
-									<g data-keyway-grooves fill="none" stroke-linecap="round" stroke-linejoin="round">
+									<g data-keyway-grooves stroke-linecap="round" stroke-linejoin="round">
 										<path
-											d="M -42 137 C -40 212 -36 316 -30 402"
+											d="M -49 137 Q -49 130 -42 130 H -40 Q -33 130 -33 137 V 395 Q -33 401 -39 403 L -42 404 Q -49 404 -49 396 Z"
+											fill="url(#keyway-recess)"
+										/>
+										<path
+											d="M -47 137 V 395"
+											fill="none"
+											stroke="#ffbd65"
+											stroke-opacity="0.5"
+											stroke-width="1.35"
+										/>
+										<path
+											d="M -34.5 137 V 395"
+											fill="none"
 											stroke="#713000"
+											stroke-opacity="0.64"
+											stroke-width="1.5"
+										/>
+										<path
+											d="M -19 144 Q -19 137 -12 137 H -10 Q -4 137 -4 144 V 382 Q -4 388 -10 390 L -12 391 Q -19 391 -19 383 Z"
+											fill="url(#keyway-recess)"
+										/>
+										<path
+											d="M -17 144 V 382"
+											fill="none"
+											stroke="#ffbd65"
 											stroke-opacity="0.46"
-											stroke-width="7.2"
+											stroke-width="1.15"
 										/>
 										<path
-											d="M -42 137 C -40 212 -36 316 -30 402"
-											stroke="#421500"
-											stroke-opacity="0.3"
-											stroke-width="2.1"
-										/>
-										<path
-											d="M -45 137 C -43 212 -39 316 -33 402"
-											stroke="#ffbd65"
-											stroke-opacity="0.38"
-											stroke-width="1"
-										/>
-										<path
-											d="M -11 138 C -8 221 -4 308 2 389"
+											d="M -5.5 144 V 382"
+											fill="none"
 											stroke="#713000"
-											stroke-opacity="0.38"
-											stroke-width="5.2"
-										/>
-										<path
-											d="M -11 138 C -8 221 -4 308 2 389"
-											stroke="#421500"
-											stroke-opacity="0.25"
-											stroke-width="1.45"
-										/>
-										<path
-											d="M -13.2 138 C -10.2 221 -6.2 308 -0.2 389"
-											stroke="#ffbd65"
-											stroke-opacity="0.3"
-											stroke-width="0.75"
+											stroke-opacity="0.58"
+											stroke-width="1.3"
 										/>
 									</g>
 								</g>
@@ -1024,9 +1071,6 @@
 								<path
 									d="M 0 -108 C 62 -108 108 -61 108 2 C 108 54 84 87 52 104 L 42 134 Q 0 148 -42 134 L -52 104 C -84 87 -108 54 -108 2 C -108 -61 -62 -108 0 -108 Z"
 									fill="#030303"
-									stroke="#000000"
-									stroke-width="2"
-									stroke-linejoin="round"
 									transform="scale(1.072)"
 									clip-path="url(#intro-fob-fill-clip)"
 								/>

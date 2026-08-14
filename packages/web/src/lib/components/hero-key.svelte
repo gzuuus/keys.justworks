@@ -35,6 +35,12 @@
 			<stop offset="0.61" stop-color="#FAFAFA" stop-opacity="0" />
 			<stop offset="1" stop-color="#FAFAFA" stop-opacity="0" />
 		</linearGradient>
+		<linearGradient id="hero-keyway-recess" x1="0" y1="0" x2="1" y2="0">
+			<stop offset="0" stop-color="var(--hero-groove-light)" stop-opacity="0.64" />
+			<stop offset="0.16" stop-color="var(--hero-groove-core)" stop-opacity="0.58" />
+			<stop offset="0.7" stop-color="var(--hero-groove-shadow)" stop-opacity="0.88" />
+			<stop offset="1" stop-color="var(--hero-groove-core)" stop-opacity="0.36" />
+		</linearGradient>
 		<linearGradient id="hero-fob-light-backing" x1="0" y1="0" x2="0.85" y2="1">
 			<stop offset="0" stop-color="#e4790b" />
 			<stop offset="0.5" stop-color="#a94300" />
@@ -188,47 +194,42 @@
 				filter="url(#hero-key-metal-texture)"
 			/>
 			<rect x="-148" y="-120" width="240" height="540" fill="url(#hero-key-sheen)" opacity="0.24" />
-			<g fill="none" stroke="#FAFAFA" stroke-linecap="round" stroke-opacity="0.13">
-				<path d="M -47 128 C -44 210 -47 303 -42 398" stroke-width="0.7" />
-				<path d="M -29 121 C -27 218 -31 314 -27 407" stroke-width="0.42" />
-				<path d="M -8 123 C -5 203 -9 307 -4 406" stroke-width="0.55" />
-			</g>
-			<g data-keyway-grooves fill="none" stroke-linecap="round" stroke-linejoin="round">
+			<g data-keyway-grooves stroke-linecap="round" stroke-linejoin="round">
 				<path
-					d="M -42 137 C -40 212 -36 316 -30 402"
+					d="M -49 137 Q -49 130 -42 130 H -40 Q -33 130 -33 137 V 395 Q -33 401 -39 403 L -42 404 Q -49 404 -49 396 Z"
+					fill="url(#hero-keyway-recess)"
+				/>
+				<path
+					d="M -47 137 V 395"
+					fill="none"
+					stroke="var(--hero-groove-light)"
+					stroke-opacity="0.5"
+					stroke-width="1.35"
+				/>
+				<path
+					d="M -34.5 137 V 395"
+					fill="none"
 					stroke="var(--hero-groove-shadow)"
+					stroke-opacity="0.64"
+					stroke-width="1.5"
+				/>
+				<path
+					d="M -19 144 Q -19 137 -12 137 H -10 Q -4 137 -4 144 V 382 Q -4 388 -10 390 L -12 391 Q -19 391 -19 383 Z"
+					fill="url(#hero-keyway-recess)"
+				/>
+				<path
+					d="M -17 144 V 382"
+					fill="none"
+					stroke="var(--hero-groove-light)"
 					stroke-opacity="0.46"
-					stroke-width="7.2"
+					stroke-width="1.15"
 				/>
 				<path
-					d="M -42 137 C -40 212 -36 316 -30 402"
-					stroke="var(--hero-groove-core)"
-					stroke-opacity="0.3"
-					stroke-width="2.1"
-				/>
-				<path
-					d="M -45 137 C -43 212 -39 316 -33 402"
-					stroke="var(--hero-groove-light)"
-					stroke-opacity="0.38"
-					stroke-width="1"
-				/>
-				<path
-					d="M -11 138 C -8 221 -4 308 2 389"
+					d="M -5.5 144 V 382"
+					fill="none"
 					stroke="var(--hero-groove-shadow)"
-					stroke-opacity="0.38"
-					stroke-width="5.2"
-				/>
-				<path
-					d="M -11 138 C -8 221 -4 308 2 389"
-					stroke="var(--hero-groove-core)"
-					stroke-opacity="0.25"
-					stroke-width="1.45"
-				/>
-				<path
-					d="M -13.2 138 C -10.2 221 -6.2 308 -0.2 389"
-					stroke="var(--hero-groove-light)"
-					stroke-opacity="0.3"
-					stroke-width="0.75"
+					stroke-opacity="0.58"
+					stroke-width="1.3"
 				/>
 			</g>
 		</g>

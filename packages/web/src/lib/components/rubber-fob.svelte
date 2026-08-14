@@ -38,10 +38,7 @@
 		<stop offset="1" stop-color="#FAFAFA" stop-opacity="0" />
 	</radialGradient>
 	<clipPath id={fillClipId} clipPathUnits="userSpaceOnUse">
-		<path
-			data-fob-fill-reveal
-			d="M -150 -140 C -112 -174 -58 -116 0 -146 C 58 -176 112 -118 150 -146 V 180 H -150 Z"
-		/>
+		<circle data-fob-fill-reveal cx="0" cy="0" r="166" />
 	</clipPath>
 	<filter id={textureId} x="-15%" y="-15%" width="130%" height="130%">
 		<feTurbulence
@@ -189,16 +186,16 @@
 	</filter>
 </defs>
 
-<path
-	data-fob-shadow
-	d={fobPath}
-	fill="var(--fob-shadow, #020202)"
-	stroke="var(--fob-shadow, #020202)"
-	stroke-width="var(--fob-shadow-width, 10)"
-	stroke-linejoin="round"
-	transform="translate(1 1.5)"
-/>
 <g clip-path={`url(#${fillClipId})`}>
+	<path
+		data-fob-shadow
+		d={fobPath}
+		fill="var(--fob-shadow, #020202)"
+		stroke="var(--fob-shadow, #020202)"
+		stroke-width="var(--fob-shadow-width, 10)"
+		stroke-linejoin="round"
+		transform="translate(1 1.5)"
+	/>
 	<path
 		data-fob-fill
 		d={fobPath}
@@ -232,13 +229,13 @@
 		stroke-opacity="var(--fob-seam-opacity, 0.34)"
 		stroke-width="2"
 	/>
+	<path
+		data-fob-outline
+		d={fobPath}
+		fill="none"
+		stroke="var(--fob-outline, #050505)"
+		stroke-width="var(--fob-outline-width, 3)"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	/>
 </g>
-<path
-	data-fob-outline
-	d={fobPath}
-	fill="none"
-	stroke="var(--fob-outline, #050505)"
-	stroke-width="var(--fob-outline-width, 3)"
-	stroke-linecap="round"
-	stroke-linejoin="round"
-/>
