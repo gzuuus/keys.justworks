@@ -22,6 +22,8 @@
 	let { children } = $props();
 
 	let menuOpen = $state(false);
+	const mobileMenuItemClass =
+		'border-b border-foreground/20 py-4 font-display text-2xl font-semibold [@media(max-height:700px)]:py-2.5 [@media(max-height:700px)]:text-xl';
 
 	// Close the mobile menu whenever the route changes.
 	$effect(() => {
@@ -154,47 +156,29 @@
 
 	{#if menuOpen}
 		<div
-			class="fixed top-16 right-0 bottom-0 left-0 z-30 flex flex-col bg-paper px-6 py-6 text-foreground md:hidden"
+			class="fixed top-16 right-0 bottom-0 left-0 z-30 flex flex-col bg-paper px-6 py-6 text-foreground md:hidden [@media(max-height:700px)]:py-3"
 		>
 			<nav
 				class="my-auto flex flex-col border-t border-foreground/20"
 				aria-label="Mobile navigation"
 			>
-				<a class="border-b border-foreground/20 py-5 font-display text-3xl font-semibold" href="/"
-					>Home</a
-				>
+				<a class={mobileMenuItemClass} href="/">Home</a>
+				<a class={mobileMenuItemClass} href="/docs">Docs</a>
+				<a class={mobileMenuItemClass} href="/download">Extension</a>
+				<a class={mobileMenuItemClass} href="/get-started">Get started</a>
+				<a class={mobileMenuItemClass} href="/login">Account</a>
 				<a
-					class="border-b border-foreground/20 py-5 font-display text-3xl font-semibold"
-					href="/docs">Docs</a
-				>
-				<a
-					class="border-b border-foreground/20 py-5 font-display text-3xl font-semibold"
-					href="/download">Extension</a
-				>
-				<a
-					class="border-b border-foreground/20 py-5 font-display text-3xl font-semibold"
-					href="/get-started">Get started</a
-				>
-				<a
-					class="border-b border-foreground/20 py-5 font-display text-3xl font-semibold"
-					href="/login">Account</a
-				>
-				<a
-					class="border-b border-foreground/20 py-5 font-display text-3xl font-semibold"
+					class={mobileMenuItemClass}
 					href="https://github.com/gzuuus/keys.justworks"
 					target="_blank"
 					rel="noopener noreferrer">Source on GitHub</a
 				>
 				{#if !keyholder.locked}
-					<a
-						class="border-b border-foreground/20 py-5 font-display text-3xl font-semibold"
-						href="/app">Dashboard</a
-					>
+					<a class={mobileMenuItemClass} href="/app">Dashboard</a>
 					<button
 						type="button"
 						onclick={() => keyholder.lock()}
-						class="border-b border-foreground/20 py-5 text-left font-display text-3xl font-semibold text-destructive"
-						>Lock key</button
+						class={cn(mobileMenuItemClass, 'text-left text-destructive')}>Lock key</button
 					>
 				{/if}
 			</nav>
