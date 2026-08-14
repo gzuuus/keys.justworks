@@ -13,8 +13,10 @@ backups are the *only* availability guarantee.
 ## Quick start (systemd, recommended)
 
 One line — installs the latest release (sha256-verified), a dedicated system
-user, a hardened systemd service on `127.0.0.1:3000`, hourly SQLite backups,
-and the browser-extension artifacts for auto-update:
+user, a hardened systemd service on `127.0.0.1:3000`, and hourly SQLite
+backups. The browser-extension artifacts (`/extension/*`) are **not** hosted
+by default — that only makes sense for the official provider (see
+[Extension artifacts](#extension-artifacts-optional) below):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/gzuuus/keys.justworks/main/scripts/setup.sh | sudo bash
@@ -70,13 +72,24 @@ All environment variables, all optional:
 | `LISTEN_ADDR`      | `0.0.0.0:3000` (systemd install pins `127.0.0.1:3000`) | bind address |
 | `DATABASE_URL`     | `sqlite:keys.db`       | relative to the working dir (`/data` in Docker)  |
 | `RUST_LOG`         | `info`                 | `tracing` filter (`debug`, `keys_justworks_server=trace`, …) |
-| `KJ_EXTENSION_DIR` | unset                  | dir with `update.xml` + `keys-justworks.crx`, served at `/extension/*` |
+| `KJ_EXTENSION_DIR` | unset                  | dir with `update.xml` + `keys-justworks.crx`, served at `/extension/*` (opt-in) |
+
+## Extension artifacts (optional)
 
 `KJ_EXTENSION_DIR` unset → `/extension/*` returns 404 and the site's download
-page hides the live version chip. Harmless. The setup one-liner maintains this
-dir for you; with Docker or a manual install, sync it yourself:
+page hides the live version chip. Harmless — for most self-hosters there is
+simply no reason to serve them: users download the official `.crx` from
+[keys.justworks.cash](https://keys.justworks.cash/download), and its
+auto-update origin is baked into the signed build anyway. Host them only if
+you are the official provider (or deliberately mirror it):
 
 ```sh
+# systemd: pass the flag on every setup.sh run (upgrades keep it unless you
+# pass HOST_EXTENSION=0 to stop hosting)
+curl -fsSL https://raw.githubusercontent.com/gzuuus/keys.justworks/main/scripts/setup.sh \
+  | sudo env HOST_EXTENSION=1 bash
+
+# Docker / manual: sync into a dir yourself and point KJ_EXTENSION_DIR at it
 curl -fsSL https://raw.githubusercontent.com/gzuuus/keys.justworks/main/scripts/sync-extension.sh \
   | bash -s -- /data/extension            # newest ext-v* release, sha256-verified
 ```
@@ -133,7 +146,7 @@ sensitive anyway; it is your users' only copy of their encrypted key.
 | service           | `systemctl {status,restart} keys-justworks-server` |
 | logs              | `journalctl -u keys-justworks-server -f`           |
 | backups           | `/var/backups/keys-justworks/` (hourly, ~1 week)   |
-| extension files   | `/opt/keys.justworks/extension` (→ `/extension/*`) |
+| extension files   | `/opt/keys.justworks/extension` (→ `/extension/*`; only when hosted) |
 
 ## Health check
 
