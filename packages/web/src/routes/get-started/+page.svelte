@@ -183,29 +183,31 @@
 					</p>
 				</div>
 
-				<div class="space-y-4 rounded-2xl border border-mint/40 bg-mint/5 p-6">
-					<h3 class="font-bold">Back up your key</h3>
-					<p class="text-sm text-muted-foreground">
-						There is <strong>no recovery</strong>. If you lose both your identifier and password,
-						the key is gone forever. Copy these into a password manager now.
-					</p>
+				<div class="flex flex-col gap-3">
+					<div class="space-y-4 rounded-2xl border border-mint/40 bg-mint/5 p-6">
+						<h3 class="font-bold">Back up your key</h3>
+						<p class="text-sm text-muted-foreground">
+							There is <strong>no recovery</strong>. If you lose both your identifier and password,
+							the key is gone forever. Copy these into a password manager now.
+						</p>
 
-					{#if outNsec}
+						{#if outNsec}
+							<SecretField
+								label="Private key (nsec)"
+								value={outNsec}
+								danger={true}
+								hint="Anyone with this owns your identity. Store only in a password manager or fully offline."
+							/>
+						{/if}
 						<SecretField
-							label="Private key (nsec)"
-							value={outNsec}
-							danger={true}
-							hint="Anyone with this owns your identity. Store only in a password manager or fully offline."
+							label="Encrypted backup (ncryptsec)"
+							value={outNcryptsec ?? ''}
+							hint="Encrypted — safe to store in a cloud note or on a second device. Still needs your password."
 						/>
-					{/if}
-					<SecretField
-						label="Encrypted backup (ncryptsec)"
-						value={outNcryptsec ?? ''}
-						hint="Encrypted — safe to store in a cloud note or on a second device. Still needs your password."
-					/>
-					<div>
-						<Button href="/login">Unlock and use it</Button>
 					</div>
+					<Button href="/login" size="lg" class="w-full">
+						Unlock and use it <ArrowRight class="size-4" />
+					</Button>
 				</div>
 			</div>
 		{/if}
