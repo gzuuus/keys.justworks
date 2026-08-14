@@ -5,10 +5,13 @@
 #
 # Downloads the release binary for this arch (sha256-verified), installs it,
 # creates a dedicated system user, writes a hardened systemd unit, enables +
-# (re)starts the service, and installs the backup script on an hourly cron.
-# Re-running upgrades in place (db + backups are preserved).
+# (re)starts the service, installs the backup script on an hourly cron, and
+# syncs the browser-extension artifacts (newest ext-v* release) for
+# /extension/* (auto-update + /download). Re-running upgrades in place
+# (db + backups are preserved).
 #
-#   VERSION=v0.1.1 ... | sudo bash    # pin a release (default: latest)
+#   VERSION=v0.1.1 ... | sudo bash    # pin a server release (default: newest v*)
+#   EXT_VERSION=ext-v0.0.3 ...        # pin the extension artifacts (default: newest ext-v*)
 #
 # Must be root. Does NOT do TLS — see the final message.
 set -euo pipefail
@@ -17,7 +20,7 @@ OWNER_REPO="gzuuus/keys.justworks"
 BIN_NAME="keys-justworks-server"
 USER_NAME="keys-justworks"
 INSTALL_DIR="/usr/local/bin"
-LIB_DIR="/opt/keys.justworks"                  # holds the backup script
+LIB_DIR="/opt/keys.justworks"                  # backup script + extension artifacts
 STATE_DIR="/var/lib/keys-justworks-server"     # the sqlite db lives here
 BACKUP_DIR="/var/backups/keys-justworks"
 VERSION="${VERSION:-latest}"
@@ -31,12 +34,17 @@ case "$(uname -m)" in
 esac
 
 if [ "$VERSION" = "latest" ]; then
-  base="https://github.com/$OWNER_REPO/releases/latest/download"
-  raw="https://raw.githubusercontent.com/$OWNER_REPO/main"
-else
-  base="https://github.com/$OWNER_REPO/releases/download/$VERSION"
-  raw="https://raw.githubusercontent.com/$OWNER_REPO/$VERSION"
+  # `releases/latest` resolves by DATE, not tag/semver: whenever an ext-v*
+  # release is the newest overall, it IS "latest" — and carries no server
+  # binary. Resolve the newest server tag (v*) via the API instead.
+  # (Unauthenticated API = 60 req/h; a deploy one-shot never feels that.)
+  VERSION=$(curl -fsSL "https://api.github.com/repos/$OWNER_REPO/releases?per_page=100" \
+    | grep -oE '"tag_name": *"v[0-9.]+"' | head -1 | grep -oE 'v[0-9.]+')
+  [ -n "$VERSION" ] || { echo "error: no server (v*) release found for $OWNER_REPO" >&2; exit 1; }
 fi
+base="https://github.com/$OWNER_REPO/releases/download/$VERSION"
+# scripts are pinned to the same tag as the binary — they can't drift apart.
+raw="https://raw.githubusercontent.com/$OWNER_REPO/$VERSION"
 asset="$BIN_NAME-$target.tar.gz"
 
 # --- binary: download + sha256-verify + atomic swap ---
@@ -71,6 +79,7 @@ WorkingDirectory=$STATE_DIR
 Environment=DATABASE_URL=sqlite:keys.db
 Environment=LISTEN_ADDR=127.0.0.1:3000
 Environment=RUST_LOG=info
+Environment=KJ_EXTENSION_DIR=$LIB_DIR/extension
 ExecStart=$INSTALL_DIR/$BIN_NAME
 Restart=on-failure
 RestartSec=2
@@ -114,12 +123,27 @@ cat > /etc/cron.d/keys-justworks-backup <<CRON
 CRON
 chmod 0644 /etc/cron.d/keys-justworks-backup
 
+# --- extension artifacts: newest ext-v* release -> served at /extension/ ----
+# Auto-update + the /download page read these. The extension release stream is
+# independent of the server pin, so this always takes the newest ext-v* (pin
+# with EXT_VERSION=ext-vX.Y.Z). Re-run setup.sh after any release to re-sync.
+# A failure must not abort a server upgrade (which may carry important fixes);
+# /extension/* just 404s — by design — until the next run succeeds.
+EXT_DIR="$LIB_DIR/extension"
+mkdir -p "$EXT_DIR"
+if curl -fsSL "$raw/scripts/sync-extension.sh" | bash -s -- "$EXT_DIR" "${EXT_VERSION:-}"; then
+  :
+else
+  echo "WARN: extension artifact sync failed — /extension/* will 404 until the next setup run"
+fi
+
 echo
 echo "installed $BIN_NAME ($VERSION) -> listening on 127.0.0.1:3000"
 echo "db:       $STATE_DIR/keys.db (user: $USER_NAME)"
 echo "status:   systemctl status keys-justworks-server"
 echo "logs:     journalctl -u keys-justworks-server -f"
 echo "backups:  hourly -> $BACKUP_DIR (keep ~168); log: /var/log/keys-justworks-backup.log"
+echo "extension: $EXT_DIR (served at /extension/*; auto-update + /download)"
 echo
 echo "next — terminate TLS with a reverse proxy. Caddy:"
 echo "    keys.example.com { reverse_proxy 127.0.0.1:3000 }"

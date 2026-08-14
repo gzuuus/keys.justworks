@@ -94,20 +94,16 @@ release CI packs the GUpdate manifest (`update.xml`, with the `appid` derived fr
 signing key) alongside the `.crx`; a deployment serves both under `/extension/*` and Chrome
 polls for updates (~every 5h), pulling the new `.crx` when the version bumps.
 
-Deploy-side, once per extension release:
+Deploy-side, nothing manual: `scripts/setup.sh` (the VPS one-liner) syncs the newest
+`ext-v*` release into `/opt/keys.justworks/extension` (sha256-verified before the live files
+are replaced) and sets `KJ_EXTENSION_DIR` in the systemd unit. The extension stream is pinned
+independently of the server pin — `EXT_VERSION=ext-v0.0.3` pins it, otherwise always newest.
+For an extension-only update (no server release), just re-run setup.sh — it's idempotent — or
+run `scripts/sync-extension.sh /opt/keys.justworks/extension` directly on the VPS. A failed
+sync never aborts a server upgrade; `/extension/*` just 404s (by design) until the next run.
 
-1. Sync the artifacts into the dir the server reads (`KJ_EXTENSION_DIR`):
-
-   ```sh
-   ./scripts/sync-extension.sh /srv/keys/extension              # newest ext-v* release
-   ./scripts/sync-extension.sh /srv/keys/extension ext-v0.0.3   # or pin a tag
-   ```
-
-   The `.sha256` is verified before the live files are replaced, so a truncated
-download can't break auto-update.
-
-2. Set `KJ_EXTENSION_DIR=/srv/keys/extension` on the server. Unset → `/extension/*`
-   returns 404 and the download page degrades gracefully (no download links).
+Note: the first release to carry `update.xml` is whatever comes after `ext-v0.0.2` — the
+CI change postdates it. Until then, syncs of `ext-v0.0.2` will warn and skip.
 
 Self-hosters serving their *own* `/extension` still can't redirect the official build's
 updates at themselves: `update_url` is baked into the signed `.crx`. That's fine — a
