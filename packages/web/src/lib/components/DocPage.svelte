@@ -8,10 +8,7 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import Check from '@lucide/svelte/icons/check';
 
-	let {
-		raw,
-		slug
-	}: { raw: string; slug: 'integration' | 'self-hosting' } = $props();
+	let { raw, slug }: { raw: string; slug: 'integration' | 'self-hosting' } = $props();
 
 	const html = $derived(marked.parse(raw) as string);
 	const tabs = [
@@ -34,8 +31,7 @@
 			{#each tabs as t (t.slug)}
 				<a
 					href={t.href}
-					class="rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors {slug ===
-					t.slug
+					class="rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors {slug === t.slug
 						? 'bg-secondary text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
