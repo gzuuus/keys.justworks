@@ -14,7 +14,9 @@ describe('npubToHex', () => {
 		expect(npubToHex(npub)).toBe(hex);
 	});
 	it('rejects non-npub / garbage', () => {
-		expect(npubToHex('nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq')).toBeNull();
+		expect(
+			npubToHex('nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq')
+		).toBeNull();
 		expect(npubToHex('not-a-key')).toBeNull();
 	});
 });

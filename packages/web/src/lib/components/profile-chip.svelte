@@ -27,13 +27,9 @@
 		};
 	});
 
-	const name = $derived(
-		profile?.name?.trim() || profile?.display_name?.trim() || shortNpub(npub)
-	);
+	const name = $derived(profile?.name?.trim() || profile?.display_name?.trim() || shortNpub(npub));
 	// kind 0 content is attacker-controlled JSON — only https images, no referrer.
-	const img = $derived(
-		profile?.picture?.startsWith('https://') ? profile.picture : null
-	);
+	const img = $derived(profile?.picture?.startsWith('https://') ? profile.picture : null);
 </script>
 
 <div class="flex min-w-0 items-center {size === 'xs' ? 'gap-1.5' : 'gap-2.5'}">
