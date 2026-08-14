@@ -5,6 +5,7 @@
 	import ProfileChip from '$lib/components/profile-chip.svelte';
 	import { accounts } from '$lib/keyholder/accounts.svelte';
 	import BunkerPanel from '$lib/components/bunker-panel.svelte';
+	import BunkerHelpDemo from '$lib/components/bunker-help-demo.svelte';
 	import SecretField from '$lib/components/secret-field.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -443,39 +444,8 @@
 			<Tabs.Content value="help" class="mt-6">
 				<div class="flex flex-col gap-4">
 					<Card>
-						<CardHeader>
-							<CardTitle class="flex items-center gap-2">
-								<CircleHelp class="size-5 text-mint-deep" /> Using your key with Nostr apps
-							</CardTitle>
-							<CardDescription>
-								A bunker lets another app request signatures without ever receiving your private
-								key.
-							</CardDescription>
-						</CardHeader>
 						<CardContent>
-							<ol class="grid gap-4 sm:grid-cols-3">
-								<li class="border-line rounded-xl border bg-[#f5f1ea] p-4 dark:bg-[#17130f]">
-									<span class="text-xs font-bold text-mint-deep">01</span>
-									<p class="mt-3 font-semibold">Open Apps</p>
-									<p class="mt-1 text-xs leading-relaxed text-foreground/58">
-										Choose whether you are creating a bunker link or using one supplied by an app.
-									</p>
-								</li>
-								<li class="border-line rounded-xl border bg-[#f5f1ea] p-4 dark:bg-[#17130f]">
-									<span class="text-xs font-bold text-mint-deep">02</span>
-									<p class="mt-3 font-semibold">Connect</p>
-									<p class="mt-1 text-xs leading-relaxed text-foreground/58">
-										Copy the connection link into the Nostr app's remote-signer or bunker field.
-									</p>
-								</li>
-								<li class="border-line rounded-xl border bg-[#f5f1ea] p-4 dark:bg-[#17130f]">
-									<span class="text-xs font-bold text-mint-deep">03</span>
-									<p class="mt-3 font-semibold">Approve</p>
-									<p class="mt-1 text-xs leading-relaxed text-foreground/58">
-										Keep this tab open and approve signing requests as they arrive.
-									</p>
-								</li>
-							</ol>
+							<BunkerHelpDemo />
 						</CardContent>
 					</Card>
 
