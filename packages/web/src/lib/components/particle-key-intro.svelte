@@ -1166,7 +1166,7 @@
 						</g>
 						<g data-nostr>
 							<image
-								href="/nostr-mark.svg"
+								href="/key-mark.svg"
 								x="-48"
 								y="-37"
 								width="92"
@@ -1174,7 +1174,7 @@
 								opacity="0.7"
 								style="filter: brightness(0)"
 							/>
-							<image href="/nostr-mark.svg" x="-47" y="-39" width="92" height="92" opacity="0.9" />
+							<image href="/key-mark.svg" x="-47" y="-39" width="92" height="92" opacity="0.9" />
 						</g>
 					</g>
 				</g>

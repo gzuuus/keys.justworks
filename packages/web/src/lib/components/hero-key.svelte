@@ -245,7 +245,7 @@
 	</g>
 	<image
 		class="hero-key__nostr-shadow"
-		href="/nostr-mark.svg"
+		href="/key-mark.svg"
 		x="-48"
 		y="-37"
 		width="92"
@@ -256,7 +256,7 @@
 	<image
 		class:hero-key__nostr-mark--embossed={embossedNostrEnabled}
 		class:hero-key__nostr-mark--flat={!embossedNostrEnabled}
-		href="/nostr-mark.svg"
+		href="/key-mark.svg"
 		x="-47"
 		y="-39"
 		width="92"

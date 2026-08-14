@@ -76,7 +76,7 @@
 			class="mx-auto flex h-16 w-full max-w-none items-center justify-between gap-4 px-6 sm:px-10 lg:px-[clamp(2.5rem,5vw,5.5rem)]"
 		>
 			<div class="flex items-center gap-2">
-				<Logo />
+				<Logo wordmark={false} />
 				{#if dev}
 					<button
 						type="button"
