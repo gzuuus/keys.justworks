@@ -288,6 +288,8 @@
 			}
 
 			const key = root.querySelector<SVGGElement>('[data-key]');
+			const keyWireframe = root.querySelector<SVGGElement>('[data-key-wireframe]');
+			const keyWireReveal = root.querySelector<SVGRectElement>('[data-key-wire-reveal]');
 			const keyMotion = root.querySelector<SVGGElement>('[data-key-motion]');
 			const keyOverlayMotion = root.querySelector<SVGGElement>('[data-key-overlay-motion]');
 			const nostr = root.querySelector<SVGGElement>('[data-nostr]');
@@ -299,6 +301,8 @@
 			const depthLayers = Array.from(root.querySelectorAll<SVGRectElement>('[data-key-depth]'));
 			const network = root.querySelector<SVGGElement>('[data-network]');
 			const orbs = Array.from(root.querySelectorAll<SVGGElement>('[data-orb]'));
+			const orbFidelity = Array.from(root.querySelectorAll<SVGGElement>('[data-orb-fidelity]'));
+			const orbWires = Array.from(root.querySelectorAll<SVGCircleElement>('[data-orb-wire]'));
 			const serviceLogos = Array.from(root.querySelectorAll<SVGGElement>('[data-service-logo]'));
 			const serviceNostr = Array.from(root.querySelectorAll<SVGGElement>('[data-service-nostr]'));
 			const flowPaths = Array.from(root.querySelectorAll<SVGPathElement>('[data-flow]'));
@@ -322,6 +326,8 @@
 			);
 			if (
 				!key ||
+				!keyWireframe ||
+				!keyWireReveal ||
 				!keyMotion ||
 				!keyOverlayMotion ||
 				!nostr ||
@@ -341,16 +347,22 @@
 				glitchBands.length !== 5 ||
 				!network ||
 				orbs.length !== services.length ||
+				orbFidelity.length !== services.length ||
+				orbWires.length !== services.length ||
 				serviceLogos.length !== services.length ||
 				serviceNostr.length !== services.length
 			)
 				return;
 
 			gsap.set(key, { opacity: 0 });
+			gsap.set(keyWireframe, { opacity: 0 });
+			gsap.set(keyWireReveal, { scaleY: 0, transformOrigin: '50% 50%' });
 			gsap.set(depthLayers, { transformBox: 'fill-box' });
 			gsap.set(keyMotion, { opacity: 1 });
 			gsap.set(keyOverlayMotion, { opacity: 1 });
 			gsap.set(orbs, { transformOrigin: '50% 50%', scale: 0.72, opacity: 0 });
+			gsap.set(orbFidelity, { opacity: 0 });
+			gsap.set(orbWires, { drawSVG: '0% 0%', opacity: 1 });
 			gsap.set(serviceLogos, { transformOrigin: '50% 50%', opacity: 1, scale: 1, rotation: 0 });
 			gsap.set(serviceNostr, {
 				transformOrigin: '50% 50%',
@@ -381,12 +393,22 @@
 			gsap
 				.timeline()
 				.timeScale(openingTimeScale * introTimeScale)
-				.to(key, { opacity: 1, duration: 0.82, ease: 'power2.out' })
+				.to(keyWireframe, { opacity: 1, duration: 0.12, ease: 'sine.out' }, 0)
+				.to(keyWireReveal, { scaleY: 1, duration: 0.9, ease: 'power2.inOut' }, 0)
+				.to(key, { opacity: 1, duration: 0.72, ease: 'power2.out' }, 0.62)
+				.to(keyWireframe, { opacity: 0, duration: 0.62, ease: 'sine.out' }, 0.64)
 				.to(
 					orbs,
 					{ scale: 1, opacity: 1, duration: 0.74, stagger: 0.075, ease: 'back.out(1.45)' },
-					0.22
+					0.18
 				)
+				.to(
+					orbWires,
+					{ drawSVG: '0% 100%', duration: 0.82, stagger: 0.075, ease: 'power2.inOut' },
+					0.18
+				)
+				.to(orbFidelity, { opacity: 1, duration: 0.52, stagger: 0.075 }, 0.68)
+				.to(orbWires, { opacity: 0, duration: 0.46, stagger: 0.055 }, 0.82)
 				.to(basePaths, { opacity: 0.22, duration: 0.62 }, 0.42)
 				.to(
 					flowPaths,
@@ -862,6 +884,30 @@
 						<feFuncA type="identity" />
 					</feComponentTransfer>
 				</filter>
+				<filter
+					id="key-wireframe"
+					x="-20%"
+					y="-20%"
+					width="140%"
+					height="140%"
+					color-interpolation-filters="sRGB"
+				>
+					<feColorMatrix
+						in="SourceGraphic"
+						type="matrix"
+						values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -0.333 -0.333 -0.333 0 1"
+						result="dark-shape"
+					/>
+					<feComposite in="dark-shape" in2="SourceAlpha" operator="in" result="key-shape-alpha" />
+					<feMorphology in="key-shape-alpha" operator="dilate" radius="2.2" result="wire-outer" />
+					<feMorphology in="key-shape-alpha" operator="erode" radius="1.7" result="wire-inner" />
+					<feComposite in="wire-outer" in2="wire-inner" operator="out" result="wire-outline" />
+					<feFlood flood-color="#FAFAFA" result="wire-white" />
+					<feComposite in="wire-white" in2="wire-outline" operator="in" />
+				</filter>
+				<clipPath id="key-wire-reveal">
+					<rect data-key-wire-reveal x="-130" y="-130" width="260" height="550" />
+				</clipPath>
 				<mask
 					id="key-shape"
 					x="-130"
@@ -981,6 +1027,11 @@
 				<g transform={`translate(${centre.x} ${centre.y})`}>
 					<circle data-flash r="104" fill="none" stroke="#f7931a" stroke-width="2" />
 					<g data-key-motion>
+						<g data-key-wireframe clip-path="url(#key-wire-reveal)" filter="url(#key-wireframe)">
+							<g transform="rotate(-90)">
+								<image href="/key-silhouette.png" x="-396" y="-105" width="500" height="210" />
+							</g>
+						</g>
 						<g data-key>
 							{#each keyDepthLayers as depth}
 								<rect
@@ -1108,45 +1159,54 @@
 				{#each layout as item, index (item.name)}
 					<g data-orb data-service={index} transform={`translate(${item.x} ${item.y})`}>
 						<circle
-							r={viewport.compact ? 39 : 50}
-							fill="#0A0A0A"
-							stroke="#FAFAFA"
-							stroke-width="1.2"
-							filter={blackPaintGlossEnabled ? 'url(#black-paint-gloss)' : undefined}
-						/>
-						<circle
-							data-orb-ring
+							data-orb-wire
 							r={viewport.compact ? 44 : 56}
 							fill="none"
-							stroke="#f7931a"
-							stroke-width="1.5"
-							stroke-dasharray="5 10 28 10"
-						/>
-						<circle
-							r={viewport.compact ? 33 : 43}
-							fill="none"
 							stroke="#FAFAFA"
-							stroke-opacity="0.16"
+							stroke-width="1.4"
 						/>
-						<g data-service-logo>
-							{#if item.icon === 'microsoft'}
-								<g fill="#FAFAFA" transform="translate(-21 -21)"
-									><rect width="19" height="19" /><rect x="23" width="19" height="19" /><rect
-										y="23"
-										width="19"
-										height="19"
-									/><rect x="23" y="23" width="19" height="19" /></g
-								>
-							{:else}
-								<path
-									d={item.icon.path}
-									fill="#FAFAFA"
-									transform="translate(-25 -25) scale(2.0833)"
-								/>
-							{/if}
-						</g>
-						<g data-service-nostr>
-							<image href="/nostr-mark.svg" x="-27" y="-27" width="54" height="54" />
+						<g data-orb-fidelity>
+							<circle
+								r={viewport.compact ? 39 : 50}
+								fill="#0A0A0A"
+								stroke="#FAFAFA"
+								stroke-width="1.2"
+								filter={blackPaintGlossEnabled ? 'url(#black-paint-gloss)' : undefined}
+							/>
+							<circle
+								data-orb-ring
+								r={viewport.compact ? 44 : 56}
+								fill="none"
+								stroke="#f7931a"
+								stroke-width="1.5"
+								stroke-dasharray="5 10 28 10"
+							/>
+							<circle
+								r={viewport.compact ? 33 : 43}
+								fill="none"
+								stroke="#FAFAFA"
+								stroke-opacity="0.16"
+							/>
+							<g data-service-logo>
+								{#if item.icon === 'microsoft'}
+									<g fill="#FAFAFA" transform="translate(-21 -21)"
+										><rect width="19" height="19" /><rect x="23" width="19" height="19" /><rect
+											y="23"
+											width="19"
+											height="19"
+										/><rect x="23" y="23" width="19" height="19" /></g
+									>
+								{:else}
+									<path
+										d={item.icon.path}
+										fill="#FAFAFA"
+										transform="translate(-25 -25) scale(2.0833)"
+									/>
+								{/if}
+							</g>
+							<g data-service-nostr>
+								<image href="/nostr-mark.svg" x="-27" y="-27" width="54" height="54" />
+							</g>
 						</g>
 					</g>
 				{/each}
