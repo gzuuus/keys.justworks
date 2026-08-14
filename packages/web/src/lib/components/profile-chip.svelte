@@ -5,7 +5,7 @@
 
 	/** Avatar + display name for a pubkey (npub), falling back to a colored
 	 *  initial + short npub until (or unless) a kind 0 arrives. */
-	let { npub, size = 'sm' }: { npub: string; size?: 'sm' | 'md' } = $props();
+	let { npub, size = 'sm' }: { npub: string; size?: 'xs' | 'sm' | 'md' } = $props();
 
 	const hex = $derived(npubToHex(npub));
 	let profile = $state<{
@@ -36,17 +36,17 @@
 	);
 </script>
 
-<div class="flex min-w-0 items-center gap-2.5">
-	<Avatar class={size === 'md' ? 'size-12' : 'size-8'}>
+<div class="flex min-w-0 items-center {size === 'xs' ? 'gap-1.5' : 'gap-2.5'}">
+	<Avatar class={size === 'md' ? 'size-12' : size === 'xs' ? 'size-6' : 'size-8'}>
 		{#if img}
 			<AvatarImage src={img} alt={name} loading="lazy" referrerpolicy="no-referrer" />
 		{/if}
 		<AvatarFallback
 			style="background-color: {hexColor(hex ?? npub)}"
-			class="text-xs font-semibold text-white"
+			class={size === 'xs' ? 'text-[0.65rem]' : 'text-xs'} font-semibold text-white
 		>
 			{name.slice(0, 1).toUpperCase()}
 		</AvatarFallback>
 	</Avatar>
-	<span class="truncate text-sm font-medium">{name}</span>
+	<span class="truncate {size === 'xs' ? 'text-xs' : 'text-sm'} font-medium">{name}</span>
 </div>

@@ -105,7 +105,7 @@
 						title={keyholder.npub ?? ''}
 					>
 						<span class="size-1.5 shrink-0 rounded-full bg-mint"></span>
-						<ProfileChip npub={keyholder.npub!} />
+						<ProfileChip npub={keyholder.npub!} size="xs" />
 					</a>
 					<Button href="/app" variant={active('/app') ? 'secondary' : 'ghost'} size="sm"
 						>Dashboard</Button
