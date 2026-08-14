@@ -63,6 +63,10 @@ make serve       # prod-like: build web, run server on :3000
 See [`docs/architecture.md`](docs/architecture.md) for the full workflow and
 `make help` for all targets. Cutting a release: `make patch|minor|major`.
 
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 [NIP-07]: https://nips.nostr.com/7
 [NIP-46]: https://nips.nostr.com/46
 [NIP-49]: https://nips.nostr.com/49
