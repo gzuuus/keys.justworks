@@ -3,6 +3,7 @@
 	import { identifierHash, login, ApiError } from '@kj/core';
 	import { keyholder } from '$lib/keyholder/store.svelte';
 	import { accounts } from '$lib/keyholder/accounts.svelte';
+	import ProfileChip from '$lib/components/profile-chip.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -11,7 +12,6 @@
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import LockOpen from '@lucide/svelte/icons/lock-open';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import KeyRound from '@lucide/svelte/icons/key-round';
 	import X from '@lucide/svelte/icons/x';
 
 	let identifier = $state('');
@@ -138,12 +138,8 @@
 					<div
 						class="border-line flex items-center gap-3 rounded-lg border bg-paper-strong px-3 py-2.5"
 					>
-						<span
-							class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-mint-deep"
-						>
-							<KeyRound class="size-4" />
-						</span>
-						<div class="flex min-w-0 flex-1 flex-col">
+						<div class="flex min-w-0 flex-1 flex-col gap-1">
+							<ProfileChip npub={account.npub} />
 							<span class="truncate text-sm font-medium">{account.label}</span>
 							<span class="truncate text-xs text-muted-foreground">{account.npub}</span>
 						</div>
