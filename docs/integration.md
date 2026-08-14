@@ -8,8 +8,7 @@ identifier, or a plaintext password, and it never signs.** It stores exactly
 (no npub, no email, no metadata beyond bookkeeping).
 
 This is everything a third-party app needs to use keys.justworks as its key
-backend. For the security model and threat analysis, see
-[design.md](design.md).
+backend.
 
 ## Base URL
 
