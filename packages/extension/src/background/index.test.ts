@@ -194,6 +194,19 @@ async function loadSW(): Promise<SW> {
   const server = makeServer();
   vi.stubGlobal('chrome', ctx.chrome);
   vi.stubGlobal('fetch', server.fetchImpl);
+  // Pre-seed fresh profiles for every fixture identity so the SW's
+  // post-unlock kind-0 refresh (ensureFresh) is a no-op — tests must not
+  // touch real relays.
+  {
+    const { nip19 } = await import('nostr-tools');
+    const now = Date.now();
+    ctx.store['kj:profiles'] = Object.fromEntries(
+      [FIX.npub, FIX.npubB].map((npub) => {
+        const d = nip19.decode(npub);
+        return [d.type === 'npub' ? (d.data as string) : '', { fetchedAt: now }];
+      })
+    );
+  }
   await import('./index');
   const listener = ctx.messageListeners[0];
   expect(listener).toBeDefined();
