@@ -199,7 +199,7 @@
 			>
 				<Tabs.Trigger
 					value="identity"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA]"
+					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA] data-active:[&_svg]:text-black dark:data-active:[&_svg]:text-[#FAFAFA]"
 					aria-label="Identity"
 					title="Identity"
 				>
@@ -208,7 +208,7 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="apps"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA]"
+					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA] data-active:[&_svg]:text-black dark:data-active:[&_svg]:text-[#FAFAFA]"
 					aria-label="Connected apps"
 					title="Connected apps"
 				>
@@ -217,7 +217,7 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="security"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA]"
+					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA] data-active:[&_svg]:text-black dark:data-active:[&_svg]:text-[#FAFAFA]"
 					aria-label="Security"
 					title="Security"
 				>
@@ -226,7 +226,7 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="help"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA]"
+					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA] data-active:[&_svg]:text-black dark:data-active:[&_svg]:text-[#FAFAFA]"
 					aria-label="Help"
 					title="Help"
 				>
