@@ -77,7 +77,7 @@
 </svelte:head>
 
 <section
-	class="flex min-h-[calc(100svh-4rem)] items-center justify-center bg-[#FAFAFA] px-6 py-10 sm:px-10 sm:py-12 dark:bg-[#0A0A0A]"
+	class="flex min-h-[calc(100svh-4rem)] items-center justify-center bg-paper px-6 py-10 sm:px-10 sm:py-12"
 >
 	<div class="w-full" class:max-w-lg={!npub} class:max-w-6xl={Boolean(npub)}>
 		<a
@@ -89,7 +89,7 @@
 
 		{#if !npub}
 			<div class="mt-6">
-				<p class="text-xs font-bold tracking-[0.2em] text-mint-deep uppercase">Get started</p>
+				<p class="eyebrow">Get started</p>
 				<h1 class="mt-2 text-3xl font-black tracking-tight">Create your key</h1>
 				<p class="mt-2 text-muted-foreground">
 					Generated and encrypted in this browser. The server stores only the encrypted version —
@@ -151,8 +151,8 @@
 		{:else}
 			<!-- Success + backup -->
 			<div class="mt-6 grid gap-4 lg:grid-cols-2 lg:items-start">
-				<div class="rounded-2xl border border-mint/40 bg-mint/5 p-6">
-					<p class="text-xs font-bold tracking-[0.2em] text-mint-deep uppercase">Key ready</p>
+				<div class="border border-mint/40 bg-mint/5 p-6">
+					<p class="eyebrow">Key ready</p>
 					<h1 class="mt-2 text-3xl font-black tracking-tight">Save your public ID</h1>
 					<p class="mt-2 text-muted-foreground">
 						Your npub identifies you to people and apps on Nostr. It is safe to share; your private
@@ -164,7 +164,7 @@
 						<h2 class="text-xl font-bold">Public ID created</h2>
 					</div>
 					<p class="mt-2 text-sm text-muted-foreground">Copy your npub before continuing:</p>
-					<div class="border-line mt-2 flex items-center border bg-paper-strong">
+					<div class="mt-2 flex items-center border border-border bg-paper-strong">
 						<code class="min-w-0 flex-1 p-2.5 font-mono text-xs break-all">{npub}</code>
 						<Button
 							variant="ghost"
@@ -177,14 +177,14 @@
 							{#if npubCopied}<Check class="size-4" />{:else}<Copy class="size-4" />{/if}
 						</Button>
 					</div>
-					<p class="mt-4 rounded-lg bg-sun/10 p-3 text-sm text-[#8a5e10] dark:text-sun">
+					<p class="mt-4 bg-sun/10 p-3 text-sm text-sun-deep dark:text-sun">
 						Also save your <strong>identifier</strong> and <strong>password</strong> (a password manager
 						is ideal). You'll need both to log in from any device.
 					</p>
 				</div>
 
 				<div class="flex flex-col gap-3">
-					<div class="space-y-4 rounded-2xl border border-mint/40 bg-mint/5 p-6">
+					<div class="space-y-4 border border-mint/40 bg-mint/5 p-6">
 						<h3 class="font-bold">Back up your key</h3>
 						<p class="text-sm text-muted-foreground">
 							There is <strong>no recovery</strong>. If you lose both your identifier and password,

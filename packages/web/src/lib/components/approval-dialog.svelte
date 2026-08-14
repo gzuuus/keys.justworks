@@ -49,7 +49,7 @@
 				<p class="font-mono text-xs text-muted-foreground">from app {short(req.client)}</p>
 				{#if req.detail}
 					<pre
-						class="max-h-64 overflow-auto rounded-md bg-muted p-2 font-mono text-xs break-all whitespace-pre-wrap">{req.detail}</pre>
+						class="max-h-64 overflow-auto bg-muted p-2 font-mono text-xs break-all whitespace-pre-wrap">{req.detail}</pre>
 				{/if}
 			</div>
 			<DialogFooter>

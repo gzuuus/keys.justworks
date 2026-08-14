@@ -66,27 +66,23 @@
 </svelte:head>
 
 <section
-	class="flex min-h-[calc(100svh-4rem)] items-center justify-center bg-[#FAFAFA] px-6 py-12 text-[#0A0A0A] sm:px-10 dark:bg-[#0A0A0A] dark:text-[#FAFAFA]"
+	class="flex min-h-[calc(100svh-4rem)] items-center justify-center bg-paper px-6 py-12 text-ink sm:px-10"
 >
 	<div class="w-full max-w-md">
 		<a
 			href="/"
-			class="mb-12 inline-flex items-center gap-2 text-sm font-semibold text-black/58 transition-colors hover:text-black dark:text-white/58 dark:hover:text-white"
+			class="mb-12 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
 		>
 			<ArrowLeft class="size-4" /> Back
 		</a>
-		<div
-			class="flex items-center justify-between border-b border-black/22 pb-5 dark:border-white/22"
-		>
+		<div class="flex items-center justify-between border-b border-border pb-5">
 			<p class="font-mono text-[0.68rem] font-bold tracking-[0.16em] uppercase">
 				Returning keyholder
 			</p>
 			<LockOpen class="size-5" />
 		</div>
 		{#if keyholder.autoLocked}
-			<Alert
-				class="mt-6 border-black/25 bg-transparent text-black dark:border-white/25 dark:text-white"
-			>
+			<Alert class="mt-6 border-ink/25 bg-transparent text-ink">
 				<TriangleAlert class="size-4" />
 				<AlertDescription
 					>Your key was auto-locked after inactivity. Unlock again to continue.</AlertDescription
@@ -97,18 +93,11 @@
 		<form class="mt-8 flex flex-col gap-5" onsubmit={onUnlock}>
 			<div class="flex flex-col gap-2">
 				<Label for="identifier">Identifier</Label>
-				<Input
-					class="border-black/30 bg-transparent text-black dark:border-white/30 dark:text-white"
-					id="identifier"
-					bind:value={identifier}
-					autocomplete="username"
-					required
-				/>
+				<Input id="identifier" bind:value={identifier} autocomplete="username" required />
 			</div>
 			<div class="flex flex-col gap-2">
 				<Label for="password">Password</Label>
 				<Input
-					class="border-black/30 bg-transparent text-black dark:border-white/30 dark:text-white"
 					id="password"
 					type="password"
 					bind:value={password}
@@ -130,29 +119,27 @@
 		</form>
 
 		{#if accounts.list.length > 0}
-			<div class="mt-8 border-t border-black/22 pt-6 dark:border-white/22">
+			<div class="mt-8 border-t border-border pt-6">
 				<p
-					class="font-mono text-[0.64rem] font-bold tracking-[0.14em] text-black/50 uppercase dark:text-white/50"
+					class="font-mono text-[0.64rem] font-bold tracking-[0.14em] text-muted-foreground uppercase"
 				>
 					On this device
 				</p>
-				<p class="mt-1 text-xs text-black/50 dark:text-white/50">
+				<p class="mt-1 text-xs text-muted-foreground">
 					Saved here — unlock without the server, even offline.
 				</p>
 				<div class="mt-4 flex flex-col gap-2">
 					{#each accounts.list as { id, account } (id)}
-						<div
-							class="flex items-center gap-3 border border-black/22 bg-transparent px-3 py-3 dark:border-white/22"
-						>
+						<div class="flex items-center gap-3 border border-border bg-transparent px-3 py-3">
 							<div class="flex min-w-0 flex-1 flex-col gap-1">
 								<ProfileChip npub={account.npub} />
 								<span class="truncate text-sm font-medium">{account.label}</span><span
-									class="truncate text-xs text-black/50 dark:text-white/50">{account.npub}</span
+									class="truncate text-xs text-muted-foreground">{account.npub}</span
 								>
 							</div>
 							<button
 								type="button"
-								class="shrink-0 p-1 text-black/45 transition-colors hover:bg-black/8 hover:text-destructive dark:text-white/45 dark:hover:bg-white/8"
+								class="shrink-0 p-1 text-muted-foreground transition-colors hover:bg-ink/8 hover:text-destructive"
 								aria-label="Remove from this device"
 								title="Remove from this device"
 								onclick={() => accounts.remove(id)}><X class="size-4" /></button

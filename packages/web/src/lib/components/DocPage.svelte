@@ -25,13 +25,13 @@
 </script>
 
 <!-- Sticky toolbar under the global header; the markdown's own H1 is the title. -->
-<div class="border-line sticky top-16 z-30 border-b bg-paper/85 backdrop-blur-md">
+<div class="sticky top-16 z-30 border-b border-border bg-paper/85 backdrop-blur-md">
 	<div class="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
 		<nav class="flex gap-1" aria-label="Documentation">
 			{#each tabs as t (t.slug)}
 				<a
 					href={t.href}
-					class="rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors {slug === t.slug
+					class="px-3 py-1.5 text-sm font-semibold transition-colors {slug === t.slug
 						? 'bg-secondary text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>

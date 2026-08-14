@@ -35,7 +35,7 @@
 </svelte:head>
 
 <section class="mx-auto max-w-3xl px-4 pt-16 pb-20">
-	<p class="text-xs font-bold tracking-[0.2em] text-mint-deep uppercase">Browser extension</p>
+	<p class="eyebrow">Browser extension</p>
 	<h1 class="mt-3 text-4xl font-black tracking-tight text-ink">
 		A NIP-07 signer for every Nostr site.
 	</h1>
@@ -45,7 +45,7 @@
 	</p>
 
 	<div
-		class="border-line mt-10 flex flex-col gap-6 rounded-2xl border bg-paper-strong p-6 sm:flex-row sm:items-center sm:justify-between"
+		class="mt-10 flex flex-col gap-6 border border-border bg-paper-strong p-6 sm:flex-row sm:items-center sm:justify-between"
 	>
 		<div>
 			<h2 class="text-lg font-bold text-ink">keys.justworks.crx</h2>
@@ -69,7 +69,7 @@
 
 	<div class="mt-12 grid gap-8 sm:grid-cols-3">
 		<div>
-			<span class="inline-flex size-10 items-center justify-center rounded-xl bg-accent">
+			<span class="inline-flex size-10 items-center justify-center bg-accent">
 				<Download class="size-5 text-ink" />
 			</span>
 			<h3 class="mt-3 font-bold">1 · Download</h3>
@@ -78,7 +78,7 @@
 			</p>
 		</div>
 		<div>
-			<span class="inline-flex size-10 items-center justify-center rounded-xl bg-accent">
+			<span class="inline-flex size-10 items-center justify-center bg-accent">
 				<Puzzle class="size-5 text-ink" />
 			</span>
 			<h3 class="mt-3 font-bold">2 · Install</h3>
@@ -88,7 +88,7 @@
 			</p>
 		</div>
 		<div>
-			<span class="inline-flex size-10 items-center justify-center rounded-xl bg-accent">
+			<span class="inline-flex size-10 items-center justify-center bg-accent">
 				<ShieldCheck class="size-5 text-ink" />
 			</span>
 			<h3 class="mt-3 font-bold">3 · Approve sites</h3>
@@ -99,7 +99,7 @@
 		</div>
 	</div>
 
-	<div class="border-line mt-12 rounded-2xl border p-6">
+	<div class="mt-12 border border-border p-6">
 		<h2 class="flex items-center gap-2 font-bold">
 			<RefreshCw class="size-4 text-mint-deep" /> Updates without the Web Store
 		</h2>

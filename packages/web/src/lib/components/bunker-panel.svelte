@@ -126,7 +126,7 @@
 <section class="flex flex-col gap-4">
 	<div class="flex flex-col gap-1.5">
 		<div class="flex items-center gap-2.5">
-			<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-mint/12 text-mint-deep">
+			<span class="grid size-8 shrink-0 place-items-center bg-mint/12 text-mint-deep">
 				<Plug class="size-4" />
 			</span>
 			<h2 class="text-lg font-bold">Connected apps</h2>
@@ -137,7 +137,7 @@
 	</div>
 
 	{#if bunker.autoApprove}
-		<Alert class="border-sun/40 bg-sun/10 text-[#8a5e10] dark:text-sun">
+		<Alert class="border-sun/40 bg-sun/10 text-sun-deep dark:text-sun">
 			<TriangleAlert class="size-4" />
 			<AlertTitle>Auto-approve is on</AlertTitle>
 			<AlertDescription>
@@ -158,7 +158,7 @@
 				<div class="grid gap-3 sm:grid-cols-2">
 					<button
 						type="button"
-						class="border-line flex items-start gap-3 rounded-xl border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
+						class="flex items-start gap-3 border border-border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
 						onclick={() => (mode = 'bunker')}
 					>
 						<Link class="mt-0.5 size-5 shrink-0 text-mint-deep" />
@@ -171,7 +171,7 @@
 					</button>
 					<button
 						type="button"
-						class="border-line flex items-start gap-3 rounded-xl border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
+						class="flex items-start gap-3 border border-border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
 						onclick={() => (mode = 'nostrconnect')}
 					>
 						<Plug class="mt-0.5 size-5 shrink-0 text-mint-deep" />
@@ -289,7 +289,7 @@
 					<div class="flex items-start justify-between gap-3">
 						<div class="flex min-w-0 items-start gap-3">
 							<span
-								class="grid size-10 shrink-0 place-items-center rounded-lg border text-xs font-extrabold tracking-[0.08em]"
+								class="grid size-10 shrink-0 place-items-center border text-xs font-extrabold tracking-[0.08em]"
 								style={`border-color: color-mix(in srgb, ${identity.accent} 30%, transparent); background: color-mix(in srgb, ${identity.accent} 12%, transparent); color: ${identity.accent}`}
 								aria-hidden="true"
 							>
@@ -332,7 +332,7 @@
 							</div>
 						</div>
 						<CollapsibleTrigger
-							class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent"
+							class="p-1 text-muted-foreground transition-colors hover:bg-accent"
 							aria-label={isOpen(app.id) ? 'Collapse' : 'Expand'}
 						>
 							<ChevronDown
@@ -360,8 +360,7 @@
 						{#if bunker.slots[app.id]?.bunkerUri}
 							<div class="flex flex-col gap-2">
 								<Label>Connection link</Label>
-								<code
-									class="block max-h-32 overflow-auto rounded-md bg-muted p-2 font-mono text-xs break-all"
+								<code class="block max-h-32 overflow-auto bg-muted p-2 font-mono text-xs break-all"
 									>{bunker.slots[app.id]!.bunkerUri}</code
 								>
 								<div>

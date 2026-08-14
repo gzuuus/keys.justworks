@@ -24,12 +24,12 @@
 	--mint: #f7931a;
 	--mint-deep: #c35f00;
 	--sun: #b78a35;
+	--sun-deep: #8a5e10;
 	--coral: #d13d52;
-	--blue: #8e6d44;
 	--muted-ink: #5f5a53;
 	--quiet: #77716a;
 	--line: rgba(8, 8, 8, 0.18);
-	--shadow: rgba(8, 8, 8, 0.18);
+	--surface-sunken: #f2eee7;
 	--surface-noise-opacity: 0.035;
 
 	--background: var(--paper);
@@ -39,7 +39,7 @@
 	--popover: var(--paper-strong);
 	--popover-foreground: var(--ink);
 	--primary: var(--ink);
-	--primary-foreground: #fafafa;
+	--primary-foreground: var(--paper);
 	--secondary: #ece8e1;
 	--secondary-foreground: var(--ink);
 	--muted: #eeeae3;
@@ -47,24 +47,9 @@
 	--accent: #e8e3da;
 	--accent-foreground: var(--ink);
 	--destructive: var(--coral);
-	--destructive-foreground: #fafafa;
 	--border: var(--line);
 	--input: rgba(8, 8, 8, 0.28);
 	--ring: var(--mint-deep);
-	--success: #16705d;
-	--chart-1: var(--mint);
-	--chart-2: var(--sun);
-	--chart-3: var(--coral);
-	--chart-4: var(--blue);
-	--chart-5: var(--mint-deep);
-	--sidebar: var(--paper);
-	--sidebar-foreground: var(--ink);
-	--sidebar-primary: var(--ink);
-	--sidebar-primary-foreground: #fafafa;
-	--sidebar-accent: var(--accent);
-	--sidebar-accent-foreground: var(--ink);
-	--sidebar-border: var(--line);
-	--sidebar-ring: var(--mint-deep);
 }
 
 .dark {
@@ -74,20 +59,20 @@
 	--muted-ink: #a0a0a0;
 	--quiet: #747474;
 	--line: rgba(255, 255, 255, 0.18);
-	--shadow: rgba(0, 0, 0, 0.6);
+	--surface-sunken: #17130f;
 	--surface-noise-opacity: 0.075;
 	--secondary: #1c1c1c;
 	--accent: #1f1f1f;
 	--muted: #181818;
 	--input: rgba(255, 255, 255, 0.28);
-	--ring: #f7931a;
-	--success: #70d5bb;
-	--primary-foreground: #0a0a0a;
-	--sidebar-primary-foreground: #0a0a0a;
-	--sidebar-accent: #1f1f1f;
+	--ring: var(--mint);
 }
 
 @layer utilities {
+	/* Orange section eyebrow label shared by dashboard, get-started, and download. */
+	.eyebrow {
+		@apply text-xs font-bold tracking-[0.2em] text-mint-deep uppercase;
+	}
 	.surface-noise {
 		position: relative;
 		isolation: isolate;
@@ -128,36 +113,21 @@
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
-	--color-destructive-foreground: var(--destructive-foreground);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
-	--color-success: var(--success);
 	--color-ink: var(--ink);
 	--color-paper: var(--paper);
 	--color-paper-strong: var(--paper-strong);
+	--color-surface-sunken: var(--surface-sunken);
 	--color-mint: var(--mint);
 	--color-mint-deep: var(--mint-deep);
 	--color-sun: var(--sun);
+	--color-sun-deep: var(--sun-deep);
 	--color-coral: var(--coral);
-	--color-blue: var(--blue);
 	--color-quiet: var(--quiet);
-	--color-chart-1: var(--chart-1);
-	--color-chart-2: var(--chart-2);
-	--color-chart-3: var(--chart-3);
-	--color-chart-4: var(--chart-4);
-	--color-chart-5: var(--chart-5);
-	--color-sidebar: var(--sidebar);
-	--color-sidebar-foreground: var(--sidebar-foreground);
-	--color-sidebar-primary: var(--sidebar-primary);
-	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-	--color-sidebar-accent: var(--sidebar-accent);
-	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-	--color-sidebar-border: var(--sidebar-border);
-	--color-sidebar-ring: var(--sidebar-ring);
 	--font-sans: 'DM Sans Variable', ui-sans-serif, system-ui, sans-serif;
 	--font-display: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
-	--font-hero: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
 }
 
 @layer base {
@@ -183,6 +153,6 @@
 		word-spacing: -0.16em;
 	}
 	::selection {
-		background: rgb(247 147 26 / 0.34);
+		background: color-mix(in srgb, var(--mint) 34%, transparent);
 	}
 }

@@ -160,6 +160,9 @@
 			delBusy = false;
 		}
 	}
+
+	const tabTriggerClass =
+		'size-11 flex-none px-0 data-active:bg-paper data-active:text-ink data-active:[&_svg]:text-ink md:h-full md:flex-1 md:px-4';
 </script>
 
 <svelte:head>
@@ -172,7 +175,7 @@
 		<Card>
 			<CardContent class="flex flex-col items-center gap-4 py-14 text-center">
 				<span
-					class="inline-flex size-14 items-center justify-center rounded-2xl bg-accent text-muted-foreground"
+					class="inline-flex size-14 items-center justify-center bg-accent text-muted-foreground"
 				>
 					<Lock class="size-7" />
 				</span>
@@ -190,18 +193,18 @@
 		</Card>
 	{:else}
 		<div>
-			<p class="text-xs font-bold tracking-[0.2em] text-mint-deep uppercase">Dashboard</p>
+			<p class="eyebrow">Dashboard</p>
 			<h1 class="mt-2 text-3xl font-black tracking-tight">Your key is ready</h1>
 		</div>
 
 		<Tabs.Root bind:value={activeTab} class="mt-7 gap-0">
 			<Tabs.List
-				class="border-line fixed bottom-5 left-4 z-40 h-14 w-auto gap-1 rounded-2xl border bg-paper-strong/95 p-1.5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl md:static md:h-11 md:w-full md:rounded-xl md:bg-[#f2eee7] md:p-1 md:shadow-none md:backdrop-blur-none md:dark:bg-[#17130f]"
+				class="fixed bottom-5 left-4 z-40 h-14 w-auto gap-1 border border-border bg-paper-strong/95 p-1.5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl md:static md:h-[var(--control-height)] md:w-full md:bg-surface-sunken md:p-1 md:shadow-none md:backdrop-blur-none"
 				aria-label="Dashboard sections"
 			>
 				<Tabs.Trigger
 					value="identity"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA] data-active:[&_svg]:text-black dark:data-active:[&_svg]:text-[#FAFAFA]"
+					class={tabTriggerClass}
 					aria-label="Identity"
 					title="Identity"
 				>
@@ -210,7 +213,7 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="apps"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA] data-active:[&_svg]:text-black dark:data-active:[&_svg]:text-[#FAFAFA]"
+					class={tabTriggerClass}
 					aria-label="Connected apps"
 					title="Connected apps"
 				>
@@ -219,19 +222,14 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="security"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA] data-active:[&_svg]:text-black dark:data-active:[&_svg]:text-[#FAFAFA]"
+					class={tabTriggerClass}
 					aria-label="Security"
 					title="Security"
 				>
 					<ShieldCheck class="size-5" />
 					<span class="max-md:sr-only">Security</span>
 				</Tabs.Trigger>
-				<Tabs.Trigger
-					value="help"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA] data-active:[&_svg]:text-black dark:data-active:[&_svg]:text-[#FAFAFA]"
-					aria-label="Help"
-					title="Help"
-				>
+				<Tabs.Trigger value="help" class={tabTriggerClass} aria-label="Help" title="Help">
 					<CircleHelp class="size-5" />
 					<span class="max-md:sr-only">Help</span>
 				</Tabs.Trigger>
@@ -247,7 +245,7 @@
 								<KeyRound class="size-5 text-mint-deep" /> Identity
 							</CardTitle>
 							<Badge
-								class="w-full justify-start gap-2 rounded-lg bg-mint/15 px-3 py-2 text-mint-deep sm:w-auto sm:rounded-full sm:py-1"
+								class="w-full justify-start gap-2 bg-mint/15 px-3 py-2 text-mint-deep sm:w-auto sm:rounded-full sm:py-1"
 							>
 								<span class="relative flex size-2.5 items-center justify-center">
 									<span class="absolute size-2.5 animate-ping rounded-full bg-mint/35"></span>
@@ -264,13 +262,13 @@
 						<ProfileChip npub={keyholder.npub} size="md" />
 						<div class="flex items-stretch gap-2">
 							<code
-								class="border-line flex min-h-12 flex-1 items-center rounded-lg border bg-muted p-2.5 font-mono text-xs break-all"
+								class="flex min-h-[var(--control-height)] flex-1 items-center border border-border bg-muted p-2.5 font-mono text-xs break-all"
 								>{keyholder.npub}</code
 							>
 							<Button
 								variant="outline"
 								size="icon"
-								class="h-auto min-h-12 self-stretch"
+								class="h-auto min-h-[var(--control-height)] self-stretch"
 								onclick={copyNpub}
 								aria-label="Copy npub"
 							>
@@ -284,7 +282,7 @@
 						<div class="flex flex-col gap-2">
 							<Button
 								variant="outline"
-								class="border-line w-full justify-center rounded-lg bg-transparent text-foreground hover:bg-black/[0.035] dark:hover:bg-white/[0.06]"
+								class="w-full justify-center border-border bg-transparent text-foreground hover:bg-ink/[0.035] dark:hover:bg-ink/[0.06]"
 								onclick={lock}><Lock class="size-4" /> Lock key</Button
 							>
 							<span class="text-xs text-muted-foreground">
