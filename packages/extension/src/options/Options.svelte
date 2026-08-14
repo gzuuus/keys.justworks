@@ -30,6 +30,14 @@
   let imported = $state<{ npub: string } | null>(null);
   let savedFlash = $state<string | null>(null);
 
+  // Unlock form state (the manage page doubles as the unlock surface — Chrome
+  // opens it right after install, before any key exists locally).
+  let unlockId = $state("");
+  let unlockPw = $state("");
+  let unlockBusy = $state(false);
+  let unlockError = $state<string | null>(null);
+  let npubCopied = $state(false);
+
   // Danger zone state.
   let cpIdentifier = $state("");
   let oldPassword = $state("");
@@ -62,6 +70,36 @@
     if (hash === "#create" || hash === "#import") mode = hash.slice(1) as Mode;
     const id = ({ "#create": "onboarding", "#import": "onboarding" } as Record<string, string>)[hash] ?? hash.slice(1);
     if (id) document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function lockKey() {
+    await send({ src: "ui", cmd: "lock" });
+    await refresh();
+  }
+
+  async function unlockKey(e: SubmitEvent) {
+    e.preventDefault();
+    unlockError = null;
+    unlockBusy = true;
+    try {
+      await send({ src: "ui", cmd: "login", identifier: unlockId, password: unlockPw });
+      unlockPw = "";
+      await refresh();
+    } catch (err) {
+      unlockError = err instanceof Error ? err.message : "unlock failed";
+    } finally {
+      unlockBusy = false;
+    }
+  }
+
+  async function copyNpub() {
+    try {
+      await navigator.clipboard.writeText(status?.npub ?? "");
+      npubCopied = true;
+      setTimeout(() => (npubCopied = false), 1200);
+    } catch {
+      /* clipboard may be blocked */
+    }
   }
 
   async function submit(e: SubmitEvent) {
@@ -219,6 +257,41 @@
       <span class="chip"><span class="dot locked"></span>Locked</span>
     {/if}
   </header>
+
+  <section id="unlock" class="card">
+    {#if status?.unlocked}
+      <h2>Unlocked</h2>
+      <div class="row" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem">
+        <pre style="margin: 0" title={status.npub ?? ""}>{shortNpub(status.npub ?? "")}</pre>
+        <div class="row">
+          <button onclick={copyNpub}>{npubCopied ? "Copied" : "Copy npub"}</button>
+          <button class="primary" onclick={lockKey}>Lock</button>
+        </div>
+      </div>
+    {:else}
+      <h2>Unlock</h2>
+      <p class="muted" style="margin-top: 0">
+        Same identifier + password as the website. The encrypted key is fetched, decrypted, and
+        held only in this extension's memory — the server still never sees it decrypted.
+      </p>
+      <form onsubmit={unlockKey} class="stack">
+        <div>
+          <label for="un-id">Identifier</label>
+          <input id="un-id" bind:value={unlockId} autocomplete="username" required />
+        </div>
+        <div>
+          <label for="un-pw">Password</label>
+          <input id="un-pw" type="password" bind:value={unlockPw} autocomplete="current-password" required />
+        </div>
+        {#if unlockError}<p class="error">{unlockError}</p>{/if}
+        <div>
+          <button class="primary" type="submit" disabled={unlockBusy}>
+            {unlockBusy ? "Unlocking…" : "Unlock"}
+          </button>
+        </div>
+      </form>
+    {/if}
+  </section>
 
   {#if backup}
     <section
