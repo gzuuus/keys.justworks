@@ -38,6 +38,7 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 
 	let connectUri = $state('');
+	let bunkerName = $state('');
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	/** Which connection flow is revealed: null = the two-button chooser. */
@@ -75,7 +76,8 @@
 		busy = true;
 		error = null;
 		try {
-			await bunker.createBunker();
+			await bunker.createBunker(bunkerName);
+			bunkerName = '';
 			mode = null; // collapse back; the new slot card appears below
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'failed to start bunker';
@@ -178,10 +180,18 @@
 						<div class="flex flex-col gap-2">
 							<p class="text-sm font-medium">Create a connection link</p>
 							<p class="text-xs text-muted-foreground">
-								We'll generate a link you paste into your app's "remote signer" or "bunker" field.
-								The app then sends signing requests here for you to approve.
+								Name this connection for the app and device you will use. This makes future signing
+								requests easy to recognise.
 							</p>
-							<Button onclick={addBunker} disabled={busy} class="self-start">
+							<Label for="bunker-name">Connection name</Label>
+							<Input
+								id="bunker-name"
+								bind:value={bunkerName}
+								placeholder="e.g. Primal on my phone"
+								autocomplete="off"
+								onkeydown={(e) => e.key === 'Enter' && bunkerName.trim() && !busy && addBunker()}
+							/>
+							<Button onclick={addBunker} disabled={busy || !bunkerName.trim()} class="self-start">
 								{busy ? 'Starting…' : 'Create connection'}
 							</Button>
 						</div>

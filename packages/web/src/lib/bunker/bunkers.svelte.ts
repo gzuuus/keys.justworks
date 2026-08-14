@@ -110,10 +110,10 @@ export class BunkerRuntime {
 	// --- create --------------------------------------------------------------
 
 	/** Provider-initiated: start a fresh bunker:// slot and return its URI. */
-	async createBunker(): Promise<void> {
+	async createBunker(name: string): Promise<void> {
 		const relays = this.#parsedRelays();
 		if (!relays.length) throw new Error('add at least one relay');
-		const app = newApp({ mode: 'bunker', relays, secret: crypto.randomUUID() });
+		const app = newApp({ mode: 'bunker', relays, secret: crypto.randomUUID(), name: name.trim() });
 		bunkerApps.upsert(app);
 		await this.#startAndSlot(app);
 	}
