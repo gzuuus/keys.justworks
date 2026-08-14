@@ -71,6 +71,18 @@
 		connected: 'default',
 		stopped: 'outline'
 	} as const;
+	const SLOT_ACCENTS = ['#c45b13', '#9a6b09', '#6e731e', '#9a4b35', '#76506d', '#815b3e'] as const;
+
+	function slotIdentity(app: BunkerApp) {
+		let hash = 0;
+		for (const character of app.id) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+		const words = displayName(app).trim().split(/\s+/).filter(Boolean);
+		const monogram = (
+			words.length > 1 ? `${words[0][0]}${words.at(-1)?.[0]}` : words[0]?.slice(0, 2)
+		).toUpperCase();
+
+		return { accent: SLOT_ACCENTS[hash % SLOT_ACCENTS.length], monogram: monogram || 'BK' };
+	}
 
 	async function addBunker() {
 		busy = true;
@@ -112,12 +124,16 @@
 </script>
 
 <section class="flex flex-col gap-4">
-	<div class="flex items-center gap-2">
-		<Plug class="size-5 text-mint-deep" />
-		<h2 class="text-lg font-bold">Connected apps</h2>
-		<span class="text-sm text-muted-foreground">
+	<div class="flex flex-col gap-1.5">
+		<div class="flex items-center gap-2.5">
+			<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-mint/12 text-mint-deep">
+				<Plug class="size-4" />
+			</span>
+			<h2 class="text-lg font-bold">Connected apps</h2>
+		</div>
+		<p class="m-0 pl-10.5 text-sm leading-relaxed text-muted-foreground">
 			Let other Nostr apps sign through this browser tab.
-		</span>
+		</p>
 	</div>
 
 	{#if bunker.autoApprove}
@@ -257,38 +273,63 @@
 	</Card>
 
 	{#each bunkerApps.apps as app (app.id)}
-		<Card>
+		{@const identity = slotIdentity(app)}
+		<Card class="relative overflow-hidden">
+			<span
+				class="absolute inset-y-0 left-0 w-1"
+				style:background-color={identity.accent}
+				aria-hidden="true"
+			></span>
 			<Collapsible
 				open={isOpen(app.id)}
 				onOpenChange={(o) => (cardOpen[app.id] = o)}
 				class="flex flex-col gap-(--card-spacing)"
 			>
-				<CardHeader>
-					<div class="flex flex-wrap items-center justify-between gap-2">
-						<div class="flex flex-wrap items-center gap-2">
-							{#if editingId === app.id}
-								<Input
-									bind:value={draftName}
-									class="h-8 max-w-[14rem]"
-									placeholder="App name"
-									onkeydown={(e) => {
-										if (e.key === 'Enter') saveEdit();
-										if (e.key === 'Escape') editingId = null;
-									}}
-									onblur={saveEdit}
-								/>
-							{:else}
-								<CardTitle
-									class="cursor-text text-base"
-									onclick={() => startEdit(app)}
-									title="Click to rename">{displayName(app)}</CardTitle
-								>
-							{/if}
-							<Badge variant={STATUS_VARIANT[status(app)]}>{status(app)}</Badge>
-							<Badge variant="outline">{app.mode}</Badge>
-							{#if app.trustApp}
-								<Badge variant="secondary">trusted</Badge>
-							{/if}
+				<CardHeader class="pl-[calc(var(--card-spacing)+0.25rem)]">
+					<div class="flex items-start justify-between gap-3">
+						<div class="flex min-w-0 items-start gap-3">
+							<span
+								class="grid size-10 shrink-0 place-items-center rounded-lg border text-xs font-extrabold tracking-[0.08em]"
+								style={`border-color: color-mix(in srgb, ${identity.accent} 30%, transparent); background: color-mix(in srgb, ${identity.accent} 12%, transparent); color: ${identity.accent}`}
+								aria-hidden="true"
+							>
+								{identity.monogram}
+							</span>
+							<div class="flex min-w-0 flex-1 flex-col gap-2">
+								<div class="flex flex-wrap items-center gap-2">
+									{#if editingId === app.id}
+										<Input
+											bind:value={draftName}
+											class="h-8 max-w-[14rem]"
+											placeholder="App name"
+											onkeydown={(e) => {
+												if (e.key === 'Enter') saveEdit();
+												if (e.key === 'Escape') editingId = null;
+											}}
+											onblur={saveEdit}
+										/>
+									{:else}
+										<CardTitle
+											class="cursor-text text-base"
+											onclick={() => startEdit(app)}
+											title="Click to rename">{displayName(app)}</CardTitle
+										>
+									{/if}
+									<Badge variant={STATUS_VARIANT[status(app)]}>{status(app)}</Badge>
+									<Badge variant="outline">{app.mode}</Badge>
+									{#if app.trustApp}
+										<Badge variant="secondary">trusted</Badge>
+									{/if}
+								</div>
+								<CardDescription class="flex min-w-0 flex-col gap-0.5">
+									<span class="truncate">{app.relays.join(', ')}</span>
+									{#if app.clientPubkey}
+										<span class="font-mono text-xs">app {short(app.clientPubkey)}</span>
+									{:else}
+										<span class="text-xs">no app connected yet</span>
+									{/if}
+								</CardDescription>
+							</div>
 						</div>
 						<CollapsibleTrigger
 							class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent"
@@ -299,14 +340,6 @@
 							/>
 						</CollapsibleTrigger>
 					</div>
-					<CardDescription class="flex flex-col gap-0.5">
-						<span>{app.relays.join(', ')}</span>
-						{#if app.clientPubkey}
-							<span class="font-mono text-xs">app {short(app.clientPubkey)}</span>
-						{:else}
-							<span class="text-xs">no app connected yet</span>
-						{/if}
-					</CardDescription>
 				</CardHeader>
 				<CollapsibleContent>
 					<CardContent class="flex flex-col gap-4">
