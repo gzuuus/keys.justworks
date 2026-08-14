@@ -1,7 +1,7 @@
 {
   "name": "@kj/extension",
   "private": true,
-  "version": "0.0.5",
+  "version": "0.0.6",
   "type": "module",
   "description": "keys.justworks — non-custodial Nostr key locker, NIP-07 signer",
   "scripts": {

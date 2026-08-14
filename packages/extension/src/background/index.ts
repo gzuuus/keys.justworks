@@ -34,6 +34,7 @@ import {
 import * as accounts from "../lib/accounts";
 import * as permissions from "../lib/permissions";
 import { fetchLatestUpdate, isNewer, UPDATE_KEY, type UpdateInfo } from "../lib/update";
+import { ensureFresh, npubToHex } from "../lib/profiles";
 import { getConfig, setConfig } from "../lib/config";
 import type {
   BgMessage,
@@ -70,6 +71,20 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 function bump() {
   lastActivity = Date.now();
+}
+
+/** Best-effort kind-0 refresh for the held key so the popup and manage page
+ *  can show a name + avatar. Dedupes via the 7-day freshness window in
+ *  lib/profiles; never throws into the router. */
+async function maybeRefreshProfile(): Promise<void> {
+  try {
+    if (!signer.unlocked) return;
+    const st = await signerCall("status", undefined);
+    const hex = st.npub ? npubToHex(st.npub) : null;
+    if (hex) await ensureFresh([hex]);
+  } catch {
+    /* enrichment is best-effort */
+  }
 }
 
 // --- self-update detection -----------------------------------------------
@@ -381,7 +396,11 @@ chrome.runtime.onMessage.addListener((msg: BgMessage, sender, sendResponse) => {
         return ok(undefined);
       }
       if (typeof msg === "object" && msg !== null && "src" in msg && msg.src === "ui") {
-        return ok(await handleUi(msg as BgUiMessage));
+        const r = await handleUi(msg as BgUiMessage);
+        // Any UI op can end with the key held (login/create/import/change) —
+        // one guarded refresh covers them all without touching each handler.
+        void maybeRefreshProfile();
+        return ok(r);
       }
       return fail("unknown message");
     } catch (e) {

@@ -19,6 +19,8 @@
 		"@fontsource-variable/dm-sans": "^5.3.0",
 		"@fontsource/ibm-plex-mono": "^5.3.0",
 		"@kj/core": "workspace:*",
+		"applesauce-core": "^6.2.0",
+		"applesauce-loaders": "^6.2.0",
 		"applesauce-relay": "^6.2.1",
 		"applesauce-signers": "^6.2.2",
 		"gsap": "^3.15.0",

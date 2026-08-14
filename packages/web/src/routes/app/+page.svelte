@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { identifierHash, updateBlob, deleteAccount, ApiError } from '@kj/core';
 	import { keyholder } from '$lib/keyholder/store.svelte';
+	import ProfileChip from '$lib/components/profile-chip.svelte';
 	import { accounts } from '$lib/keyholder/accounts.svelte';
 	import BunkerPanel from '$lib/components/bunker-panel.svelte';
 	import SecretField from '$lib/components/secret-field.svelte';
@@ -259,6 +260,7 @@
 						>
 					</CardHeader>
 					<CardContent class="flex flex-col gap-3">
+						<ProfileChip npub={keyholder.npub} size="md" />
 						<div class="flex items-stretch gap-2">
 							<code
 								class="border-line flex min-h-12 flex-1 items-center rounded-lg border bg-muted p-2.5 font-mono text-xs break-all"

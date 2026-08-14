@@ -5,13 +5,14 @@
 #
 # Downloads the release binary for this arch (sha256-verified), installs it,
 # creates a dedicated system user, writes a hardened systemd unit, enables +
-# (re)starts the service, installs the backup script on an hourly cron, and
-# syncs the browser-extension artifacts (newest ext-v* release) for
-# /extension/* (auto-update + /download). Re-running upgrades in place
-# (db + backups are preserved).
+# (re)starts the service, installs the backup script on an hourly cron, and —
+# only when asked — syncs the browser-extension artifacts (newest ext-v*
+# release) for /extension/* (auto-update + /download). Re-running upgrades
+# in place (db + backups are preserved).
 #
-#   VERSION=v0.1.1 ... | sudo bash    # pin a server release (default: newest v*)
-#   EXT_VERSION=ext-v0.0.3 ...        # pin the extension artifacts (default: newest ext-v*)
+#   VERSION=v0.1.1 ... | sudo bash          # pin a server release (default: newest v*)
+#   ... | sudo env HOST_EXTENSION=1 bash    # also serve /extension/* (official provider)
+#   EXT_VERSION=ext-v0.0.3 ...              # pin the extension artifacts (default: newest ext-v*)
 #
 # Must be root. Does NOT do TLS — see the final message.
 set -euo pipefail
@@ -63,8 +64,25 @@ getent group "$USER_NAME" >/dev/null || groupadd --system "$USER_NAME"
 getent passwd "$USER_NAME" >/dev/null || useradd --system --gid "$USER_NAME" \
   --no-create-home --shell /usr/sbin/nologin "$USER_NAME"
 
-# --- hardened systemd unit ---
-cat > /etc/systemd/system/keys-justworks-server.service <<UNIT
+# --- hardened systemd unit ----------------------------------------------------
+# Extension hosting (KJ_EXTENSION_DIR) is opt-in: it only makes sense for the
+# official provider (the signed .crx's update_url is baked to
+# keys.justworks.cash; a self-built one is differently-signed). HOST_EXTENSION
+#   1 -> host /extension/*       unset -> keep whatever the existing unit has
+#   0 -> explicitly stop hosting (on a fresh install, unset == not hosted)
+unit=/etc/systemd/system/keys-justworks-server.service
+case "${HOST_EXTENSION:-}" in
+  1) ext_env="Environment=KJ_EXTENSION_DIR=$LIB_DIR/extension" ;;
+  0) ext_env="" ;;
+  *) if [ -f "$unit" ] && grep -q '^Environment=KJ_EXTENSION_DIR=' "$unit"; then
+       ext_env="Environment=KJ_EXTENSION_DIR=$LIB_DIR/extension"  # preserve
+     else
+       ext_env=""
+     fi ;;
+esac
+ext_line="${ext_env:-# /extension/* not hosted (enable: ... | sudo env HOST_EXTENSION=1 bash)}"
+
+cat > "$unit" <<UNIT
 [Unit]
 Description=keys.justworks server
 After=network-online.target
@@ -79,7 +97,7 @@ WorkingDirectory=$STATE_DIR
 Environment=DATABASE_URL=sqlite:keys.db
 Environment=LISTEN_ADDR=127.0.0.1:3000
 Environment=RUST_LOG=info
-Environment=KJ_EXTENSION_DIR=$LIB_DIR/extension
+$ext_line
 ExecStart=$INSTALL_DIR/$BIN_NAME
 Restart=on-failure
 RestartSec=2
@@ -124,17 +142,19 @@ CRON
 chmod 0644 /etc/cron.d/keys-justworks-backup
 
 # --- extension artifacts: newest ext-v* release -> served at /extension/ ----
-# Auto-update + the /download page read these. The extension release stream is
-# independent of the server pin, so this always takes the newest ext-v* (pin
-# with EXT_VERSION=ext-vX.Y.Z). Re-run setup.sh after any release to re-sync.
+# Only when hosting (see ext_env above). Auto-update + the /download page
+# read these. The extension release stream is independent of the server pin,
+# so this always takes the newest ext-v* (pin with EXT_VERSION=ext-vX.Y.Z).
 # A failure must not abort a server upgrade (which may carry important fixes);
 # /extension/* just 404s — by design — until the next run succeeds.
-EXT_DIR="$LIB_DIR/extension"
-mkdir -p "$EXT_DIR"
-if curl -fsSL "$raw/scripts/sync-extension.sh" | bash -s -- "$EXT_DIR" "${EXT_VERSION:-}"; then
-  :
-else
-  echo "WARN: extension artifact sync failed — /extension/* will 404 until the next setup run"
+if [ -n "$ext_env" ]; then
+  EXT_DIR="$LIB_DIR/extension"
+  mkdir -p "$EXT_DIR"
+  if curl -fsSL "$raw/scripts/sync-extension.sh" | bash -s -- "$EXT_DIR" "${EXT_VERSION:-}"; then
+    :
+  else
+    echo "WARN: extension artifact sync failed — /extension/* will 404 until the next setup run"
+  fi
 fi
 
 echo
@@ -143,7 +163,11 @@ echo "db:       $STATE_DIR/keys.db (user: $USER_NAME)"
 echo "status:   systemctl status keys-justworks-server"
 echo "logs:     journalctl -u keys-justworks-server -f"
 echo "backups:  hourly -> $BACKUP_DIR (keep ~168); log: /var/log/keys-justworks-backup.log"
-echo "extension: $EXT_DIR (served at /extension/*; auto-update + /download)"
+if [ -n "$ext_env" ]; then
+  echo "extension: $LIB_DIR/extension (served at /extension/*; auto-update + /download)"
+else
+  echo "extension: not hosted (/extension/* 404s; enable: ... | sudo env HOST_EXTENSION=1 bash)"
+fi
 echo
 echo "next — terminate TLS with a reverse proxy. Caddy:"
 echo "    keys.example.com { reverse_proxy 127.0.0.1:3000 }"

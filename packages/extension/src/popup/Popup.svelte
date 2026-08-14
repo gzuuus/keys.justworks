@@ -3,6 +3,7 @@
   import { send, shortNpub, type Status } from "../lib/ui";
   import { isNewer, UPDATE_KEY, type UpdateInfo } from "../lib/update";
   import Logo from "../lib/Logo.svelte";
+  import Profile from "../lib/Profile.svelte";
 
   let identifier = $state("");
   let password = $state("");
@@ -94,8 +95,10 @@
         <span class="dot"></span>
         <span class="muted">Unlocked</span>
       </div>
-      <pre class="pk" title={npub}>{shortNpub(npub)}</pre>
-      <button type="button" class="link copy" onclick={copy}>{copied ? "Copied" : "Copy npub"}</button>
+      <Profile npub={npub} fallback={shortNpub(npub)} size={30} />
+      <button type="button" class="link copy" onclick={copy} title={npub}
+        >{copied ? "Copied" : "Copy npub"}</button
+      >
     </div>
     <div class="row actions">
       <button onclick={() => openManage()}>Manage</button>
@@ -162,10 +165,6 @@
     border-radius: 50%;
     background: var(--mint);
     display: inline-block;
-  }
-  .pk {
-    margin: 0 0 0.35rem;
-    max-height: none;
   }
   .copy {
     font-size: 0.78rem;

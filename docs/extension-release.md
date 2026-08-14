@@ -103,13 +103,18 @@ page. The user re-drags the `.crx`; the data (cached blobs, permissions, config)
 survive because the extension ID is stable. This works unchanged for self-hosters —
 the check resolves against whatever API base the extension is configured with.
 
-Deploy-side, nothing manual: `scripts/setup.sh` (the VPS one-liner) syncs the newest
-`ext-v*` release into `/opt/keys.justworks/extension` (sha256-verified before the live files
-are replaced) and sets `KJ_EXTENSION_DIR` in the systemd unit. The extension stream is pinned
-independently of the server pin — `EXT_VERSION=ext-v0.0.3` pins it, otherwise always newest.
-For an extension-only update (no server release), just re-run setup.sh — it's idempotent — or
-run `scripts/sync-extension.sh /opt/keys.justworks/extension` directly on the VPS. A failed
-sync never aborts a server upgrade; `/extension/*` just 404s (by design) until the next run.
+Deploy-side, nothing manual: `scripts/setup.sh` (the VPS one-liner, run with
+`HOST_EXTENSION=1` — extension hosting is opt-in, official provider only) syncs
+the newest `ext-v*` release into `/opt/keys.justworks/extension` (sha256-verified
+before the live files are replaced) and sets `KJ_EXTENSION_DIR` in the systemd
+unit. The extension stream is pinned independently of the server pin —
+`EXT_VERSION=ext-v0.0.3` pins it, otherwise always newest. For an
+extension-only update (no server release), just re-run setup.sh with the flag
+(it's idempotent; an already-hosting unit keeps `KJ_EXTENSION_DIR` across plain
+upgrades, `HOST_EXTENSION=0` removes it) or run
+`scripts/sync-extension.sh /opt/keys.justworks/extension` directly on the VPS.
+A failed sync never aborts a server upgrade; `/extension/*` just 404s (by
+design) until the next run.
 
 Note: the first release to carry `update.xml` is whatever comes after `ext-v0.0.2` — the
 CI change postdates it. Until then, syncs of `ext-v0.0.2` will warn and skip.

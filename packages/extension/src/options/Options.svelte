@@ -5,6 +5,8 @@
   import type { PermissionEntry } from "../lib/permissions";
   import type { CachedAccount } from "../lib/accounts";
   import Logo from "../lib/Logo.svelte";
+  import Profile from "../lib/Profile.svelte";
+  import { ensureFresh, npubToHex } from "../lib/profiles";
 
   interface KjConfig {
     apiBase: string;
@@ -62,6 +64,13 @@
     } catch {
       /* SW may be mid-startup */
     }
+    // Refresh kind-0 profiles that are missing/stale (SW only refreshes the
+    // currently-held key). Profile components pick the update up via
+    // storage.onChanged. fire-and-forget by design.
+    const hexes = cached
+      .map(({ account }) => npubToHex(account.npub))
+      .filter((h): h is string => !!h);
+    void ensureFresh(hexes).catch(() => {});
   }
 
   /** Deep links from the popup: #create / #import jump into onboarding,
@@ -262,7 +271,7 @@
     {#if status?.unlocked}
       <h2>Unlocked</h2>
       <div class="row" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem">
-        <pre style="margin: 0" title={status.npub ?? ""}>{shortNpub(status.npub ?? "")}</pre>
+        <Profile npub={status.npub ?? ""} fallback={shortNpub(status.npub ?? "")} size={30} />
         <div class="row">
           <button onclick={copyNpub}>{npubCopied ? "Copied" : "Copy npub"}</button>
           <button class="primary" onclick={lockKey}>Lock</button>
@@ -375,15 +384,13 @@
       <ul class="devices">
         {#each cached as { id, account } (id)}
           <li>
-            <div>
-              <div class="label">
-                {account.label}
-                {#if status?.unlocked && status.npub === account.npub}
-                  <span class="chip ok"><span class="dot"></span>active</span>
-                {/if}
-              </div>
-              <div class="muted small">{shortNpub(account.npub)}</div>
-            </div>
+            <Profile npub={account.npub} fallback={account.label} size={26} />
+            <span class="muted small" style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+              >{shortNpub(account.npub)}</span
+            >
+            {#if status?.unlocked && status.npub === account.npub}
+              <span class="chip ok"><span class="dot"></span>active</span>
+            {/if}
             <button onclick={() => removeCached(id)}>Remove</button>
           </li>
         {/each}
@@ -582,11 +589,6 @@
   }
   .devices li:last-child {
     border-bottom: none;
-  }
-  .label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
   }
   h3 {
     margin: 1.25rem 0 0.5rem;

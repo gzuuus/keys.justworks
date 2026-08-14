@@ -325,7 +325,10 @@ The API is namespaced under `/api/*` so it coexists with the bundled static site
   `Content-Security-Policy` emitted as a **header** by the Rust server
   (`script-src 'self'`, `object-src 'none'`, `base-uri 'none'`,
   `frame-ancestors 'none'`, `connect-src 'self'` + relay `wss:` origins for
-  NIP-46). The only inline `<script>` in the built HTML is SvelteKit's
+  NIP-46, `img-src 'self' https:` so profile avatars — arbitrary https URLs
+  from kind 0 metadata — can render; under XSS this leaves an image-request
+  beacon channel, accepted because `script-src` already blocks script
+  execution and avatars render `no-referrer`). The only inline `<script>` in the built HTML is SvelteKit's
   bootstrap loader; the server hashes it from the embedded `index.html` and
   includes `'sha256-<hash>'` in `script-src`, so no `'unsafe-inline'` is needed
   (`modulePreload.polyfill = false` avoids an extra inline script). Everything is
