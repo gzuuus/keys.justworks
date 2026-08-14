@@ -310,6 +310,9 @@ async function handleUi(msg: BgUiMessage): Promise<unknown> {
       return setConfig({ apiBase: msg.apiBase });
     case "cachedAccounts":
       return accounts.list();
+    case "removeCached":
+      await accounts.remove(msg.id);
+      return { removed: true };
     case "listPermissions":
       return permissions.listPermissions();
     case "removePermission":

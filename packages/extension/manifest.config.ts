@@ -14,11 +14,15 @@ export default defineManifest({
   name: "keys.justworks",
   version: "0.0.2",
   description: "Non-custodial Nostr key locker — NIP-07 signer.",
+  icons: { 16: "icons/icon-16.png", 32: "icons/icon-32.png", 48: "icons/icon-48.png", 128: "icons/icon-128.png" },
   action: {
     default_title: "keys.justworks",
     default_popup: "src/popup/index.html",
+    default_icon: { 16: "icons/icon-16.png", 32: "icons/icon-32.png", 48: "icons/icon-48.png", 128: "icons/icon-128.png" },
   },
-  options_ui: { page: "src/options/index.html" },
+  // open_in_tab: a full page instead of the embedded chrome://extensions panel —
+  // the options page is the extension's manage surface, not a settings panel.
+  options_ui: { page: "src/options/index.html", open_in_tab: true },
   background: {
     service_worker: "src/background/index.ts",
     type: "module",

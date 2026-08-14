@@ -87,6 +87,7 @@ export type BgUiMessage =
   | { src: "ui"; cmd: "getConfig" }
   | { src: "ui"; cmd: "setConfig"; apiBase: string }
   | { src: "ui"; cmd: "cachedAccounts" }
+  | { src: "ui"; cmd: "removeCached"; id: string }
   | { src: "ui"; cmd: "listPermissions" }
   | {
       src: "ui";

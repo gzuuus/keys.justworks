@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { send, shortNpub, type Status } from "../lib/ui";
+  import Logo from "../lib/Logo.svelte";
 
   let identifier = $state("");
   let password = $state("");
@@ -49,19 +50,23 @@
     }
   }
 
-  function openOptions() {
-    chrome.runtime.openOptionsPage();
+  /** Deep-link into the manage tab (e.g. "#create") — the popup is too small
+   * and too short-lived (closes on blur) for onboarding flows. */
+  function openManage(hash = "") {
+    chrome.tabs.create({ url: chrome.runtime.getURL(`src/options/index.html${hash}`) });
   }
 
   onMount(refresh);
 </script>
 
 <div class="wrap">
-  <h1>🔑 keys.justworks</h1>
+  <header class="head">
+    <Logo size={26} />
+  </header>
 
   {#if status?.unlocked}
     <div class="card">
-      <div class="head">
+      <div class="state">
         <span class="dot"></span>
         <span class="muted">Unlocked</span>
       </div>
@@ -69,11 +74,10 @@
       <button type="button" class="link copy" onclick={copy}>{copied ? "Copied" : "Copy npub"}</button>
     </div>
     <div class="row actions">
-      <button onclick={openOptions}>Manage</button>
+      <button onclick={() => openManage()}>Manage</button>
       <button class="primary" onclick={lock}>Lock</button>
     </div>
   {:else}
-    <p class="muted sub">Unlock your key</p>
     <form onsubmit={onUnlock} class="form">
       <div>
         <label for="id">Identifier</label>
@@ -88,7 +92,7 @@
     </form>
     <p class="muted foot">
       No key yet?
-      <button type="button" class="link" onclick={openOptions}>Create one →</button>
+      <button type="button" class="link" onclick={() => openManage("#create")}>Create one →</button>
     </p>
   {/if}
 </div>
@@ -96,17 +100,17 @@
 <style>
   .wrap {
     padding: 1rem;
-    min-width: 240px;
+    min-width: 288px;
   }
-  .sub {
-    margin: 0 0 0.5rem;
+  .head {
+    margin-bottom: 0.9rem;
   }
   .form {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
   }
-  .head {
+  .state {
     display: flex;
     align-items: center;
     gap: 0.4rem;
