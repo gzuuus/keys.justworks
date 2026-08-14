@@ -20,7 +20,7 @@
 			* { box-sizing: border-box; }
 			body { margin: 0; background: var(--black); color: var(--white); }
 			body.light {
-				--panel: #f0efec;
+				--panel: #efeeeb;
 				--line: rgb(9 9 9 / 0.17);
 				--muted: rgb(9 9 9 / 0.58);
 				background: var(--white);
@@ -29,17 +29,18 @@
 			.shell { width: min(100% - 2rem, 92rem); margin: 0 auto; padding: 2rem 0 5rem; }
 			header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 3rem; border-bottom: 1px solid var(--line); padding-bottom: 1.75rem; }
 			.kicker { margin: 0 0 0.75rem; color: var(--orange); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
-			h1 { max-width: 12ch; margin: 0; font-size: clamp(2.4rem, 6vw, 6rem); line-height: 0.9; letter-spacing: -0.07em; }
-			.intro { max-width: 47rem; margin: 1.4rem 0 0; color: var(--muted); font-family: system-ui, sans-serif; line-height: 1.6; }
-			button { border: 1px solid var(--line); background: transparent; color: inherit; padding: 0.8rem 1rem; font: inherit; cursor: pointer; }
+			h1 { max-width: 11ch; margin: 0; font-size: clamp(2.7rem, 6vw, 6rem); line-height: 0.9; letter-spacing: -0.07em; }
+			.intro { max-width: 50rem; margin: 1.4rem 0 0; color: var(--muted); font-family: system-ui, sans-serif; line-height: 1.6; }
+			.controls { display: flex; gap: 0.6rem; }
+			button { min-height: 2.75rem; border: 1px solid var(--line); background: transparent; color: inherit; padding: 0.7rem 0.95rem; font: inherit; cursor: pointer; }
 			button:hover { border-color: var(--orange); }
 			.criteria { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.25rem 0 0; padding: 0; list-style: none; }
 			.criteria li { border: 1px solid var(--line); padding: 0.42rem 0.62rem; color: var(--muted); font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; }
 			.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 2rem; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
 			.card { min-width: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: clamp(1.25rem, 3vw, 2.5rem); }
-			.preview { position: relative; display: flex; min-height: 17rem; align-items: center; justify-content: center; overflow: hidden; background: var(--panel); }
+			.preview { position: relative; display: flex; min-height: 18rem; align-items: center; justify-content: center; overflow: hidden; background: var(--panel); }
 			.preview::after { position: absolute; inset: auto 1rem 1rem auto; color: var(--muted); content: "96"; font-size: 0.58rem; letter-spacing: 0.1em; }
-			.mark { width: 9.5rem; height: 9.5rem; overflow: visible; color: currentColor; }
+			.mark { width: 10.5rem; height: 10.5rem; overflow: visible; color: currentColor; }
 			.meta { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) auto; align-items: start; gap: 1rem; margin-top: 1.3rem; }
 			.number { color: var(--orange); font-size: 0.72rem; font-weight: 800; }
 			h2 { margin: 0; font-size: 1rem; letter-spacing: -0.035em; }
@@ -48,152 +49,114 @@
 			.sample { display: block; color: currentColor; }
 			.sample--32 { width: 2rem; height: 2rem; }
 			.sample--20 { width: 1.25rem; height: 1.25rem; }
-			.orange-fill { fill: var(--orange); }
-			.orange-stroke { fill: none; stroke: var(--orange); }
 			.ink-fill { fill: currentColor; }
 			.ink-stroke { fill: none; stroke: currentColor; }
+			.orange-fill { fill: var(--orange); }
+			.orange-stroke { fill: none; stroke: var(--orange); }
+			.cutout-stroke { fill: none; stroke: var(--panel); }
+			.nostr-image { filter: none; }
+			body.light .nostr-image { filter: invert(1); }
+			body.mono .orange-fill { fill: currentColor; }
+			body.mono .orange-stroke { stroke: currentColor; }
 			.keyline { fill: none; stroke: currentColor; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
 			.signal { fill: none; stroke: var(--orange); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+			body.mono .signal { stroke: currentColor; }
 			@media (max-width: 760px) {
 				.shell { width: min(100% - 1rem, 92rem); padding-top: 1rem; }
 				header { grid-template-columns: 1fr; align-items: start; gap: 1.5rem; }
+				.controls { flex-wrap: wrap; }
 				.grid { grid-template-columns: 1fr; }
 				.preview { min-height: 14rem; }
-				.mark { width: 8rem; height: 8rem; }
+				.mark { width: 8.5rem; height: 8.5rem; }
 			}
 		</style>
 	</head>
 	<body>
+		<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+			<defs>
+				<symbol id="mark-01" viewBox="0 0 96 96">
+					<circle class="ink-stroke" cx="31" cy="40" r="22" stroke-width="7" />
+					<path class="signal" d="M20 50V30l22 20V30" />
+					<path class="keyline" d="M47 56 76 85m-13-13 10-10m-3 16 8-8" />
+				</symbol>
+				<symbol id="mark-02" viewBox="0 0 96 96">
+					<path class="ink-fill" d="M9 39a25 25 0 1 1 43 17l31 24-6 8-13-10-7 7-7-6 7-7-15-12A25 25 0 0 1 9 39Z" />
+					<path class="cutout-stroke" d="M20 49V29l22 20V29" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+					<circle class="orange-fill" cx="18" cy="21" r="4" />
+				</symbol>
+				<symbol id="mark-03" viewBox="0 0 96 96">
+					<circle class="ink-stroke" cx="30" cy="46" r="23" stroke-width="7" />
+					<path class="orange-stroke" d="M19 57V35l22 22V35" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+					<g class="orange-fill"><circle cx="19" cy="57" r="4"/><circle cx="19" cy="35" r="4"/><circle cx="30" cy="46" r="4"/><circle cx="41" cy="57" r="4"/><circle cx="41" cy="35" r="4"/></g>
+					<path class="keyline" d="M53 46h32m-17 0v11m11-11v7" />
+				</symbol>
+				<symbol id="mark-04" viewBox="0 0 96 96">
+					<path class="ink-stroke" d="M12 16h35l11 11v31H12Z" stroke-width="7" stroke-linejoin="round" />
+					<path class="ink-stroke" d="M47 16v12h11" stroke-width="7" stroke-linejoin="round" />
+					<path class="signal" d="M23 47V28l23 19V28" />
+					<path class="keyline" d="m53 55 27 27m-12-12 9-9m-3 15 7-7" />
+				</symbol>
+				<symbol id="mark-05" viewBox="0 0 96 96">
+					<circle class="ink-stroke" cx="31" cy="44" r="23" stroke-width="7" />
+					<image class="nostr-image" href="/nostr-mark.svg" x="15" y="28" width="32" height="32" />
+					<circle class="orange-fill" cx="31" cy="44" r="3" />
+					<path class="keyline" d="M53 44h32m-17 0v11m11-11v7" />
+				</symbol>
+				<symbol id="mark-06" viewBox="0 0 96 96">
+					<circle class="orange-stroke" cx="19" cy="22" r="10" stroke-width="7" />
+					<circle class="orange-stroke" cx="51" cy="22" r="10" stroke-width="7" />
+					<path class="keyline" d="M19 75V34l32 41V34m0 0h33m-17 0v11m11-11v7" />
+				</symbol>
+				<symbol id="mark-07" viewBox="0 0 96 96">
+					<rect class="orange-fill" x="10" y="13" width="56" height="56" rx="18" />
+					<path d="M24 56V28l28 28V28" fill="none" stroke="#090909" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+					<path class="keyline" d="m60 63 21 21m-10-10 8-8m-3 14 6-6" />
+				</symbol>
+				<symbol id="mark-08" viewBox="0 0 96 96">
+					<path class="ink-stroke" d="M10 17h56v42H42L28 72V59H10Z" stroke-width="7" stroke-linejoin="round" />
+					<path class="signal" d="M22 49V29l25 20V29" />
+					<path class="orange-stroke" d="m61 55 21 21m-10-10 8-8m-3 14 6-6" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+				</symbol>
+				<symbol id="mark-09" viewBox="0 0 96 96">
+					<path class="keyline" d="M18 75V28l36 47V28h31m-17 0v11m11-11v7" />
+					<path class="orange-stroke" d="M18 75V28l36 47V28" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+					<g class="orange-fill"><circle cx="18" cy="75" r="4"/><circle cx="18" cy="28" r="4"/><circle cx="36" cy="51.5" r="4"/><circle cx="54" cy="75" r="4"/><circle cx="54" cy="28" r="4"/></g>
+				</symbol>
+				<symbol id="mark-10" viewBox="0 0 96 96">
+					<circle class="orange-stroke" cx="29" cy="20" r="11" stroke-width="7" />
+					<circle class="ink-fill" cx="29" cy="20" r="3" />
+					<path class="keyline" d="M19 79V40l24 25V40m0 13h40m-17 0v11m11-11v7" />
+				</symbol>
+			</defs>
+		</svg>
+
 		<main class="shell">
 			<header>
 				<div>
-					<p class="kicker">keys.justworks / identity study 02</p>
+					<p class="kicker">keys.justworks / identity study 03</p>
 					<h1>Nostr, cut into the key.</h1>
-					<p class="intro">Ten production-minded marks built from one brief: fuse a user-held key with a recognisable Nostr signal. Every direction is drawn for silhouette, owns its negative space, and is shown at real interface sizes.</p>
-					<ul class="criteria" aria-label="Design criteria">
-						<li>Key at first glance</li><li>Nostr encoded</li><li>Works at 20px</li><li>One-colour safe</li>
-					</ul>
+					<p class="intro">Ten production-ready directions built on one optical system: a user-held key, a recognisable Nostr signal, and a silhouette that survives at real interface sizes. The family uses one grid, one blade language, and no decorative detail that disappears at 20px.</p>
+					<ul class="criteria" aria-label="Design criteria"><li>Key at first glance</li><li>Nostr encoded</li><li>Works at 20px</li><li>One-colour safe</li></ul>
 				</div>
-				<button id="theme" type="button">Invert surface</button>
+				<div class="controls"><button id="mono" type="button">One colour</button><button id="theme" type="button">Invert surface</button></div>
 			</header>
 
 			<section class="grid" aria-label="Ten Nostr key logo concepts">
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="N-key monogram">
-							<circle class="ink-stroke" cx="28" cy="31" r="18" stroke-width="8"/>
-							<path class="signal" d="M20 39V23l16 16V23"/>
-							<path class="keyline" d="M41 44 76 79m-12-12 9-9m-3 15 8-8"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">01</span><div><h2>N-key monogram</h2><p>A precise Nostr “N” is locked into the bow; the diagonal becomes a conventional cut key.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><circle class="ink-stroke" cx="28" cy="31" r="18" stroke-width="8"/><path class="signal" d="M20 39V23l16 16V23"/><path class="keyline" d="M41 44 76 79m-12-12 9-9m-3 15 8-8"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><circle class="ink-stroke" cx="28" cy="31" r="18" stroke-width="9"/><path class="signal" d="M20 39V23l16 16V23"/><path class="keyline" d="M41 44 76 79m-12-12 9-9m-3 15 8-8"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Negative-space Nostr key">
-							<path class="ink-fill" fill-rule="evenodd" d="M11 30a21 21 0 1 1 37.2 13.3L81 76l-6 6-8-8-7 7-6-6 7-7-18.8-18.8A21 21 0 0 1 11 30Zm13-9v18h6V30l10 10V21h-6v9L24 20.5Z"/>
-							<circle class="orange-fill" cx="17" cy="16" r="5"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">02</span><div><h2>Cut N</h2><p>The Nostr initial is physically cut through a solid key bow, giving the mark a strong one-piece silhouette.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><path class="ink-fill" fill-rule="evenodd" d="M11 30a21 21 0 1 1 37.2 13.3L81 76l-6 6-8-8-7 7-6-6 7-7-18.8-18.8A21 21 0 0 1 11 30Zm13-9v18h6V30l10 10V21h-6v9L24 20.5Z"/><circle class="orange-fill" cx="17" cy="16" r="5"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><path class="ink-fill" fill-rule="evenodd" d="M11 30a21 21 0 1 1 37.2 13.3L81 76l-6 6-8-8-7 7-6-6 7-7-18.8-18.8A21 21 0 0 1 11 30Zm13-9v18h6V30l10 10V21h-6v9L24 20.5Z"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Relay key">
-							<circle class="ink-stroke" cx="29" cy="30" r="19" stroke-width="7"/>
-							<path class="orange-stroke" d="M20 39 20 21 38 39V21" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-							<g class="orange-fill"><circle cx="20" cy="39" r="4"/><circle cx="20" cy="21" r="4"/><circle cx="38" cy="39" r="4"/><circle cx="38" cy="21" r="4"/></g>
-							<path class="keyline" d="M43 44 76 77m-11-11 9-9m-3 15 7-7"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">03</span><div><h2>Relay key</h2><p>Four relay nodes draw the N inside the bow. The protocol is the mechanism, not decoration.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><circle class="ink-stroke" cx="29" cy="30" r="19" stroke-width="8"/><path class="orange-stroke" d="M20 39V21l18 18V21" stroke-width="6"/><path class="keyline" d="M43 44 76 77m-11-11 9-9m-3 15 7-7"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><circle class="ink-stroke" cx="29" cy="30" r="19" stroke-width="9"/><path class="orange-stroke" d="M20 39V21l18 18V21" stroke-width="7"/><path class="keyline" d="M43 44 76 77m-11-11 9-9"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Nostr event key">
-							<path class="ink-stroke" d="M12 16h33l10 10v29H12Z" stroke-width="7" stroke-linejoin="round"/>
-							<path class="ink-stroke" d="M45 16v11h10" stroke-width="7" stroke-linejoin="round"/>
-							<path class="signal" d="M22 44V27l20 17V27"/>
-							<path class="keyline" d="M52 53 77 78m-10-10 8-8m-3 14 6-6"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">04</span><div><h2>Event key</h2><p>A signed Nostr event is the key’s bow; its folded corner flows directly into the shaft.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><path class="ink-stroke" d="M12 16h33l10 10v29H12ZM45 16v11h10" stroke-width="7" stroke-linejoin="round"/><path class="signal" d="M22 44V27l20 17V27"/><path class="keyline" d="M52 53 77 78m-10-10 8-8"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><path class="ink-stroke" d="M12 16h33l10 10v29H12ZM45 16v11h10" stroke-width="9"/><path class="signal" d="M22 44V27l20 17V27"/><path class="keyline" d="M52 53 77 78m-10-10 8-8"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Ostrich key">
-							<path class="ink-fill" d="M15 41c0-12 10-22 23-22 10 0 18 5 22 14-8 1-14 5-18 11-4 7-3 14 1 20H29c-8 0-14-5-14-12 0-4 2-8 6-11Z"/>
-							<path class="orange-stroke" d="M38 49c9-1 15-8 15-18 0-10 4-16 12-17 6-1 11 2 13 7l-10 2" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-							<circle class="ink-fill" cx="69" cy="18" r="2.5"/>
-							<path class="keyline" d="M43 64h36m-13 0v10m9-10v7"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">05</span><div><h2>Ostrich cut</h2><p>The Nostr ostrich’s neck resolves into the key channel; its body becomes the grip.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><path class="ink-fill" d="M15 41c0-12 10-22 23-22 10 0 18 5 22 14-8 1-14 5-18 11-4 7-3 14 1 20H29c-8 0-14-5-14-12 0-4 2-8 6-11Z"/><path class="orange-stroke" d="M38 49c9-1 15-8 15-18 0-10 4-16 12-17 6-1 11 2 13 7l-10 2" stroke-width="6"/><path class="keyline" d="M43 64h36m-13 0v10m9-10v7"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><path class="ink-fill" d="M15 41c0-12 10-22 23-22 10 0 18 5 22 14-8 1-14 5-18 11-4 7-3 14 1 20H29c-8 0-14-5-14-12 0-4 2-8 6-11Z"/><path class="orange-stroke" d="M38 49c9-1 15-8 15-18 0-10 4-16 12-17 6-1 11 2 13 7l-10 2" stroke-width="7"/><path class="keyline" d="M43 64h36m-13 0v10"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Keypair N">
-							<path class="keyline" d="M18 74V23l36 51V23"/>
-							<circle class="orange-stroke" cx="18" cy="18" r="9" stroke-width="7"/>
-							<circle class="orange-stroke" cx="54" cy="18" r="9" stroke-width="7"/>
-							<path class="ink-stroke" d="M54 23h27m-10 0v10m7-10v7" stroke-width="7" stroke-linecap="round"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">06</span><div><h2>Keypair N</h2><p>Two cryptographic key heads anchor a single N. The public and private pair stay visibly connected.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><path class="keyline" d="M18 74V23l36 51V23"/><circle class="orange-stroke" cx="18" cy="18" r="9" stroke-width="7"/><circle class="orange-stroke" cx="54" cy="18" r="9" stroke-width="7"/><path class="ink-stroke" d="M54 23h27m-10 0v10m7-10v7" stroke-width="7"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><path class="keyline" d="M18 74V23l36 51V23"/><circle class="orange-fill" cx="18" cy="18" r="8"/><circle class="orange-fill" cx="54" cy="18" r="8"/><path class="ink-stroke" d="M54 23h27m-10 0v10" stroke-width="8"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Nostr key stamp">
-							<rect class="orange-fill" x="10" y="10" width="56" height="56" rx="18"/>
-							<path d="M23 52V25l28 27V25" fill="none" stroke="#090909" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-							<path class="keyline" d="M60 60 80 80m-9-9 8-8m-3 13 5-5"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">07</span><div><h2>Nostr stamp</h2><p>A bold app-icon direction: the N is stamped into an orange key bow with an uncompromised small-size silhouette.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><rect class="orange-fill" x="10" y="10" width="56" height="56" rx="18"/><path d="M23 52V25l28 27V25" fill="none" stroke="#090909" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path class="keyline" d="M60 60 80 80m-9-9 8-8"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><rect class="orange-fill" x="10" y="10" width="56" height="56" rx="17"/><path d="M23 52V25l28 27V25" fill="none" stroke="#090909" stroke-width="9"/><path class="keyline" d="M60 60 80 80m-9-9 8-8"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Nostr note key">
-							<path class="ink-fill" fill-rule="evenodd" d="M10 14h56v46H42L29 72V60H10Zm13 35V25h7l22 22V25h7v24h-7L30 28v21Z"/>
-							<path class="orange-stroke" d="M61 56 80 75m-9-9 8-8m-3 13 6-6" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
-					</div>
-					<div class="meta"><span class="number">08</span><div><h2>Note key</h2><p>The open protocol’s note bubble becomes the grip; the signature exits as a cut key.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><path class="ink-fill" fill-rule="evenodd" d="M10 14h56v46H42L29 72V60H10Zm13 35V25h7l22 22V25h7v24h-7L30 28v21Z"/><path class="orange-stroke" d="M61 56 80 75m-9-9 8-8" stroke-width="7"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><path class="ink-fill" fill-rule="evenodd" d="M10 14h56v46H42L29 72V60H10Zm13 35V25h7l22 22V25h7v24h-7L30 28v21Z"/><path class="orange-stroke" d="M61 56 80 75m-9-9 8-8" stroke-width="8"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Five relay key">
-							<circle class="ink-stroke" cx="31" cy="31" r="22" stroke-width="7"/>
-							<path class="orange-stroke" d="M19 42V20l24 22V20" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-							<g class="orange-fill"><circle cx="19" cy="42" r="4.5"/><circle cx="19" cy="20" r="4.5"/><circle cx="31" cy="31" r="4.5"/><circle cx="43" cy="42" r="4.5"/><circle cx="43" cy="20" r="4.5"/></g>
-							<path class="keyline" d="M47 47 78 78m-11-11 9-9m-4 14 7-7"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">09</span><div><h2>Five-relay N</h2><p>Five identity nodes form an N inside the bow, directly connecting the landing animation to the permanent mark.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><circle class="ink-stroke" cx="31" cy="31" r="22" stroke-width="8"/><path class="orange-stroke" d="M19 42V20l24 22V20" stroke-width="5"/><g class="orange-fill"><circle cx="19" cy="42" r="5"/><circle cx="19" cy="20" r="5"/><circle cx="31" cy="31" r="5"/><circle cx="43" cy="42" r="5"/><circle cx="43" cy="20" r="5"/></g><path class="keyline" d="M47 47 78 78m-11-11 9-9"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><circle class="ink-stroke" cx="31" cy="31" r="22" stroke-width="9"/><path class="orange-stroke" d="M19 42V20l24 22V20" stroke-width="7"/><path class="keyline" d="M47 47 78 78m-11-11 9-9"/></svg></div></div>
-				</article>
-
-				<article class="card">
-					<div class="preview">
-						<svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Only you Nostr key">
-							<circle class="orange-stroke" cx="31" cy="19" r="11" stroke-width="7"/>
-							<path class="keyline" d="M20 79V39l22 25V39m0 20h35m-13 0v11m9-11v7"/>
-							<circle class="ink-fill" cx="31" cy="19" r="3"/>
-						</svg>
-					</div>
-					<div class="meta"><span class="number">10</span><div><h2>Only you / N</h2><p>The strongest idea from round one, redrawn as an N-shaped key: one identity node, one owner, one exit.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><circle class="orange-stroke" cx="31" cy="19" r="11" stroke-width="7"/><path class="keyline" d="M20 79V39l22 25V39m0 20h35m-13 0v11m9-11v7"/><circle class="ink-fill" cx="31" cy="19" r="3"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><circle class="orange-fill" cx="31" cy="19" r="9"/><path class="keyline" d="M20 79V39l22 25V39m0 20h35m-13 0v11"/></svg></div></div>
-				</article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="N key monogram"><use href="#mark-01"/></svg></div><div class="meta"><span class="number">01</span><div><h2>Monogram cut</h2><p>The N sits inside a classic bow while its lower diagonal hands directly into the blade.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-01"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-01"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Knockout N key"><use href="#mark-02"/></svg></div><div class="meta"><span class="number">02</span><div><h2>Knockout N</h2><p>A compact one-piece key with the protocol initial physically removed from the bow.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-02"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-02"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Relay bow key"><use href="#mark-03"/></svg></div><div class="meta"><span class="number">03</span><div><h2>Relay bow</h2><p>Five Nostr nodes form the N inside a horizontal key built for app-chrome proportions.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-03"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-03"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Signed event key"><use href="#mark-04"/></svg></div><div class="meta"><span class="number">04</span><div><h2>Signed event</h2><p>The signed event is the grip; its folded corner and signature resolve into the blade.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-04"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-04"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Ostrich channel key"><use href="#mark-05"/></svg></div><div class="meta"><span class="number">05</span><div><h2>Ostrich channel</h2><p>The Nostr ostrich is reduced to a durable gesture; its body occupies the key bow.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-05"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-05"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Keypair ligature"><use href="#mark-06"/></svg></div><div class="meta"><span class="number">06</span><div><h2>Keypair ligature</h2><p>Public and private key heads anchor a single N without becoming a diagram.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-06"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-06"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Nostr fob stamp"><use href="#mark-07"/></svg></div><div class="meta"><span class="number">07</span><div><h2>Fob stamp</h2><p>A dense app-icon mark: the N is debossed into a rubber key fob with a cut blade.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-07"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-07"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Nostr note signature key"><use href="#mark-08"/></svg></div><div class="meta"><span class="number">08</span><div><h2>Note signature</h2><p>The open note becomes the grip, while its signed exit is cut as a functional key.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-08"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-08"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Five node Nostr key"><use href="#mark-09"/></svg></div><div class="meta"><span class="number">09</span><div><h2>Five-node key</h2><p>The five intro nodes become a permanent N-shaped mechanism inside the key head.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-09"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-09"/></svg></div></div></article>
+				<article class="card"><div class="preview"><svg class="mark" viewBox="0 0 96 96" role="img" aria-label="Only you N key"><use href="#mark-10"/></svg></div><div class="meta"><span class="number">10</span><div><h2>Only you / N</h2><p>One identity node anchors an N-shaped key: one owner, one controlled exit.</p></div><div class="tests"><svg class="sample sample--32" viewBox="0 0 96 96"><use href="#mark-10"/></svg><svg class="sample sample--20" viewBox="0 0 96 96"><use href="#mark-10"/></svg></div></div></article>
 			</section>
 		</main>
 		<script>
 			document.querySelector('#theme').addEventListener('click', () => document.body.classList.toggle('light'));
+			document.querySelector('#mono').addEventListener('click', () => document.body.classList.toggle('mono'));
 		</script>
 	</body>
 </html>
