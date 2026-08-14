@@ -112,8 +112,13 @@ function makeChrome() {
       onInstalled: { addListener: () => {} },
       getURL: (p: string) => `chrome-extension://test/${p}`,
       openOptionsPage: async () => {},
+      getManifest: () => ({ version: '0.0.4' }),
     },
-    alarms: { create: () => {}, onAlarm: { addListener: () => {} } },
+    action: {
+      setBadgeText: () => {},
+      setBadgeBackgroundColor: () => {},
+    },
+    alarms: { create: () => {}, get: async () => undefined, onAlarm: { addListener: () => {} } },
     windows: {
       create: async (opts: { url: string }) => {
         const win = { id: created.length + 1, url: opts.url };

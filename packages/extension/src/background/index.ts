@@ -33,6 +33,7 @@ import {
 } from "@kj/core";
 import * as accounts from "../lib/accounts";
 import * as permissions from "../lib/permissions";
+import { fetchLatestUpdate, isNewer, UPDATE_KEY, type UpdateInfo } from "../lib/update";
 import { getConfig, setConfig } from "../lib/config";
 import type {
   BgMessage,
@@ -47,6 +48,9 @@ const signer = new SignerCore();
 // Apply the stored (or default) API base before any REST call. The extension is
 // never same-origin with the server, so this must override core's `/api` default.
 void getConfig();
+// One staleness-guarded fetch per SW boot at most (the 6h alarm covers
+// long-running browsers; boot checks cover daily-restarted ones).
+void maybeCheckForUpdate();
 
 // --- keepalive + idle auto-lock ---------------------------------------------
 // Chrome kills an idle MV3 service worker (~30s). When that happens the held key
@@ -57,15 +61,59 @@ void getConfig();
 const ALARM = "kj-tick";
 let lastActivity = Date.now();
 chrome.alarms.create(ALARM, { periodInMinutes: 0.5 });
-chrome.alarms.onAlarm.addListener(() => {
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === UPDATE_ALARM) {
+    void refreshUpdate();
+    return;
+  }
   if (signer.unlocked && Date.now() - lastActivity > IDLE_LOCK_MS) signer.lock();
 });
 function bump() {
   lastActivity = Date.now();
 }
 
+// --- self-update detection -----------------------------------------------
+// Chrome doesn't apply update_url updates for drag-installed CRXs (Linux/policy
+// installs only), so we poll our own update.xml and badge the toolbar icon when
+// the server advertises something newer. The popup turns the badge into a
+// banner with a download link.
+const UPDATE_ALARM = "kj-update";
+const UPDATE_EVERY_MS = 6 * 60 * 60 * 1000;
+
+// Create-once (not every SW boot, unlike the short-period tick above): a
+// top-level create would reset the 6h window on every SW wake and starve it.
+void chrome.alarms.get(UPDATE_ALARM).then((a) => {
+  if (!a) chrome.alarms.create(UPDATE_ALARM, { periodInMinutes: 360 });
+});
+
+async function refreshUpdate(): Promise<void> {
+  const { apiBase } = await getConfig();
+  const latest = await fetchLatestUpdate(apiBase);
+  // Unreachable / not synced: keep whatever we knew before (don't blink the
+  // badge on a flaky network, don't clear a valid notice).
+  if (!latest) return;
+  const current = chrome.runtime.getManifest().version;
+  const info: UpdateInfo | null = isNewer(latest.version, current)
+    ? { latest: latest.version, checkedAt: Date.now() }
+    : null;
+  await chrome.storage.local.set({ [UPDATE_KEY]: info });
+  chrome.action.setBadgeText({ text: info ? "•" : "" });
+  if (info) chrome.action.setBadgeBackgroundColor({ color: "#F59E0B" });
+}
+
+async function maybeCheckForUpdate(): Promise<void> {
+  const stored = (await chrome.storage.local.get(UPDATE_KEY))[UPDATE_KEY] as
+    | UpdateInfo
+    | null
+    | undefined;
+  if (!stored || Date.now() - stored.checkedAt > UPDATE_EVERY_MS) await refreshUpdate();
+}
+
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") chrome.runtime.openOptionsPage();
+  // install/update: re-evaluate immediately (clears a stale badge after the
+  // user updates, sets it on a fresh install if the server is ahead).
+  void refreshUpdate();
 });
 
 // --- signer dispatch helper -------------------------------------------------

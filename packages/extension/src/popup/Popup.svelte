@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { send, shortNpub, type Status } from "../lib/ui";
+  import { isNewer, UPDATE_KEY, type UpdateInfo } from "../lib/update";
   import Logo from "../lib/Logo.svelte";
 
   let identifier = $state("");
@@ -10,6 +11,7 @@
   let busy = $state(false);
   let error = $state<string | null>(null);
   let copied = $state(false);
+  let update = $state<{ latest: string; url: string } | null>(null);
 
   async function refresh() {
     try {
@@ -17,6 +19,21 @@
       npub = status?.npub ?? "";
     } catch (e) {
       error = e instanceof Error ? e.message : "status failed";
+    }
+    // Update notice: written by the SW's periodic check of /extension/update.xml.
+    const stored = (await chrome.storage.local.get(UPDATE_KEY))[UPDATE_KEY] as
+      | UpdateInfo
+      | null
+      | undefined;
+    if (stored && isNewer(stored.latest, chrome.runtime.getManifest().version)) {
+      try {
+        const cfg = await send<{ apiBase: string }>({ src: "ui", cmd: "getConfig" });
+        update = { latest: stored.latest, url: `${new URL(cfg.apiBase).origin}/download` };
+      } catch {
+        update = null;
+      }
+    } else {
+      update = null;
     }
   }
 
@@ -64,6 +81,13 @@
     <Logo size={26} />
   </header>
 
+  {#if update}
+    <a class="update" href={update.url} target="_blank" rel="noopener noreferrer">
+      <strong>v{update.latest} available</strong>
+      <span>Download the new .crx, then drag it onto chrome://extensions.</span>
+    </a>
+  {/if}
+
   {#if status?.unlocked}
     <div class="card">
       <div class="state">
@@ -104,6 +128,22 @@
   }
   .head {
     margin-bottom: 0.9rem;
+  }
+  .update {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-bottom: 0.9rem;
+    padding: 0.55rem 0.7rem;
+    border-left: 3px solid #f59e0b;
+    border-radius: 0.4rem;
+    background: var(--secondary, #f5f5f4);
+    font-size: 0.78rem;
+    text-decoration: none;
+    color: inherit;
+  }
+  .update span {
+    opacity: 0.75;
   }
   .form {
     display: flex;

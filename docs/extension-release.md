@@ -89,10 +89,19 @@ This is exactly the command CI runs (same `crx3` version, same flags).
 
 ## Auto-update
 
-Implemented. The manifest carries `update_url` → `https://keys.justworks.cash/extension/update.xml`;
+Implemented, with a caveat. The manifest carries `update_url` → `https://keys.justworks.cash/extension/update.xml`;
 release CI packs the GUpdate manifest (`update.xml`, with the `appid` derived from the
-signing key) alongside the `.crx`; a deployment serves both under `/extension/*` and Chrome
-polls for updates (~every 5h), pulling the new `.crx` when the version bumps.
+signing key) alongside the `.crx`; a deployment serves both under `/extension/*`.
+
+**The caveat:** Chrome only *applies* `update_url` updates to policy/Linux installs.
+For the drag-installed `.crx` on Windows/macOS (the documented install path), Chrome
+never pulls the update — it does nothing, silently. So the extension watches its own
+server: the SW fetches `/extension/update.xml` every ~6h (and on install/update), and
+when the advertised version is newer than the running one it sets an amber badge on
+the toolbar icon and the popup shows a banner linking to the site's `/download`
+page. The user re-drags the `.crx`; the data (cached blobs, permissions, config) all
+survive because the extension ID is stable. This works unchanged for self-hosters —
+the check resolves against whatever API base the extension is configured with.
 
 Deploy-side, nothing manual: `scripts/setup.sh` (the VPS one-liner) syncs the newest
 `ext-v*` release into `/opt/keys.justworks/extension` (sha256-verified before the live files
