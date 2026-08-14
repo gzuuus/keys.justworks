@@ -53,6 +53,29 @@ describe("passwordSecret", () => {
   });
 });
 
+describe("identifier normalization (trim at the crypto boundary)", () => {
+  // One account must not silently become two because of a stray trailing
+  // space: register with "id " then log in with "id" would otherwise hit a
+  // different hash, salt, and keystone. The trim lives in @kj/core (the single
+  // choke point), so both surfaces get it for free.
+  it("identifierHash ignores surrounding whitespace", async () => {
+    expect(await identifierHash(`  ${ID} \n`)).toBe(await identifierHash(ID));
+  });
+
+  it("passwordSecret ignores surrounding whitespace in the identifier", async () => {
+    expect(await passwordSecret(`\t${ID} `, PW)).toBe(await passwordSecret(ID, PW));
+  });
+
+  it("a blob encrypted with surrounding whitespace decrypts with the trimmed identifier", () => {
+    const blob = encryptSecret(SECRET, ` ${ID}\t`, PW);
+    expect(decryptSecret(blob, ID, PW)).toEqual(SECRET);
+  });
+
+  it("never trims the password (whitespace is legitimate keystone material)", async () => {
+    expect(await passwordSecret(ID, ` ${PW} `)).not.toBe(await passwordSecret(ID, PW));
+  });
+});
+
 describe("decrypt → npub (real recorded vector)", () => {
   // A throwaway test key created through the real browser stack (nostr-tools
   // keygen in the page → encryptSecret → server → back). Asserts the full

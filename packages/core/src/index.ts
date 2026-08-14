@@ -49,9 +49,23 @@ export * from "./signer"; // shared in-memory signer (web + extension)
  * normalizes whatever we pass before scrypt; that happens identically in every
  * surface because they all call this one function.
  */
+/**
+ * Identifiers are whitespace-trimmed at this crypto boundary — the single
+ * choke point every surface (web, extension) routes through — so a stray
+ * leading/trailing space can never split one account into "two" (register
+ * with "id " then fail to log in with "id"). Bytes are unchanged for
+ * whitespace-free identifiers, so existing accounts are unaffected (the golden
+ * vectors lock that). The PASSWORD is never trimmed: whitespace is legitimate
+ * there and trimming would silently change keystone material.
+ */
+function normalizeIdentifier(identifier: string): string {
+  return identifier.trim();
+}
+
 function passphrase(identifier: string, password: string): string {
-  const idByteLen = new TextEncoder().encode(identifier).length;
-  return `${idByteLen}:${identifier}${password}`;
+  const id = normalizeIdentifier(identifier);
+  const idByteLen = new TextEncoder().encode(id).length;
+  return `${idByteLen}:${id}${password}`;
 }
 
 /**
@@ -67,7 +81,7 @@ function passphrase(identifier: string, password: string): string {
  * trade-off, not a free win.
  */
 export async function identifierHash(identifier: string): Promise<string> {
-  const data = new TextEncoder().encode(identifier);
+  const data = new TextEncoder().encode(normalizeIdentifier(identifier));
   const digest = await crypto.subtle.digest("SHA-256", data);
   return bytesToHex(new Uint8Array(digest));
 }
@@ -101,7 +115,7 @@ export async function passwordSecret(
   identifier: string,
   password: string,
 ): Promise<string> {
-  const salt = `keys.justworks-password-secret-v1:${identifier}`;
+  const salt = `keys.justworks-password-secret-v1:${normalizeIdentifier(identifier)}`;
   const out = await scryptAsync(password, salt, { N: 2 ** 16, r: 8, p: 1, dkLen: 32 });
   return bytesToHex(out);
 }
