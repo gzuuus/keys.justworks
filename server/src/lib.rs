@@ -9,6 +9,7 @@
 //! applies argon2 on top, so the stored verifier is never the wire value.
 
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
@@ -97,6 +98,10 @@ pub fn app(state: AppState) -> Router {
         .route("/api/login", post(login))
         .route("/api/blob", put(update_blob))
         .route("/api/account", delete(delete_account))
+        // Self-hosted extension artifacts (auto-update + direct download).
+        // 404 unless KJ_EXTENSION_DIR is set — see docs/extension-release.md.
+        .route("/extension/update.xml", get(extension_update_xml))
+        .route("/extension/keys-justworks.crx", get(extension_crx))
         .fallback(static_handler)
         .layer(TraceLayer::new_for_http())
         .layer(from_fn(security_headers))
@@ -667,6 +672,46 @@ async fn static_handler(uri: Uri) -> Response {
         .into_response()
 }
 
+// --- extension artifacts (self-hosted .crx + auto-update manifest) -----------
+
+/// Directory served under `/extension/*` (env `KJ_EXTENSION_DIR`): holds the
+/// release artifacts (`update.xml`, `keys-justworks.crx`) synced by
+/// `scripts/sync-extension.sh`. Unset → the routes 404 and the site's download
+/// page degrades gracefully. Read once — config is process-wide (cf.
+/// `csp_header`, which uses the same OnceLock pattern).
+fn extension_dir() -> Option<&'static Path> {
+    static DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
+    DIR.get_or_init(|| std::env::var("KJ_EXTENSION_DIR").ok().map(PathBuf::from))
+        .as_deref()
+}
+
+/// Serve one file from `dir`. Two fixed routes instead of a directory walk:
+/// the artifact set is exactly these two files, and a closed set makes path
+/// traversal a non-question.
+async fn extension_file(dir: Option<&Path>, file: &str) -> Response {
+    let Some(dir) = dir else {
+        return (StatusCode::NOT_FOUND, "extension artifacts not configured").into_response();
+    };
+    match tokio::fs::read(dir.join(file)).await {
+        Ok(bytes) => {
+            let mime = mime_guess::from_path(file)
+                .first_or_octet_stream()
+                .essence_str()
+                .to_owned();
+            (StatusCode::OK, [(header::CONTENT_TYPE, mime)], bytes).into_response()
+        }
+        Err(_) => (StatusCode::NOT_FOUND, "extension artifact missing").into_response(),
+    }
+}
+
+async fn extension_update_xml() -> Response {
+    extension_file(extension_dir(), "update.xml").await
+}
+
+async fn extension_crx() -> Response {
+    extension_file(extension_dir(), "keys-justworks.crx").await
+}
+
 // --- perimeter: CSP + security response headers -----------------------------
 
 /// The `Content-Security-Policy` for the bundled site. `script-src` is `'self'`
@@ -765,6 +810,35 @@ async fn security_headers(req: Request, next: Next) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn extension_artifacts_route() {
+        let dir = std::env::temp_dir().join(format!("kj-ext-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("update.xml"), "<gupdate/>").unwrap();
+
+        // present file → 200 with an xml content type
+        let r = extension_file(Some(&dir), "update.xml").await;
+        assert_eq!(r.status(), StatusCode::OK);
+        assert!(r.headers()[header::CONTENT_TYPE]
+            .to_str()
+            .unwrap()
+            .contains("xml"));
+
+        // missing file → 404; unset dir → 404 (graceful when not configured)
+        assert_eq!(
+            extension_file(Some(&dir), "keys-justworks.crx")
+                .await
+                .status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            extension_file(None, "update.xml").await.status(),
+            StatusCode::NOT_FOUND
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 
     #[test]
     fn csp_shape_and_inline_script_hash() {
