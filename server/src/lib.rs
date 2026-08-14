@@ -721,6 +721,11 @@ async fn extension_crx() -> Response {
 /// defense". `connect-src` also allows the `wss:` scheme so the NIP-46 bunker
 /// can reach user-chosen relays (the primary XSS defense remains
 /// `script-src 'self'`; see docs/design.md "Perimeter defense").
+/// `img-src` allows `https:` so profile avatars (kind 0 pictures — arbitrary
+/// https URLs chosen by the key owner) can render; the residual risk of an
+/// image-request beacon under XSS is accepted because `script-src 'self'`
+/// (no inline) already blocks script execution, and the client renders
+/// avatars with `referrerpolicy=no-referrer`.
 fn csp_header() -> &'static str {
     static CSP: OnceLock<String> = OnceLock::new();
     CSP.get_or_init(build_csp)
@@ -735,7 +740,7 @@ fn build_csp() -> String {
     }
     format!(
         "default-src 'self'; script-src {script_src}; style-src 'self'; \
-         img-src 'self'; font-src 'self'; connect-src 'self' wss:; object-src 'none'; \
+         img-src 'self' https:; font-src 'self'; connect-src 'self' wss:; object-src 'none'; \
          base-uri 'none'; frame-ancestors 'none'; form-action 'self'; \
          frame-src 'none'; manifest-src 'self'"
     )

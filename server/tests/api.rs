@@ -425,6 +425,7 @@ async fn security_headers_present_on_every_response() {
     let csp = h.get("content-security-policy").unwrap().to_str().unwrap();
     assert!(csp.contains("script-src 'self'"), "{csp}");
     assert!(csp.contains("frame-ancestors 'none'"), "{csp}");
+    assert!(csp.contains("img-src 'self' https:"), "{csp}");
     assert!(csp.contains("object-src 'none'"), "{csp}");
 }
 
