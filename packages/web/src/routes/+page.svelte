@@ -11,6 +11,7 @@
 	let homeRevealed = $state(false);
 	let revealStarted = false;
 	let homeAnimation: { revert(): void } | null = null;
+	let heroSound: HTMLAudioElement | null = null;
 
 	async function revealHome() {
 		if (!homeRoot || revealStarted) return;
@@ -24,6 +25,16 @@
 		const left = Array.from(homeRoot.querySelectorAll<HTMLElement>('[data-home-left]'));
 		const right = Array.from(homeRoot.querySelectorAll<HTMLElement>('[data-home-right]'));
 		const key = homeRoot.querySelector<HTMLElement>('[data-home-key]');
+		heroSound = new Audio('/pop.mp3');
+		heroSound.preload = 'auto';
+		heroSound.volume = 0.68;
+		const playHeroSound = () => {
+			if (!heroSound) return;
+			heroSound.currentTime = 0;
+			void heroSound.play().catch(() => {
+				// Autoplay can be blocked until the visitor has interacted with the page.
+			});
+		};
 		homeAnimation = gsap.context(() => {
 			gsap.set([...left, ...right], { y: 26, opacity: 0 });
 			if (key) gsap.set(key, { x: 70, y: 18, opacity: 0 });
@@ -32,7 +43,8 @@
 				.timeline({ defaults: { ease: 'power3.out' } })
 				.to(left, { y: 0, opacity: 1, duration: 0.78, stagger: 0.075 })
 				.to(right, { y: 0, opacity: 1, duration: 0.86, stagger: 0.08 }, 0.16)
-				.to(key, { x: 0, y: 0, opacity: 1, duration: 1.05, ease: 'expo.out' }, '>-0.12');
+				.call(playHeroSound, [], '>-0.12')
+				.to(key, { x: 0, y: 0, opacity: 1, duration: 1.05, ease: 'expo.out' }, '<');
 		}, homeRoot);
 	}
 
@@ -40,7 +52,12 @@
 		if (introFinished && homeRoot) void revealHome();
 	});
 
-	onDestroy(() => homeAnimation?.revert());
+	onDestroy(() => {
+		homeAnimation?.revert();
+		heroSound?.pause();
+		heroSound?.removeAttribute('src');
+		heroSound?.load();
+	});
 </script>
 
 <svelte:head>
