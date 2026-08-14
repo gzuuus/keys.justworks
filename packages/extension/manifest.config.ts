@@ -12,7 +12,7 @@ import { defineManifest } from "@crxjs/vite-plugin";
 export default defineManifest({
   manifest_version: 3,
   name: "keys.justworks",
-  version: "0.0.5",
+  version: "0.0.6",
   description: "Non-custodial Nostr key locker — NIP-07 signer.",
   // Self-hosted auto-update: Chrome polls this GUpdate manifest and pulls the
   // new .crx from the same origin when the version bumps. Release CI packs it
