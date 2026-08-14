@@ -28,6 +28,9 @@
 			.section-head h2 { margin:0; font:700 clamp(1.8rem,3vw,3rem)/1 Arial,sans-serif; letter-spacing:-.055em; }
 			.section-head p { max-width:36rem; margin:0; color:var(--muted); font:.85rem/1.5 Arial,sans-serif; }
 			.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line); }
+			.grid--single { grid-template-columns:1fr; }
+			.grid--single .preview { min-height:min(58rem,70vh); }
+			.grid--single .mark { width:clamp(14rem,26vw,23rem); }
 			.card { min-width:0; border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:clamp(.75rem,1.4vw,1.25rem); }
 			.preview { position:relative; min-height:clamp(20rem,35vw,34rem); display:grid; place-items:center; overflow:hidden; background:var(--surface); color:#f3f0e9; }
 			.preview::before { position:absolute; inset:1rem auto auto 1rem; color:rgb(243 240 233/.46); content:attr(data-axis); font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; }
@@ -54,43 +57,23 @@
 	<body>
 		<svg width="0" height="0" aria-hidden="true" style="position:absolute">
 			<defs>
-				<symbol id="mark-01" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 25h14v-4h6v-4h8v20h-8v-4h-6v-4H49Z"/><rect class="accent-fill" x="73" y="17" width="4" height="20"/></symbol>
-				<symbol id="mark-02" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 24h14v-4h6v-4h8v20h-8v-4h-6v-4H49Z"/><rect class="accent-fill" x="73" y="16" width="4" height="20"/></symbol>
-				<symbol id="mark-03" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 23h14v-4h6v-4h8v20h-8v-4h-6v-4H49Z"/><rect class="accent-fill" x="73" y="15" width="4" height="20"/></symbol>
-				<symbol id="mark-04" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 22h13v-5h7v-3h8v20h-8v-4h-7v-4H49Z"/><rect class="accent-fill" x="73" y="14" width="4" height="20"/></symbol>
-				<symbol id="mark-05" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 22h12v-4h7v-5h9v21h-9v-5h-7v-3H49Z"/><rect class="accent-fill" x="73" y="13" width="4" height="21"/></symbol>
-				<symbol id="mark-06" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 21h13v-4h6v-5h9v21h-9v-4h-6v-4H49Z"/><rect class="accent-fill" x="73" y="12" width="4" height="21"/></symbol>
-				<symbol id="mark-07" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 21h13v-4h7v-5h8v21h-8v-5h-7v-3H49Z"/><path class="accent-stroke" stroke-width="2" d="M53 23h17"/><rect class="accent-fill" x="74" y="12" width="3" height="21"/></symbol>
-				<symbol id="mark-08" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 20h12v-4h7v-5h9v21h-9v-4h-7v-4H49Z"/><rect class="accent-fill" x="73" y="11" width="4" height="21"/></symbol>
-				<symbol id="mark-09" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 20h13v-5h7v-4h8v21h-8v-4h-7v-4H49Z"/><rect class="accent-fill" x="73" y="11" width="4" height="21"/></symbol>
-				<symbol id="mark-10" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v36H47L17 31v24Z"/><path class="ink-fill" d="M49 20h13v-5h7v-4h8v21h-8v-5h-7v-3H49Z"/><rect class="accent-fill" x="73" y="11" width="4" height="21"/></symbol>
+				<symbol id="mark-01" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h11v11h24v8h-8v7h8v8H61v7H47L17 31v24Z"/><path class="accent-fill" d="M17 19h9l16 14v10L17 21Z"/></symbol>
 			</defs>
 		</svg>
 
 		<main class="shell">
 			<header>
-				<div><p class="issue">Identity study 07 / Double-sided</p><h1>Lift the bit.<br/>Find balance.</h1><p class="lede">Ten optical refinements of Double-sided, now isolated as the only direction. The N remains fixed while the blade rises through measured positions until its upper cut, shoulder, and counter feel like one deliberate mark.</p></div>
-				<aside class="side"><p class="side-label">Selection discipline</p><ol class="principles"><li>Keep the Double-sided idea</li><li>Align blade and N optically</li><li>Read cleanly at sixteen pixels</li><li>Remain strong in one colour</li></ol><div class="controls"><button id="mono" type="button">One colour</button><button id="theme" type="button">Dark surface</button></div></aside>
+				<div><p class="issue">Selected direction / Double-sided</p><h1>One mark.<br/>Clean baseline.</h1><p class="lede">The original Double-sided concept you selected, restored unchanged and isolated from every later experiment. This is the only direction in the lab, ready for your exact refinement guidance.</p></div>
+				<aside class="side"><p class="side-label">Baseline status</p><ol class="principles"><li>Original selected geometry</li><li>No new balance experiments</li><li>Colour and mono previews retained</li><li>Awaiting exact art direction</li></ol><div class="controls"><button id="mono" type="button">One colour</button><button id="theme" type="button">Dark surface</button></div></aside>
 			</header>
-			<div class="section-head"><h2>Double-sided balance</h2><p>One N, one key idea, ten measured alignments. Each pass raises or reshapes only the blade so its top cut meets the N’s cap line instead of hanging beneath it.</p></div>
-			<section class="grid" id="grid" aria-label="Ten Double-sided N key logo iterations"></section>
+			<div class="section-head"><h2>Selected Double-sided</h2><p>The sole working mark. No alternatives remain on this page.</p></div>
+			<section class="grid grid--single" id="grid" aria-label="Selected Double-sided N key logo"></section>
 		</main>
 		<script>
-			const concepts = [
-				['Baseline lifted','+ 01 lift','The selected Double-sided silhouette, lifted one unit so the blade no longer sags beneath the N shoulder.'],
-				['Shoulder raised','+ 02 lift','A second measured rise brings the shaft closer to the N cap while preserving generous negative space below.'],
-				['Counter aligned','counter aligned','The central shaft now meets the upper counter of the N, creating a cleaner left-to-right reading rhythm.'],
-				['Upper-cut aligned','upper cut aligned','The first tooth reaches the N cap line; a shallower lower cut keeps the mark from becoming top-heavy.'],
-				['Deep opposed','deep opposed','Deeper opposing cuts make the precision-key idea unmistakable while their unequal rhythm avoids a mechanical star shape.'],
-				['Cap-line cut','cap line cut','The tallest tooth clears the cap by one unit, testing whether visual alignment needs a small geometric overshoot.'],
-				['Milled balance','milled balance','A restrained keyway scores the lifted shaft. It adds manufactured character without weakening the one-colour silhouette.'],
-				['Tight shoulder','tight shoulder','A shorter shoulder pulls the key mass closer to the N and reduces the sense of a separate symbol being attached.'],
-				['Long shoulder','long shoulder','A slightly longer runway restores directional energy while keeping both cuts anchored around the N cap line.'],
-				['Resolved Double-sided','resolved balance','The recommended balance: cap-aligned upper tooth, compact shoulder, asymmetric lower cut, and a restrained terminal accent.']
-			];
+			const concepts = [['Double-sided','selected baseline','The original opposed-tooth key and Expanded N combination, preserved exactly as selected.']];
 			document.querySelector('#grid').innerHTML = concepts.map(([name,axis,copy],index) => {
 				const number = String(index + 1).padStart(2,'0');
-				const recommended = index === 9 ? '<span class="tag">Recommended</span>' : '';
+				const recommended = '<span class="tag">Selected direction</span>';
 				return `<article class="card"><div class="preview" data-axis="${number} / ${axis}"><svg class="mark" viewBox="0 0 80 80" role="img" aria-label="${name} Double-sided N key"><use href="#mark-${number}"/></svg><span class="wordmark"><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg>keys.justworks</span></div><div class="meta"><span class="number">${number}</span><div>${recommended}<h3>${name}</h3><p>${copy}</p></div><div class="tests"><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg></div></div></article>`;
 			}).join('');
 			document.querySelector('#theme').addEventListener('click', () => document.body.classList.toggle('dark'));
