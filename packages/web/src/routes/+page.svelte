@@ -20,32 +20,37 @@
 			homeRevealed = true;
 			return;
 		}
-		const { gsap } = await import('gsap');
-		if (!homeRoot) return;
-		const left = Array.from(homeRoot.querySelectorAll<HTMLElement>('[data-home-left]'));
-		const right = Array.from(homeRoot.querySelectorAll<HTMLElement>('[data-home-right]'));
-		const key = homeRoot.querySelector<HTMLElement>('[data-home-key]');
-		heroSound = new Audio('/pop.mp3');
-		heroSound.preload = 'auto';
-		heroSound.volume = 0.68;
-		const playHeroSound = () => {
-			if (!heroSound) return;
-			heroSound.currentTime = 0;
-			void heroSound.play().catch(() => {
-				// Autoplay can be blocked until the visitor has interacted with the page.
-			});
-		};
-		homeAnimation = gsap.context(() => {
-			gsap.set([...left, ...right], { y: 26, opacity: 0 });
-			if (key) gsap.set(key, { x: 70, y: 18, opacity: 0 });
+		try {
+			const { gsap } = await import('gsap');
+			if (!homeRoot) return;
+			const left = Array.from(homeRoot.querySelectorAll<HTMLElement>('[data-home-left]'));
+			const right = Array.from(homeRoot.querySelectorAll<HTMLElement>('[data-home-right]'));
+			const key = homeRoot.querySelector<HTMLElement>('[data-home-key]');
+			heroSound = new Audio('/pop.mp3');
+			heroSound.preload = 'auto';
+			heroSound.volume = 0.68;
+			const playHeroSound = () => {
+				if (!heroSound) return;
+				heroSound.currentTime = 0;
+				void heroSound.play().catch(() => {
+					// Autoplay can be blocked until the visitor has interacted with the page.
+				});
+			};
+			homeAnimation = gsap.context(() => {
+				gsap.set([...left, ...right], { y: 26, opacity: 0 });
+				if (key) gsap.set(key, { x: 70, y: 18, opacity: 0 });
+				homeRevealed = true;
+				gsap
+					.timeline({ defaults: { ease: 'power3.out' } })
+					.to(left, { y: 0, opacity: 1, duration: 0.78, stagger: 0.075 })
+					.to(right, { y: 0, opacity: 1, duration: 0.86, stagger: 0.08 }, 0.16)
+					.call(playHeroSound, [], '>-0.12')
+					.to(key, { x: 0, y: 0, opacity: 1, duration: 1.05, ease: 'expo.out' }, '<');
+			}, homeRoot);
+		} catch {
+			// If the animation chunk fails to load, show the page rather than staying blank.
 			homeRevealed = true;
-			gsap
-				.timeline({ defaults: { ease: 'power3.out' } })
-				.to(left, { y: 0, opacity: 1, duration: 0.78, stagger: 0.075 })
-				.to(right, { y: 0, opacity: 1, duration: 0.86, stagger: 0.08 }, 0.16)
-				.call(playHeroSound, [], '>-0.12')
-				.to(key, { x: 0, y: 0, opacity: 1, duration: 1.05, ease: 'expo.out' }, '<');
-		}, homeRoot);
+		}
 	}
 
 	$effect(() => {
@@ -71,7 +76,7 @@
 <section
 	bind:this={homeRoot}
 	class:home-awaiting={!homeRevealed}
-	class="relative grid min-h-[calc(100svh-4rem)] border-b border-border bg-[#FAFAFA] text-[#0A0A0A] lg:grid-cols-[0.43fr_0.57fr] dark:bg-[#0A0A0A] dark:text-[#FAFAFA]"
+	class="relative grid min-h-[calc(100svh-4rem)] border-b border-border bg-paper text-ink lg:grid-cols-[0.43fr_0.57fr]"
 >
 	<div
 		aria-hidden="true"
@@ -89,9 +94,7 @@
 			>
 				One encrypted key. Three guarantees.
 			</h2>
-			<p
-				class="mt-6 max-w-[36rem] text-sm leading-6 text-[#475569] sm:text-base dark:text-white/62"
-			>
+			<p class="mt-6 max-w-[36rem] text-sm leading-6 text-muted-foreground sm:text-base">
 				The server stores the thing it cannot read, under an identity it cannot reverse. Your
 				browser does the sensitive work; every other surface stays deliberately dumb.
 			</p>
@@ -102,7 +105,7 @@
 				<span class="font-mono text-[0.65rem] text-mint-deep dark:text-mint">01</span>
 				<div>
 					<strong class="block text-sm font-bold">Encrypted before upload</strong>
-					<span class="mt-1 block text-xs leading-5 text-[#64748b] dark:text-white/48"
+					<span class="mt-1 block text-xs leading-5 text-quiet"
 						>Raw keys never leave your device.</span
 					>
 				</div>
@@ -111,7 +114,7 @@
 				<span class="font-mono text-[0.65rem] text-mint-deep dark:text-mint">02</span>
 				<div>
 					<strong class="block text-sm font-bold">Unlinkable at rest</strong>
-					<span class="mt-1 block text-xs leading-5 text-[#64748b] dark:text-white/48"
+					<span class="mt-1 block text-xs leading-5 text-quiet"
 						>No npub, email, or readable identifier.</span
 					>
 				</div>
@@ -120,7 +123,7 @@
 				<span class="font-mono text-[0.65rem] text-mint-deep dark:text-mint">03</span>
 				<div>
 					<strong class="block text-sm font-bold">Available everywhere</strong>
-					<span class="mt-1 block text-xs leading-5 text-[#64748b] dark:text-white/48"
+					<span class="mt-1 block text-xs leading-5 text-quiet"
 						>Decrypt and sign from the browser you trust.</span
 					>
 				</div>
@@ -129,7 +132,7 @@
 	</div>
 
 	<div
-		class="relative order-1 flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden bg-[#FAFAFA] px-6 py-16 text-[#0A0A0A] sm:px-10 lg:order-2 lg:min-h-0 lg:px-[clamp(3rem,7vw,8rem)] dark:bg-[#0A0A0A] dark:text-[#FAFAFA]"
+		class="relative order-1 flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden bg-paper px-6 py-16 text-ink sm:px-10 lg:order-2 lg:min-h-0 lg:px-[clamp(3rem,7vw,8rem)]"
 	>
 		<div
 			data-home-key
@@ -142,15 +145,13 @@
 		<div class="relative z-10 max-w-3xl">
 			<h1
 				data-home-right
-				class="font-hero text-[clamp(2.8rem,5.2vw,6.2rem)] leading-[0.94] font-semibold tracking-[-0.045em] text-balance"
+				class="font-display text-[clamp(2.8rem,5.2vw,6.2rem)] leading-[0.94] font-semibold tracking-[-0.045em] text-balance"
 			>
-				Your key,<br />everywhere.<br /><span class="text-black/42 dark:text-white/42"
-					>Held by no one.</span
-				>
+				Your key,<br />everywhere.<br /><span class="text-ink/42">Held by no one.</span>
 			</h1>
 			<p
 				data-home-right
-				class="mt-8 max-w-[13.5rem] text-base leading-7 text-black/62 sm:max-w-lg sm:text-lg dark:text-white/62"
+				class="mt-8 max-w-[13.5rem] text-base leading-7 text-ink/62 sm:max-w-lg sm:text-lg"
 			>
 				Sign in to your accounts. Everywhere and anywhere. Only you control it.
 			</p>

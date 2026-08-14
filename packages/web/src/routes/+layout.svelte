@@ -19,12 +19,16 @@
 	import { bunkerApps } from '$lib/bunker/apps.svelte';
 	import ApprovalDialog from '$lib/components/approval-dialog.svelte';
 	import ProfileChip from '$lib/components/profile-chip.svelte';
+	import { INTRO_SESSION_KEY } from '$lib/components/particle-key-intro.svelte';
 
 	let { children } = $props();
 
 	let menuOpen = $state(false);
 	const mobileMenuItemClass =
 		'border-b border-foreground/20 py-4 font-display text-2xl font-semibold [@media(max-height:700px)]:py-2.5 [@media(max-height:700px)]:text-xl';
+	const desktopNavLinkClass =
+		'inline-flex h-[var(--control-height)] items-center px-3 text-sm font-semibold transition-colors hover:bg-accent hover:text-foreground';
+	const footerLinkClass = 'text-muted-foreground hover:text-foreground';
 
 	// Close the mobile menu whenever the route changes.
 	$effect(() => {
@@ -37,7 +41,7 @@
 	}
 
 	function replayIntro() {
-		sessionStorage.removeItem('keys.justworks:intro-seen');
+		sessionStorage.removeItem(INTRO_SESSION_KEY);
 		window.location.assign('/');
 	}
 
@@ -70,7 +74,7 @@
 <div class="flex min-h-dvh flex-col">
 	<!-- Header -->
 	<header
-		class="sticky top-0 z-40 border-b-0 border-border bg-[#FAFAFA] [--control-height:var(--nav-control-height)] md:border-b dark:bg-[#0A0A0A]"
+		class="sticky top-0 z-40 border-b-0 border-border bg-paper [--control-height:var(--nav-control-height)] md:border-b"
 	>
 		<div
 			class="mx-auto flex h-16 w-full max-w-none items-center justify-between gap-4 px-6 sm:px-10 lg:px-[clamp(2.5rem,5vw,5.5rem)]"
@@ -80,7 +84,7 @@
 				{#if dev}
 					<button
 						type="button"
-						class="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+						class="inline-flex size-[var(--nav-control-height)] items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 						onclick={replayIntro}
 						aria-label="Replay intro"
 						title="Replay intro (development only)"
@@ -95,14 +99,14 @@
 				<a
 					href="/docs"
 					class={cn(
-						'rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-accent hover:text-foreground',
+						desktopNavLinkClass,
 						active('/docs') ? 'text-foreground' : 'text-muted-foreground'
 					)}>Docs</a
 				>
 				<a
 					href="/download"
 					class={cn(
-						'rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-accent hover:text-foreground',
+						desktopNavLinkClass,
 						active('/download') ? 'text-foreground' : 'text-muted-foreground'
 					)}>Extension</a
 				>
@@ -116,7 +120,7 @@
 					<a
 						href="/app"
 						class={cn(
-							'border-line inline-flex items-center gap-2 rounded-lg border bg-paper-strong/70 px-2 py-1 text-muted-foreground transition-colors hover:text-foreground',
+							'inline-flex items-center gap-2 border border-border bg-paper-strong/70 px-2 py-1 text-muted-foreground transition-colors hover:text-foreground',
 							active('/app') && 'border-ink/30 text-foreground'
 						)}
 						title={keyholder.npub ?? ''}
@@ -180,28 +184,25 @@
 					>
 				{/if}
 			</nav>
-			<Button
-				variant="default"
-				size="icon-lg"
-				class="fixed right-5 bottom-[max(1.25rem,env(safe-area-inset-bottom))] size-14"
-				onclick={() => (menuOpen = false)}
-				aria-label="Close menu"
-			>
-				<X class="size-5" />
-			</Button>
 		</div>
-	{:else}
-		<Button
-			variant="default"
-			size="icon-lg"
-			class="fixed right-5 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-50 size-14 shadow-lg md:hidden"
-			onclick={() => (menuOpen = true)}
-			aria-label="Open menu"
-			aria-expanded="false"
-		>
-			<Menu class="size-5" />
-		</Button>
 	{/if}
+	<Button
+		variant="default"
+		size="icon-lg"
+		class={cn(
+			'fixed right-5 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-50 size-14 md:hidden',
+			!menuOpen && 'shadow-lg'
+		)}
+		onclick={() => (menuOpen = !menuOpen)}
+		aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+		aria-expanded={menuOpen}
+	>
+		{#if menuOpen}
+			<X class="size-5" />
+		{:else}
+			<Menu class="size-5" />
+		{/if}
+	</Button>
 
 	<main class="flex-1">
 		{@render children()}
@@ -209,7 +210,7 @@
 
 	<!-- Footer -->
 	{#if !['/', '/login', '/get-started'].includes(page.url.pathname)}
-		<footer class="border-line mt-20 border-t bg-paper-strong/40">
+		<footer class="mt-20 border-t border-border bg-paper-strong/40">
 			<div class="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
 				<div class="sm:col-span-2 lg:col-span-2">
 					<Logo size={30} />
@@ -222,18 +223,14 @@
 					<h3 class="text-xs font-bold tracking-wider text-quiet uppercase">Product</h3>
 					<ul class="mt-3 flex flex-col gap-2 text-sm">
 						<li>
-							<a class="text-muted-foreground hover:text-foreground" href="/get-started"
-								>Get started</a
-							>
+							<a class={footerLinkClass} href="/get-started">Get started</a>
 						</li>
-						<li><a class="text-muted-foreground hover:text-foreground" href="/login">Unlock</a></li>
+						<li><a class={footerLinkClass} href="/login">Unlock</a></li>
 						<li>
-							<a class="text-muted-foreground hover:text-foreground" href="/docs"
-								>API &amp; integration</a
-							>
+							<a class={footerLinkClass} href="/docs">API &amp; integration</a>
 						</li>
 						<li>
-							<a class="text-muted-foreground hover:text-foreground" href="/download">Extension</a>
+							<a class={footerLinkClass} href="/download">Extension</a>
 						</li>
 					</ul>
 				</div>
@@ -242,7 +239,7 @@
 					<ul class="mt-3 flex flex-col gap-2 text-sm">
 						<li>
 							<a
-								class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+								class={cn(footerLinkClass, 'inline-flex items-center gap-1')}
 								href="https://nips.nostr.com/7"
 								target="_blank"
 								rel="noopener noreferrer">NIP-07<ExternalLink class="size-3" /></a
@@ -250,7 +247,7 @@
 						</li>
 						<li>
 							<a
-								class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+								class={cn(footerLinkClass, 'inline-flex items-center gap-1')}
 								href="https://nips.nostr.com/46"
 								target="_blank"
 								rel="noopener noreferrer">NIP-46<ExternalLink class="size-3" /></a
@@ -258,7 +255,7 @@
 						</li>
 						<li>
 							<a
-								class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+								class={cn(footerLinkClass, 'inline-flex items-center gap-1')}
 								href="https://nips.nostr.com/49"
 								target="_blank"
 								rel="noopener noreferrer">NIP-49<ExternalLink class="size-3" /></a
@@ -267,7 +264,7 @@
 					</ul>
 				</div>
 			</div>
-			<div class="border-line border-t px-4 py-5 text-center text-xs text-quiet">
+			<div class="border-t border-border px-4 py-5 text-center text-xs text-quiet">
 				No recovery by design · Self-hosted · Built on Nostr · MIT ·
 				<a
 					class="inline-flex items-center gap-1 hover:text-foreground"
