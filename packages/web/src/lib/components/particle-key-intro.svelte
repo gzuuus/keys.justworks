@@ -103,8 +103,8 @@
 	const openingTimeScale = 2;
 	const openingDurationFactor = 1 / openingTimeScale;
 	const compressedOpeningOffset = 3.04 * (1 - openingDurationFactor);
-	// Authored-time hold that becomes one real second after the global 1.25x time scale.
-	const centralStackHold = introTimeScale;
+	// Keep the service ring readable for one extra real second before intake begins.
+	const centralServicesHold = 1;
 	const introSessionKey = 'keys.justworks:intro-seen';
 
 	let root = $state<HTMLDivElement>();
@@ -496,27 +496,23 @@
 			intakeSequence.to(
 				fobFillReveal,
 				{ scale: 1, duration: 1.08, ease: 'power3.inOut' },
-				afterOpening(3.72) + centralStackHold
+				afterOpening(3.12)
 			);
 			intakeSequence.to(
 				fobShadow,
 				{ opacity: 1, duration: 0.58, ease: 'sine.out' },
-				afterOpening(3.86) + centralStackHold
+				afterOpening(3.26)
 			);
-			intakeSequence.to(
-				orbs,
-				{ opacity: 0, duration: 0.46, ease: 'sine.in' },
-				afterOpening(4.18) + centralStackHold
-			);
+			intakeSequence.to(orbs, { opacity: 0, duration: 0.46, ease: 'sine.in' }, afterOpening(3.58));
 			intakeSequence.to(
 				nostr,
 				{ opacity: 1, scale: 1, duration: 0.68, ease: 'power3.out' },
-				afterOpening(4.24) + centralStackHold
+				afterOpening(3.64)
 			);
 			intakeSequence.to(
 				fobOutline,
 				{ opacity: 1, duration: 0.28, ease: 'sine.out' },
-				afterOpening(4.55) + centralStackHold
+				afterOpening(3.95)
 			);
 
 			const copySequence = gsap.timeline({ paused: true, onComplete: finish });
@@ -642,7 +638,10 @@
 			});
 			copySequence.to(root, { opacity: 0, duration: 0.42, ease: 'power2.in' });
 			ready = true;
-			autoplayTimer = gsap.delayedCall((2.55 * openingDurationFactor) / introTimeScale, startIntro);
+			autoplayTimer = gsap.delayedCall(
+				(2.55 * openingDurationFactor) / introTimeScale + centralServicesHold,
+				startIntro
+			);
 		})().catch(() => {
 			if (active) finish();
 		});
