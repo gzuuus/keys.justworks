@@ -411,8 +411,8 @@
 						opacity: 0,
 						scale: 0.58,
 						rotation: -12,
-						duration: 0.24 * openingDurationFactor,
-						stagger: 0.075 * openingDurationFactor
+						duration: 0.14,
+						stagger: 0.08
 					},
 					0
 				)
@@ -422,15 +422,15 @@
 						opacity: 1,
 						scale: 1,
 						rotation: 0,
-						duration: 0.3 * openingDurationFactor,
-						stagger: 0.075 * openingDurationFactor,
+						duration: 0.18,
+						stagger: 0.08,
 						ease: 'back.out(1.6)'
 					},
 					0.04 * openingDurationFactor
 				);
 			serviceSequence.forEach((index, sequenceIndex) => {
 				const orb = orbs[index];
-				const at = (0.42 + sequenceIndex * 0.16) * openingDurationFactor;
+				const at = 0.42 * openingDurationFactor + sequenceIndex * 0.12;
 				intakeSequence
 					.to(
 						orb.querySelector('[data-orb-ring]'),
