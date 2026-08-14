@@ -8,7 +8,7 @@ server never sees plaintext keys and cannot link accounts to Nostr identities.
 |--------------------|--------------------|-------------------------------------------------------------------------------------|
 | `server/`          | Rust (axum+sqlite) | stores/serves `ncryptsec` behind stateless body-auth; serves the bundled static site. Never decrypts, never signs. |
 | `packages/web/`    | SvelteKit (static) | onboarding, login, [NIP-46] remote-signer bunker; key in a Web Worker.              |
-| `packages/extension/` | TS, MV3         | [NIP-07] `window.nostr` signer; isolated keyholding. (planned)                      |
+| `packages/extension/` | TS, MV3         | [NIP-07] `window.nostr` signer; isolated keyholding.                               |
 | `packages/core/`   | TS                 | shared, byte-identical crypto glue + REST client.                                   |
 
 **Security model, data model, threat analysis:** [`docs/design.md`](docs/design.md).
@@ -24,6 +24,8 @@ curl -fsSL https://raw.githubusercontent.com/gzuuus/keys.justworks/main/scripts/
 ```
 
 Pin a release with `VERSION=v0.1.1 ... | sudo bash`. Upgrade by re-running it.
+Full self-hosting guide — Docker, TLS, backups & restore, pointing the
+extension at your server: [`docs/self-hosting.md`](docs/self-hosting.md).
 
 The server binds **localhost only** — terminate TLS with a reverse proxy:
 

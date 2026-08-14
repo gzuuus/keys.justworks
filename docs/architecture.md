@@ -20,7 +20,7 @@ keys.justworks/
 ├── packages/                     # JS monorepo (pnpm workspaces)
 │   ├── core/                     # shared, security-critical glue (see below)
 │   ├── web/                      # SvelteKit (static adapter): onboarding + login + NIP-46 bunker
-│   └── extension/                # MV3 browser extension: NIP-07 signer (later)
+│   └── extension/                # MV3 browser extension: NIP-07 signer
 ├── package.json                  # workspace root
 ├── pnpm-workspace.yaml           # workspace packages list (packages/*)
 ├── pnpm-lock.yaml                # lockfile (committed)
@@ -121,7 +121,7 @@ Ports: **API** `:3000`, **web** `:5173` (proxies `/api/*` → `:3000`).
 | `make dev`          | run API + web together (parallel)                   |
 | `make dev-api`      | run the Rust API only (`:3000`)                     |
 | `make dev-web`      | run the Vite dev server (`:5173`)                   |
-| `make dev-extension`| build the extension in watch mode                   |
+| `make dev-extension`| build the extension to dist/ (load unpacked; re-run after edits) |
 | `make serve`        | prod-like: build web, then run server (`:3000`)     |
 | `make build-web`    | build the static web assets                         |
 | `make build-server` | build the Rust server binary (embeds web)           |
