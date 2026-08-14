@@ -40,13 +40,6 @@ export interface PageCall {
   params: Record<string, unknown>;
 }
 
-/** content-script → provider: the response to a PageCall. */
-export interface PageReply {
-  ext: "kj";
-  id: string;
-  response: { result?: unknown; error?: { message: string } };
-}
-
 // --- content-script → service worker (runtime.sendMessage) -------------------
 
 /** A page request forwarded to the SW with the requesting host attached. */
