@@ -116,11 +116,9 @@
 	>
 		<div
 			data-home-key
-			class="pointer-events-none absolute right-[-5rem] bottom-[-8rem] h-[min(68vh,34rem)] rotate-[7deg] sm:right-0 sm:h-[min(62vh,32rem)] sm:rotate-[10deg] lg:right-[-2.5rem] lg:bottom-[-7rem] lg:h-[min(72vh,44rem)] 2xl:right-[1rem]"
+			class="pointer-events-none absolute right-[-9.5rem] bottom-[-11rem] h-[min(82vh,42rem)] rotate-[5deg] sm:right-0 sm:bottom-[-8rem] sm:h-[min(62vh,32rem)] sm:rotate-[10deg] lg:right-[-2.5rem] lg:bottom-[-7rem] lg:h-[min(72vh,44rem)] 2xl:right-[1rem]"
 		>
-			<div
-				class="h-full opacity-30 sm:opacity-85 lg:opacity-100 dark:opacity-40 sm:dark:opacity-85 lg:dark:opacity-100"
-			>
+			<div class="h-full">
 				<HeroKey class="h-full w-auto" />
 			</div>
 		</div>
@@ -135,7 +133,7 @@
 			</h1>
 			<p
 				data-home-right
-				class="mt-8 max-w-lg text-base leading-7 text-black/62 sm:text-lg dark:text-white/62"
+				class="mt-8 max-w-[13.5rem] text-base leading-7 text-black/62 sm:max-w-lg sm:text-lg dark:text-white/62"
 			>
 				Sign in to your accounts. Everywhere and anywhere. Only you control it.
 			</p>

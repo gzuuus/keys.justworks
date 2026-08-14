@@ -2,11 +2,13 @@
 	let {
 		prefix,
 		tone = 'black',
-		glossy = true
+		glossy = true,
+		socket = false
 	}: {
 		prefix: string;
 		tone?: 'black' | 'orange';
 		glossy?: boolean;
+		socket?: boolean;
 	} = $props();
 
 	const textureId = $derived(`${prefix}-rubber-texture`);
@@ -21,8 +23,11 @@
 	const fluidShadeId = $derived(`${prefix}-fluid-shade`);
 	const insetReflectionId = $derived(`${prefix}-inset-reflection`);
 	const reflectionBlurId = $derived(`${prefix}-reflection-blur`);
-	const fobPath =
+	const baseFobPath =
 		'M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z';
+	const wrappedFobPath =
+		'M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 20 145 3 145 L 1 158 C -13 164 -32 165 -49 158 L -51 137 C -51 128 -52 112 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z';
+	const fobPath = $derived(socket ? wrappedFobPath : baseFobPath);
 </script>
 
 <defs>

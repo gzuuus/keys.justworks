@@ -236,28 +236,29 @@
 	</g>
 
 	<g class="hero-key__light-underlay">
-		{#each [8, 6, 4, 2] as depth}
-			<path
-				d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
-				fill="url(#hero-fob-light-backing)"
-				transform={`translate(${depth * 0.72} ${depth}) scale(1.105)`}
-			/>
-		{/each}
+		<path
+			d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 20 145 3 145 L 1 158 C -13 164 -32 165 -49 158 L -51 137 C -51 128 -52 112 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
+			fill="url(#hero-fob-light-backing)"
+			transform="translate(5.8 8) scale(1.105)"
+		/>
 	</g>
 	<g class="hero-key__fob-light" transform="scale(1.105)">
-		<RubberFob prefix="hero-fob-light" tone="orange" glossy={true} />
+		<RubberFob prefix="hero-fob-light" tone="orange" glossy={true} socket={true} />
 	</g>
 	<g class="hero-key__dark-underlay">
-		{#each [8, 6, 4, 2] as depth}
-			<path
-				d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
-				fill="url(#hero-fob-dark-backing)"
-				transform={`translate(${depth * 0.72} ${depth}) scale(1.105)`}
-			/>
-		{/each}
+		<path
+			d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 20 145 3 145 L 1 158 C -13 164 -32 165 -49 158 L -51 137 C -51 128 -52 112 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
+			fill="url(#hero-fob-dark-backing)"
+			transform="translate(5.8 8) scale(1.105)"
+		/>
 	</g>
 	<g class="hero-key__fob-dark" transform="scale(1.105)">
-		<RubberFob prefix="hero-fob-dark" tone="black" glossy={kammergutBlackPaintGlossEnabled} />
+		<RubberFob
+			prefix="hero-fob-dark"
+			tone="black"
+			glossy={kammergutBlackPaintGlossEnabled}
+			socket={true}
+		/>
 	</g>
 	<image
 		class="hero-key__nostr-shadow"
