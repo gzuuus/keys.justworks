@@ -1,3 +1,8 @@
+<script lang="ts" module>
+	/** Session flag marking the intro as seen; shared with the layout's dev replay control. */
+	export const INTRO_SESSION_KEY = 'keys.justworks:intro-seen';
+</script>
+
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -105,7 +110,6 @@
 	const compressedOpeningOffset = 3.04 * (1 - openingDurationFactor);
 	// Keep the service ring readable for one extra real second before intake begins.
 	const centralServicesHold = 1;
-	const introSessionKey = 'keys.justworks:intro-seen';
 
 	let root = $state<HTMLDivElement>();
 	let viewport = $state({ width: 1000, height: 1000, compact: false });
@@ -113,8 +117,10 @@
 	let introStarted = $state(false);
 	let activeLine = $state('');
 	let ready = $state(false);
+	let openingTimeline: Timeline | null = null;
 	let intake: Timeline | null = null;
 	let copyTimeline: Timeline | null = null;
+	let stopIntroSounds: (() => void) | null = null;
 	let ambientTweens: Array<{ kill(): void }> = [];
 	let splitInstances: Array<{ revert(): void }> = [];
 	let restoreOverflow: (() => void) | null = null;
@@ -181,15 +187,17 @@
 
 	function finish() {
 		try {
-			sessionStorage.setItem(introSessionKey, '1');
+			sessionStorage.setItem(INTRO_SESSION_KEY, '1');
 		} catch {
 			// Storage can be unavailable in hardened/private browser contexts.
 		}
 		autoplayTimer?.kill();
+		openingTimeline?.kill();
 		intake?.kill();
 		copyTimeline?.kill();
 		ambientTweens.forEach((tween) => tween.kill());
 		splitInstances.forEach((split) => split.revert());
+		stopIntroSounds?.();
 		restoreOverflow?.();
 		dismissed = true;
 		if (!finishNotified) {
@@ -201,20 +209,17 @@
 	function startIntro() {
 		if (!ready || introStarted) return;
 		introStarted = true;
-		if (!intake) return;
-		if (intake.progress() >= 0.999) copyTimeline?.timeScale(introTimeScale).play(0);
-		else
-			intake
-				.eventCallback('onComplete', () => {
-					copyTimeline?.timeScale(introTimeScale).play(0);
-				})
-				.timeScale(introTimeScale)
-				.play();
+		intake
+			?.eventCallback('onComplete', () => {
+				copyTimeline?.timeScale(introTimeScale).play(0);
+			})
+			.timeScale(introTimeScale)
+			.play();
 	}
 
 	onMount(() => {
 		try {
-			if (sessionStorage.getItem(introSessionKey) === '1') {
+			if (sessionStorage.getItem(INTRO_SESSION_KEY) === '1') {
 				dismissed = true;
 				finishNotified = true;
 				onfinish?.();
@@ -222,6 +227,11 @@
 			}
 		} catch {
 			// Continue with the intro if session storage is unavailable.
+		}
+
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			finish();
+			return;
 		}
 
 		let active = true;
@@ -260,6 +270,10 @@
 		void introSound.play().catch(() => {
 			// Autoplay can be blocked until the visitor has interacted with the page.
 		});
+		stopIntroSounds = () => {
+			for (const sound of [introSound, lockSound, glitchSound, textSound]) sound.pause();
+			stopIntroSounds = null;
+		};
 		restoreOverflow = () => {
 			document.documentElement.style.overflow = previousOverflow;
 			restoreOverflow = null;
@@ -282,23 +296,15 @@
 			]);
 			gsap.registerPlugin(MotionPathPlugin, DrawSVGPlugin, SplitText);
 
-			if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-				finish();
-				return;
-			}
-
 			const key = root.querySelector<SVGGElement>('[data-key]');
 			const keyWireframe = root.querySelector<SVGGElement>('[data-key-wireframe]');
 			const keyWireReveal = root.querySelector<SVGRectElement>('[data-key-wire-reveal]');
 			const keyMotion = root.querySelector<SVGGElement>('[data-key-motion]');
 			const keyOverlayMotion = root.querySelector<SVGGElement>('[data-key-overlay-motion]');
 			const nostr = root.querySelector<SVGGElement>('[data-nostr]');
-			const flash = root.querySelector<SVGCircleElement>('[data-flash]');
-			const guardShell = root.querySelector<SVGGElement>('[data-guard-shell]');
 			const fobOutline = root.querySelector<SVGPathElement>('[data-fob-outline]');
 			const fobFillReveal = root.querySelector<SVGGraphicsElement>('[data-fob-fill-reveal]');
 			const fobShadow = root.querySelector<SVGPathElement>('[data-fob-shadow]');
-			const depthLayers = Array.from(root.querySelectorAll<SVGRectElement>('[data-key-depth]'));
 			const network = root.querySelector<SVGGElement>('[data-network]');
 			const orbs = Array.from(root.querySelectorAll<SVGGElement>('[data-orb]'));
 			const orbFidelity = Array.from(root.querySelectorAll<SVGGElement>('[data-orb-fidelity]'));
@@ -331,8 +337,6 @@
 				!keyMotion ||
 				!keyOverlayMotion ||
 				!nostr ||
-				!flash ||
-				!guardShell ||
 				!fobOutline ||
 				!fobFillReveal ||
 				!fobShadow ||
@@ -357,7 +361,6 @@
 			gsap.set(key, { opacity: 0 });
 			gsap.set(keyWireframe, { opacity: 0 });
 			gsap.set(keyWireReveal, { scaleY: 0, transformOrigin: '50% 50%' });
-			gsap.set(depthLayers, { transformBox: 'fill-box' });
 			gsap.set(keyMotion, { opacity: 1 });
 			gsap.set(keyOverlayMotion, { opacity: 1 });
 			gsap.set(orbs, { transformOrigin: '50% 50%', scale: 0.72, opacity: 0 });
@@ -373,14 +376,12 @@
 			gsap.set(flowPaths, { drawSVG: '0% 0%' });
 			gsap.set(basePaths, { opacity: 0 });
 			gsap.set(nostr, { opacity: 0, scale: 0.76, transformOrigin: '50% 50%' });
-			gsap.set(guardShell, { opacity: 1 });
 			gsap.set(fobOutline, { drawSVG: '0% 100%', opacity: 0 });
 			gsap.set(fobFillReveal, {
 				scale: 0,
 				transformOrigin: '50% 50%'
 			});
 			gsap.set(fobShadow, { opacity: 0 });
-			gsap.set(flash, { opacity: 0, scale: 0.16, transformOrigin: '50% 50%' });
 			gsap.set(wordLines, { display: 'none' });
 			gsap.set(dataField, { opacity: 0 });
 			gsap.set(breachRain, { opacity: 1 });
@@ -390,7 +391,7 @@
 			gsap.set(circuitNodes, { opacity: 0.42, scale: 1, transformOrigin: '50% 50%' });
 			gsap.set(circuitPulses, { opacity: 0.72 });
 
-			gsap
+			openingTimeline = gsap
 				.timeline()
 				.timeScale(openingTimeScale * introTimeScale)
 				.to(keyWireframe, { opacity: 1, duration: 0.12, ease: 'sine.out' }, 0)
@@ -708,6 +709,7 @@
 		return () => {
 			active = false;
 			autoplayTimer?.kill();
+			openingTimeline?.kill();
 			intake?.kill();
 			copyTimeline?.kill();
 			ambientTweens.forEach((tween) => tween.kill());
@@ -806,23 +808,6 @@
 						<feMergeNode in="SourceGraphic" />
 						<feMergeNode in="top-light" />
 					</feMerge>
-				</filter>
-				<filter id="rubber-texture" x="-15%" y="-15%" width="130%" height="130%">
-					<feTurbulence
-						type="fractalNoise"
-						baseFrequency="0.025 0.34"
-						numOctaves="2"
-						seed="8"
-						result="grain"
-					/>
-					<feColorMatrix
-						in="grain"
-						type="matrix"
-						values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .05 0"
-						result="soft-grain"
-					/>
-					<feComposite in="soft-grain" in2="SourceAlpha" operator="in" result="clipped-grain" />
-					<feBlend in="SourceGraphic" in2="clipped-grain" mode="multiply" />
 				</filter>
 				<!-- Adapted from Kammergut's paintGloss: dark paint, a tight highlight, and no grey halo. -->
 				<filter
@@ -1025,7 +1010,6 @@
 				</g>
 
 				<g transform={`translate(${centre.x} ${centre.y})`}>
-					<circle data-flash r="104" fill="none" stroke="#f7931a" stroke-width="2" />
 					<g data-key-motion>
 						<g data-key-wireframe clip-path="url(#key-wire-reveal)" filter="url(#key-wireframe)">
 							<g transform="rotate(-90)">
@@ -1214,7 +1198,7 @@
 				<g transform={`translate(${centre.x} ${centre.y})`}>
 					<g data-key-overlay-motion>
 						<g data-guard>
-							<g data-guard-shell transform="scale(1.045)">
+							<g transform="scale(1.045)">
 								<path
 									d="M 0 -108 C 62 -108 108 -61 108 1 C 108 51 84 86 57 101 C 53 104 54 111 54 119 L 54 132 C 38 140 19 145 0 145 C -19 145 -38 140 -54 132 L -54 119 C -54 111 -53 104 -57 101 C -84 86 -108 51 -108 1 C -108 -61 -62 -108 0 -108 Z"
 									fill="#030303"

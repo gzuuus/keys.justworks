@@ -82,62 +82,6 @@
 				<feMergeNode in="top-light" />
 			</feMerge>
 		</filter>
-		<filter id="hero-key-rubber-texture" x="-15%" y="-15%" width="130%" height="130%">
-			<feTurbulence
-				type="fractalNoise"
-				baseFrequency="0.025 0.34"
-				numOctaves="2"
-				seed="8"
-				result="grain"
-			/>
-			<feColorMatrix
-				in="grain"
-				type="matrix"
-				values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .05 0"
-				result="soft-grain"
-			/>
-			<feComposite in="soft-grain" in2="SourceAlpha" operator="in" result="clipped-grain" />
-			<feBlend in="SourceGraphic" in2="clipped-grain" mode="multiply" />
-		</filter>
-		<filter id="hero-key-rubber" x="-18%" y="-18%" width="136%" height="142%">
-			<feTurbulence
-				type="fractalNoise"
-				baseFrequency="0.032 0.28"
-				numOctaves="2"
-				seed="11"
-				result="grain"
-			/>
-			<feColorMatrix
-				in="grain"
-				type="matrix"
-				values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .032 0"
-				result="soft-grain"
-			/>
-			<feComposite in="soft-grain" in2="SourceAlpha" operator="in" result="clipped-grain" />
-			<feBlend in="SourceGraphic" in2="clipped-grain" mode="screen" result="painted" />
-			<feGaussianBlur in="SourceAlpha" stdDeviation="1.05" result="bump" />
-			<feSpecularLighting
-				in="bump"
-				surfaceScale="3.2"
-				specularConstant="0.78"
-				specularExponent="46"
-				lighting-color="#FAFAFA"
-				result="spec"
-			>
-				<fePointLight x="-180" y="-260" z="300" />
-			</feSpecularLighting>
-			<feComposite in="spec" in2="SourceAlpha" operator="in" result="spec-clip" />
-			<feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="shadow-blur" />
-			<feOffset in="shadow-blur" dx="1.5" dy="3" result="shadow-offset" />
-			<feComponentTransfer in="shadow-offset" result="shadow">
-				<feFuncA type="linear" slope="0.42" />
-			</feComponentTransfer>
-			<feMerge>
-				<feMergeNode in="shadow" />
-				<feMergeNode in="painted" />
-				<feMergeNode in="spec-clip" />
-			</feMerge>
-		</filter>
 		<mask
 			id="hero-key-shape"
 			x="-130"
