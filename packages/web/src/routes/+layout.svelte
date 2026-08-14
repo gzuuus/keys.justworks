@@ -8,6 +8,7 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { cn } from '$lib/utils';
 	import Menu from '@lucide/svelte/icons/menu';
+	import GithubMark from '$lib/components/github-mark.svelte';
 	import X from '@lucide/svelte/icons/x';
 	import LockOpen from '@lucide/svelte/icons/lock-open';
 	import Lock from '@lucide/svelte/icons/lock';
@@ -115,6 +116,16 @@
 						Lock
 					</Button>
 				{/if}
+				<Button
+					href="https://github.com/gzuuus/keys.justworks"
+					target="_blank"
+					rel="noopener noreferrer"
+					variant="ghost"
+					size="icon"
+				>
+					<GithubMark class="size-4" />
+					<span class="sr-only">Source on GitHub</span>
+				</Button>
 				<ThemeToggle />
 			</nav>
 
@@ -170,6 +181,13 @@
 							>Lock key</button
 						>
 					{/if}
+					<a
+						href="https://github.com/gzuuus/keys.justworks"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="rounded-lg px-3 py-2.5 font-semibold hover:bg-accent"
+						>Source on GitHub</a
+					>
 				</div>
 			</nav>
 		{/if}
@@ -242,7 +260,14 @@
 			</div>
 		</div>
 		<div class="border-line border-t px-4 py-5 text-center text-xs text-quiet">
-			No recovery by design · Self-hosted · Built on Nostr
+			No recovery by design · Self-hosted · Built on Nostr · MIT ·
+			<a
+				class="inline-flex items-center gap-1 hover:text-foreground"
+					href="https://github.com/gzuuus/keys.justworks"
+					target="_blank"
+					rel="noopener noreferrer"
+					>GitHub</a
+				>
 		</div>
 	</footer>
 

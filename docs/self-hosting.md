@@ -103,7 +103,7 @@ systemctl start keys-justworks-server
 Offsite copies matter: the backups live on the same disk as the db. Rsync them
 elsewhere — `sqlite3 .backup` snapshots are plain files, `scp`/`rsync` is the
 whole story. **Legal note:** the db contains only `H(identifier)`, an argon2
-verifier, and encrypted blobs (see `docs/design.md`) — but treat it as
+verifier, and encrypted blobs — but treat it as
 sensitive anyway; it is your users' only copy of their encrypted key.
 
 ## Pointing the surfaces at your server
@@ -117,7 +117,7 @@ sensitive anyway; it is your users' only copy of their encrypted key.
 ## What's deliberately not configurable
 
 - **No SMTP, no email, no reset hooks.** Recovery-by-admin is a backdoor we
-  don't ship; see `docs/design.md` ("no recovery by design").
+  don't ship; there is no recovery by design.
 - **Rate limits** are compiled-in defaults (register/login share a per-IP
   bucket tuned for a single VPS). If you're behind a shared egress and hit it,
   file an issue — exposing them as config hasn't been needed yet.
