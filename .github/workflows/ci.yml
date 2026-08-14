@@ -1,0 +1,54 @@
+name: ci
+
+# Continuous checks on every push to main and every PR. The release workflows
+# (release.yml, release-extension.yml) build+publish on tags; this one just
+# keeps the tree green: fmt/clippy/tests for the server, test+check+build for
+# every JS package. One pnpm install is shared by the two JS jobs.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # core first: it's the contract the other packages build against.
+      - run: pnpm --filter @kj/core test
+      - run: pnpm --filter @kj/web test
+      - run: pnpm --filter @kj/extension test
+      - run: pnpm --filter @kj/web check
+      - run: pnpm --filter @kj/extension check
+      # builds catch bundler/config drift the type checker can't see
+      # (web build embeds docs/integration.md; extension build runs crxjs).
+      - run: pnpm --filter @kj/web build
+      - run: pnpm --filter @kj/extension build
