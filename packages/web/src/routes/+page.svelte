@@ -101,7 +101,7 @@
 		</div>
 
 		<ol data-home-left class="mt-12 border-t border-border" aria-label="Privacy guarantees">
-			<li class="grid grid-cols-[2rem_1fr] gap-4 border-b border-border py-4">
+			<li class="grid grid-cols-[2rem_1fr] gap-4 border-b border-border py-4 pl-3">
 				<span class="font-mono text-[0.65rem] text-mint-deep dark:text-mint">01</span>
 				<div>
 					<strong class="block text-sm font-bold">Encrypted before upload</strong>
@@ -110,7 +110,7 @@
 					>
 				</div>
 			</li>
-			<li class="grid grid-cols-[2rem_1fr] gap-4 border-b border-border py-4">
+			<li class="grid grid-cols-[2rem_1fr] gap-4 border-b border-border py-4 pl-3">
 				<span class="font-mono text-[0.65rem] text-mint-deep dark:text-mint">02</span>
 				<div>
 					<strong class="block text-sm font-bold">Unlinkable at rest</strong>
@@ -119,7 +119,7 @@
 					>
 				</div>
 			</li>
-			<li class="grid grid-cols-[2rem_1fr] gap-4 border-b border-border py-4">
+			<li class="grid grid-cols-[2rem_1fr] gap-4 border-b border-border py-4 pl-3">
 				<span class="font-mono text-[0.65rem] text-mint-deep dark:text-mint">03</span>
 				<div>
 					<strong class="block text-sm font-bold">Available everywhere</strong>
