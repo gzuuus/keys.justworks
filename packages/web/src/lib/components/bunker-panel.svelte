@@ -351,7 +351,7 @@
 										<Button
 											variant="ghost"
 											size="sm"
-											class="h-6 px-2 text-xs"
+											class="px-2 text-xs"
 											onclick={() => bunkerApps.revoke(app.id, key)}>Revoke</Button
 										>
 									</div>

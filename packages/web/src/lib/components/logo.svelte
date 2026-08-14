@@ -16,17 +16,14 @@
 		height={size}
 		viewBox="0 0 32 32"
 		fill="none"
-		class="shrink-0 drop-shadow-sm"
+		class="shrink-0"
 		aria-hidden="true"
 	>
-		<rect width="32" height="32" rx="8" fill="#101413" />
-		<circle cx="10" cy="16" r="4.4" fill="none" stroke="#61cdbb" stroke-width="2.5" />
-		<path d="M14.5 16H26" stroke="#61cdbb" stroke-width="2.5" stroke-linecap="round" />
-		<path d="M20 16v4M24 16v3" stroke="#61cdbb" stroke-width="2.5" stroke-linecap="round" />
+		<circle cx="8" cy="16" r="5" stroke="currentColor" stroke-width="2.4" />
+		<path d="M13 16H28" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" />
+		<path d="M21 16v5M26 16v3.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" />
 	</svg>
 	{#if wordmark}
-		<span class="text-lg font-black tracking-tight"
-			>keys<span class="text-mint-deep">.</span>justworks</span
-		>
+		<span class="font-display text-lg font-bold tracking-[-0.02em]">keys.justworks</span>
 	{/if}
 </a>
