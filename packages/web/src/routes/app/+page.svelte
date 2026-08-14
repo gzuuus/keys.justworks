@@ -199,7 +199,7 @@
 			>
 				<Tabs.Trigger
 					value="identity"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-white/10 dark:data-active:text-white"
+					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA]"
 					aria-label="Identity"
 					title="Identity"
 				>
@@ -208,7 +208,7 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="apps"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-white/10 dark:data-active:text-white"
+					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA]"
 					aria-label="Connected apps"
 					title="Connected apps"
 				>
@@ -217,7 +217,7 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="security"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-white/10 dark:data-active:text-white"
+					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA]"
 					aria-label="Security"
 					title="Security"
 				>
@@ -226,7 +226,7 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="help"
-					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-white/10 dark:data-active:text-white"
+					class="size-11 flex-none rounded-xl px-0 data-active:bg-white data-active:text-black md:h-full md:flex-1 md:px-4 dark:data-active:bg-[#0A0A0A] dark:data-active:text-[#FAFAFA]"
 					aria-label="Help"
 					title="Help"
 				>
@@ -259,12 +259,18 @@
 						>
 					</CardHeader>
 					<CardContent class="flex flex-col gap-3">
-						<div class="flex items-center gap-2">
+						<div class="flex items-stretch gap-2">
 							<code
-								class="border-line flex-1 rounded-lg border bg-muted p-2.5 font-mono text-xs break-all"
+								class="border-line flex min-h-12 flex-1 items-center rounded-lg border bg-muted p-2.5 font-mono text-xs break-all"
 								>{keyholder.npub}</code
 							>
-							<Button variant="outline" size="icon" onclick={copyNpub} aria-label="Copy npub">
+							<Button
+								variant="outline"
+								size="icon"
+								class="h-auto min-h-12 self-stretch"
+								onclick={copyNpub}
+								aria-label="Copy npub"
+							>
 								{#if copiedNpub}
 									<Check class="size-4 text-mint-deep" />
 								{:else}
