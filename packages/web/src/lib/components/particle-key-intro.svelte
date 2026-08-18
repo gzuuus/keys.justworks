@@ -94,14 +94,12 @@
 		'DECRYPT',
 		'PUBLISH'
 	];
-	const rainRows = Array.from({ length: 28 });
+	const rainRows = 28;
 	const introLines = [
 		'SIGN IN TO YOUR ACCOUNTS.',
 		'EVERYWHERE AND ANYWHERE.',
 		'ONLY YOU CONTROL IT.'
 	];
-	// One-switch experiment: set false to restore the original flat black service wells/fob inset.
-	const blackPaintGlossEnabled = true;
 	// One-switch timing control: set to 1 to restore the authored intro pace.
 	const introTimeScale = 1.25;
 	// The opening reveal and service-to-key stack run at double their authored pace.
@@ -443,7 +441,7 @@
 			});
 
 			rainStreams.forEach((stream, index) => {
-				const streamHeight = rainRows.length * rainRowHeight;
+				const streamHeight = rainRows * rainRowHeight;
 				const startY = -streamHeight - (index % 5) * (viewport.height * 0.16);
 				ambientTweens.push(
 					gsap.fromTo(
@@ -848,10 +846,10 @@
 					>
 						{#each [{ kind: 'breach', tokens: breachDataTokens }, { kind: 'nostr', tokens: nostrDataTokens }] as rainLayer}
 							<g data-rain-layer={rainLayer.kind} opacity={rainLayer.kind === 'breach' ? 1 : 0}>
-								{#each rainRows as _, rowIndex}
+								{#each Array(rainRows) as _, rowIndex}
 									{@const token =
 										rainLayer.tokens[(rowIndex * 5 + streamIndex * 7) % rainLayer.tokens.length]}
-									{@const isHead = rowIndex === rainRows.length - 1}
+									{@const isHead = rowIndex === rainRows - 1}
 									{@const isAlert =
 										token === 'SIGN' ||
 										token === 'NIP-46' ||
@@ -999,7 +997,7 @@
 								fill="#0A0A0A"
 								stroke="#FAFAFA"
 								stroke-width="1.2"
-								filter={blackPaintGlossEnabled ? 'url(#black-paint-gloss)' : undefined}
+								filter="url(#black-paint-gloss)"
 							/>
 							<circle
 								data-orb-ring
@@ -1049,7 +1047,7 @@
 									transform="scale(1.072)"
 									clip-path="url(#intro-fob-fill-clip)"
 								/>
-								<RubberFob prefix="intro-fob" tone="black" glossy={blackPaintGlossEnabled} />
+								<RubberFob prefix="intro-fob" tone="black" />
 							</g>
 						</g>
 						<g data-nostr>

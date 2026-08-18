@@ -3,10 +3,6 @@
 	import RubberFob from '$lib/components/rubber-fob.svelte';
 
 	let { class: className = '' }: { class?: string } = $props();
-	// One-switch experiment: set false to restore only the black fob's flat finish.
-	const kammergutBlackPaintGlossEnabled = true;
-	// One-switch experiment: set false to restore the flat Nostr mark treatment.
-	const embossedNostrEnabled = true;
 </script>
 
 <svg
@@ -19,24 +15,10 @@
 	<KeyBlade prefix="hero" />
 
 	<g class="hero-key__fob-light" transform="scale(1.105)">
-		<RubberFob
-			prefix="hero-fob-light"
-			tone="orange"
-			glossy={true}
-			socket={true}
-			depthX={3.2}
-			depthY={4.5}
-		/>
+		<RubberFob prefix="hero-fob-light" tone="orange" socket={true} depthX={3.2} depthY={4.5} />
 	</g>
 	<g class="hero-key__fob-dark" transform="scale(1.105)">
-		<RubberFob
-			prefix="hero-fob-dark"
-			tone="black"
-			glossy={kammergutBlackPaintGlossEnabled}
-			socket={true}
-			depthX={3.2}
-			depthY={4.5}
-		/>
+		<RubberFob prefix="hero-fob-dark" tone="black" socket={true} depthX={3.2} depthY={4.5} />
 	</g>
 	<image
 		class="hero-key__nostr-shadow"
@@ -45,12 +27,10 @@
 		y="-37"
 		width="92"
 		height="92"
-		opacity={embossedNostrEnabled ? 0.7 : 0}
-		style="filter: brightness(0)"
+		opacity="0.7"
 	/>
 	<image
-		class:hero-key__nostr-mark--embossed={embossedNostrEnabled}
-		class:hero-key__nostr-mark--flat={!embossedNostrEnabled}
+		class="hero-key__nostr-mark"
 		href="/key-mark.svg"
 		x="-47"
 		y="-39"
@@ -93,7 +73,6 @@
 		--fob-inset-width: 0;
 		--fob-outline: #681900;
 		--fob-outline-width: 0.4;
-		--hero-nostr-flat-filter: brightness(0);
 		--hero-nostr-filter: brightness(0) drop-shadow(0 1.2px 0 rgb(255 214 160 / 0.38));
 	}
 	.hero-key__fob-light {
@@ -105,10 +84,7 @@
 	.hero-key__nostr-shadow {
 		filter: brightness(0);
 	}
-	.hero-key__nostr-mark--flat {
-		filter: var(--hero-nostr-flat-filter);
-	}
-	.hero-key__nostr-mark--embossed {
+	.hero-key__nostr-mark {
 		filter: var(--hero-nostr-filter);
 	}
 	:global(.dark) .hero-key {
@@ -142,7 +118,6 @@
 		--fob-seam-opacity: 0.34;
 		--fob-gloss-opacity: 0.16;
 		--fob-shell-gloss-opacity: 0.1;
-		--hero-nostr-flat-filter: brightness(0) invert(1);
 		--hero-nostr-filter: brightness(0) invert(1) drop-shadow(0 1.4px 1px rgb(0 0 0 / 0.92));
 	}
 	:global(.dark) .hero-key__fob-light {
@@ -150,11 +125,5 @@
 	}
 	:global(.dark) .hero-key__fob-dark {
 		display: block;
-	}
-	:global(.dark) .hero-key__nostr-shadow {
-		filter: brightness(0);
-	}
-	:global(.dark) .hero-key__nostr-mark--embossed {
-		filter: var(--hero-nostr-filter);
 	}
 </style>
