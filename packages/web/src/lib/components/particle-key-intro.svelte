@@ -6,6 +6,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
+	import KeyBlade from '$lib/components/key-blade.svelte';
 	import RubberFob from '$lib/components/rubber-fob.svelte';
 	import SkipForward from '@lucide/svelte/icons/skip-forward';
 	import { siApple, siGoogle, siInstagram, siX, type SimpleIcon } from 'simple-icons';
@@ -26,7 +27,6 @@
 	];
 	// Visual clockwise sweep requested: bottom-left → left → top → top-right → bottom-right.
 	const serviceSequence = [3, 4, 0, 1, 2];
-	const keyDepthLayers = [10, 8, 6, 4, 2];
 	const nostrStackOffsets = [
 		[-12, -8],
 		[-6, -4],
@@ -739,31 +739,6 @@
 			aria-hidden="true"
 		>
 			<defs>
-				<linearGradient id="key-metal" x1="0" y1="0" x2="1" y2="1">
-					<stop offset="0" stop-color="#ffd08a" />
-					<stop offset="0.18" stop-color="#f7931a" />
-					<stop offset="0.48" stop-color="#c85f00" />
-					<stop offset="0.72" stop-color="#ffad42" />
-					<stop offset="1" stop-color="#672600" />
-				</linearGradient>
-				<linearGradient id="key-depth" x1="0" y1="0" x2="1" y2="1">
-					<stop offset="0" stop-color="#8f3c00" />
-					<stop offset="0.5" stop-color="#4b1c00" />
-					<stop offset="1" stop-color="#220b00" />
-				</linearGradient>
-				<linearGradient id="metal-sheen" x1="0" y1="0" x2="1" y2="0">
-					<stop offset="0" stop-color="#FAFAFA" stop-opacity="0" />
-					<stop offset="0.44" stop-color="#FAFAFA" stop-opacity="0" />
-					<stop offset="0.52" stop-color="#FAFAFA" stop-opacity="0.5" />
-					<stop offset="0.61" stop-color="#FAFAFA" stop-opacity="0" />
-					<stop offset="1" stop-color="#FAFAFA" stop-opacity="0" />
-				</linearGradient>
-				<linearGradient id="keyway-recess" x1="0" y1="0" x2="1" y2="0">
-					<stop offset="0" stop-color="#ffbd65" stop-opacity="0.64" />
-					<stop offset="0.16" stop-color="#421500" stop-opacity="0.58" />
-					<stop offset="0.7" stop-color="#713000" stop-opacity="0.88" />
-					<stop offset="1" stop-color="#421500" stop-opacity="0.36" />
-				</linearGradient>
 				<linearGradient id="current" x1="0" y1="0" x2="1" y2="0">
 					<stop offset="0" stop-color="#FAFAFA" stop-opacity="0.16" />
 					<stop offset="0.62" stop-color="#FAFAFA" />
@@ -775,39 +750,6 @@
 				</filter>
 				<filter id="matrix-glitch-soft" x="-8%" y="-90%" width="116%" height="280%">
 					<feGaussianBlur stdDeviation={viewport.compact ? '2.4 1.8' : '4.2 2.6'} />
-				</filter>
-				<filter id="metal-texture" x="-15%" y="-15%" width="130%" height="130%">
-					<feTurbulence
-						type="fractalNoise"
-						baseFrequency="0.62 0.012"
-						numOctaves="2"
-						seed="14"
-						result="brush"
-					/>
-					<feColorMatrix
-						in="brush"
-						type="matrix"
-						values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .12 0"
-						result="soft-brush"
-					/>
-					<feComposite in="soft-brush" in2="SourceAlpha" operator="in" result="clipped-brush" />
-					<feBlend in="SourceGraphic" in2="clipped-brush" mode="soft-light" />
-				</filter>
-				<filter id="key-edge-finish" x="-8%" y="-5%" width="116%" height="112%">
-					<feMorphology in="SourceAlpha" operator="erode" radius="1.35" result="inner" />
-					<feComposite in="SourceAlpha" in2="inner" operator="out" result="edge" />
-					<feGaussianBlur in="edge" stdDeviation="0.45" result="soft-edge" />
-					<feFlood flood-color="#e47a08" flood-opacity="0.58" result="light-color" />
-					<feComposite in="light-color" in2="soft-edge" operator="in" result="edge-light" />
-					<feOffset in="edge-light" dx="-0.8" dy="-0.8" result="top-light" />
-					<feFlood flood-color="#7b2c00" flood-opacity="0.56" result="shade-color" />
-					<feComposite in="shade-color" in2="soft-edge" operator="in" result="edge-shade" />
-					<feOffset in="edge-shade" dx="0.9" dy="1" result="bottom-shade" />
-					<feMerge>
-						<feMergeNode in="bottom-shade" />
-						<feMergeNode in="SourceGraphic" />
-						<feMergeNode in="top-light" />
-					</feMerge>
 				</filter>
 				<!-- Adapted from Kammergut's paintGloss: dark paint, a tight highlight, and no grey halo. -->
 				<filter
@@ -861,14 +803,6 @@
 						<feMergeNode in="paint-spec-clip" />
 					</feMerge>
 				</filter>
-				<filter id="invert-key" color-interpolation-filters="sRGB">
-					<feComponentTransfer>
-						<feFuncR type="table" tableValues="1 0" />
-						<feFuncG type="table" tableValues="1 0" />
-						<feFuncB type="table" tableValues="1 0" />
-						<feFuncA type="identity" />
-					</feComponentTransfer>
-				</filter>
 				<filter
 					id="key-wireframe"
 					x="-20%"
@@ -893,26 +827,6 @@
 				<clipPath id="key-wire-reveal">
 					<rect data-key-wire-reveal x="-130" y="-130" width="260" height="550" />
 				</clipPath>
-				<mask
-					id="key-shape"
-					x="-130"
-					y="-130"
-					width="260"
-					height="550"
-					maskUnits="userSpaceOnUse"
-					style="mask-type: luminance"
-				>
-					<g transform="rotate(-90)">
-						<image
-							href="/key-silhouette.png"
-							x="-396"
-							y="-105"
-							width="500"
-							height="210"
-							filter="url(#invert-key)"
-						/>
-					</g>
-				</mask>
 			</defs>
 
 			<g data-data-field opacity="0" pointer-events="none">
@@ -1017,78 +931,8 @@
 							</g>
 						</g>
 						<g data-key>
-							{#each keyDepthLayers as depth}
-								<rect
-									data-key-depth
-									x="-120"
-									y="-120"
-									width="240"
-									height="540"
-									fill="url(#key-depth)"
-									mask="url(#key-shape)"
-									transform={`translate(${depth * 0.9} ${depth * 1.2})`}
-								/>
-							{/each}
-							<g filter="url(#key-edge-finish)">
-								<g mask="url(#key-shape)">
-									<rect
-										x="-120"
-										y="-120"
-										width="240"
-										height="540"
-										fill="url(#key-metal)"
-										filter="url(#metal-texture)"
-									/>
-									<rect
-										data-material-sheen
-										x="-148"
-										y="-120"
-										width="240"
-										height="540"
-										fill="url(#metal-sheen)"
-										opacity="0.24"
-									/>
-									<g data-keyway-grooves stroke-linecap="round" stroke-linejoin="round">
-										<path
-											d="M -49 137 Q -49 130 -42 130 H -40 Q -33 130 -33 137 V 395 Q -33 401 -39 403 L -42 404 Q -49 404 -49 396 Z"
-											fill="url(#keyway-recess)"
-										/>
-										<path
-											d="M -47 137 V 395"
-											fill="none"
-											stroke="#ffbd65"
-											stroke-opacity="0.5"
-											stroke-width="1.35"
-										/>
-										<path
-											d="M -34.5 137 V 395"
-											fill="none"
-											stroke="#713000"
-											stroke-opacity="0.64"
-											stroke-width="1.5"
-										/>
-										<path
-											d="M -19 144 Q -19 137 -12 137 H -10 Q -4 137 -4 144 V 382 Q -4 388 -10 390 L -12 391 Q -19 391 -19 383 Z"
-											fill="url(#keyway-recess)"
-										/>
-										<path
-											d="M -17 144 V 382"
-											fill="none"
-											stroke="#ffbd65"
-											stroke-opacity="0.46"
-											stroke-width="1.15"
-										/>
-										<path
-											d="M -5.5 144 V 382"
-											fill="none"
-											stroke="#713000"
-											stroke-opacity="0.58"
-											stroke-width="1.3"
-										/>
-									</g>
-								</g>
-							</g>
-							<g mask="url(#key-shape)" fill="none">
+							<KeyBlade prefix="intro" />
+							<g mask="url(#intro-key-shape)" fill="none">
 								{#each circuitShapes as circuit, index}
 									<path
 										d={circuit.d}
@@ -1250,6 +1094,19 @@
 
 <style>
 	.key-intro {
+		--key-metal-0: #ffd08a;
+		--key-metal-1: #f7931a;
+		--key-metal-2: #c85f00;
+		--key-metal-3: #ffad42;
+		--key-metal-4: #672600;
+		--key-depth-0: #8f3c00;
+		--key-depth-1: #4b1c00;
+		--key-depth-2: #220b00;
+		--key-edge-light: #e47a08;
+		--key-edge-shade: #7b2c00;
+		--key-groove-light: #ffbd65;
+		--key-groove-shadow: #713000;
+		--key-groove-core: #421500;
 		position: fixed;
 		inset: 0;
 		z-index: 100;
