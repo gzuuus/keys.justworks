@@ -95,6 +95,12 @@
 		'PUBLISH'
 	];
 	const rainRows = 28;
+	const introSoundCues = [
+		['intro', '/intro.mp3', 0.62],
+		['lock', '/nostr-lock.mp3', 0.72],
+		['glitch', '/glitch.mp3', 0.56],
+		['text', '/woosh.mp3', 0.58]
+	] as const;
 	const introLines = [
 		'SIGN IN TO YOUR ACCOUNTS.',
 		'EVERYWHERE AND ANYWHERE.',
@@ -235,41 +241,24 @@
 		let active = true;
 		const previousOverflow = document.documentElement.style.overflow;
 		document.documentElement.style.overflow = 'hidden';
-		const introSound = new Audio('/intro.mp3');
-		introSound.preload = 'auto';
-		introSound.volume = 0.62;
-		const lockSound = new Audio('/nostr-lock.mp3');
-		lockSound.preload = 'auto';
-		lockSound.volume = 0.72;
-		const glitchSound = new Audio('/glitch.mp3');
-		glitchSound.preload = 'auto';
-		glitchSound.volume = 0.56;
-		const textSound = new Audio('/woosh.mp3');
-		textSound.preload = 'auto';
-		textSound.volume = 0.58;
-		const playLockSound = () => {
-			lockSound.currentTime = 0;
-			void lockSound.play().catch(() => {
+		const sounds = Object.fromEntries(
+			introSoundCues.map(([key, src, volume]) => {
+				const sound = new Audio(src);
+				sound.preload = 'auto';
+				sound.volume = volume;
+				return [key, sound];
+			})
+		) as Record<(typeof introSoundCues)[number][0], HTMLAudioElement>;
+		const playSound = (key: keyof typeof sounds) => {
+			const sound = sounds[key];
+			sound.currentTime = 0;
+			void sound.play().catch(() => {
 				// Autoplay can be blocked until the visitor has interacted with the page.
 			});
 		};
-		const playTextSound = () => {
-			textSound.currentTime = 0;
-			void textSound.play().catch(() => {
-				// Autoplay can be blocked until the visitor has interacted with the page.
-			});
-		};
-		const playGlitchSound = () => {
-			glitchSound.currentTime = 0;
-			void glitchSound.play().catch(() => {
-				// Autoplay can be blocked until the visitor has interacted with the page.
-			});
-		};
-		void introSound.play().catch(() => {
-			// Autoplay can be blocked until the visitor has interacted with the page.
-		});
+		playSound('intro');
 		stopIntroSounds = () => {
-			for (const sound of [introSound, lockSound, glitchSound, textSound]) sound.pause();
+			for (const sound of Object.values(sounds)) sound.pause();
 			stopIntroSounds = null;
 		};
 		restoreOverflow = () => {
@@ -463,7 +452,7 @@
 			const orderedServiceLogos = serviceSequence.map((index) => serviceLogos[index]);
 			const orderedServiceNostr = serviceSequence.map((index) => serviceNostr[index]);
 			intakeSequence
-				.call(playGlitchSound, [], 0)
+				.call(() => playSound('glitch'), [], 0)
 				.to(
 					orderedServiceLogos,
 					{
@@ -553,7 +542,7 @@
 				{ scale: 1, duration: 1.08, ease: 'power3.inOut' },
 				afterOpening(3.12)
 			);
-			intakeSequence.call(playLockSound, [], afterOpening(3.12));
+			intakeSequence.call(() => playSound('lock'), [], afterOpening(3.12));
 			intakeSequence.to(
 				fobShadow,
 				{ opacity: 1, duration: 0.58, ease: 'sine.out' },
@@ -656,7 +645,11 @@
 					index === 0 ? null : SplitText.create(line, { type: 'words', wordsClass: 'intro-word' });
 				if (split) splitInstances.push(split);
 				const lineStart = copySequence.duration();
-				copySequence.call(playTextSound, [], index === 0 ? 0 : Math.max(0, lineStart - 0.55));
+				copySequence.call(
+					() => playSound('text'),
+					[],
+					index === 0 ? 0 : Math.max(0, lineStart - 0.55)
+				);
 				copySequence
 					.call(() => (activeLine = introLines[index]))
 					.set(line, { display: 'block' })
@@ -712,18 +705,11 @@
 			copyTimeline?.kill();
 			ambientTweens.forEach((tween) => tween.kill());
 			splitInstances.forEach((split) => split.revert());
-			introSound.pause();
-			introSound.removeAttribute('src');
-			introSound.load();
-			lockSound.pause();
-			lockSound.removeAttribute('src');
-			lockSound.load();
-			glitchSound.pause();
-			glitchSound.removeAttribute('src');
-			glitchSound.load();
-			textSound.pause();
-			textSound.removeAttribute('src');
-			textSound.load();
+			for (const sound of Object.values(sounds)) {
+				sound.pause();
+				sound.removeAttribute('src');
+				sound.load();
+			}
 			restoreOverflow?.();
 		};
 	});
