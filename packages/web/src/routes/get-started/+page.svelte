@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { identifierHash, register, ApiError } from '@kj/core';
 	import { keyholder } from '$lib/keyholder/store.svelte';
+	import { accounts } from '$lib/keyholder/accounts.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -22,6 +23,9 @@
 	let outNsec = $state<string | null>(null);
 	let outNcryptsec = $state<string | null>(null);
 	let npubCopied = $state(false);
+	/** False only if the post-register auto-unlock failed (never expected): the
+	 * success screen then falls back to the sign-in CTA. */
+	let unlocked = $state(false);
 
 	function resetResult() {
 		npub = outNsec = outNcryptsec = null;
@@ -64,6 +68,16 @@
 			npub = np;
 			outNsec = ns;
 			outNcryptsec = blob;
+			// Hold the freshly-registered key so the user skips the redundant
+			// sign-in; the account exists server-side before we hold anything.
+			// Mirrors /login: cache the blob so this device works offline next time.
+			try {
+				await keyholder.unlock(blob, identifier, password);
+				accounts.save(identifier_hash, blob, np);
+				unlocked = true;
+			} catch {
+				unlocked = false; // fall back to the /login CTA
+			}
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong. Please try again.';
 		} finally {
@@ -205,9 +219,15 @@
 							hint="Encrypted — safe to store in a cloud note or on a second device. Still needs your password."
 						/>
 					</div>
-					<Button href="/login" size="lg" class="w-full">
-						Unlock and use it <ArrowRight class="size-4" />
-					</Button>
+					{#if unlocked}
+						<Button href="/app" size="lg" class="w-full">
+							Go to dashboard <ArrowRight class="size-4" />
+						</Button>
+					{:else}
+						<Button href="/login" size="lg" class="w-full">
+							Unlock and use it <ArrowRight class="size-4" />
+						</Button>
+					{/if}
 				</div>
 			</div>
 		{/if}
