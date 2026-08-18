@@ -22,6 +22,12 @@
 	export type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
 </script>
 
+<!--
+	ponytail: radius-0 + --control-height design overrides were edited here by
+	hand; a shadcn-svelte regen reverts them — reapply from git or move to
+	layout.css if a second regen hurts.
+-->
+
 <script lang="ts">
 	import { cn, type WithElementRef } from '$lib/utils.js';
 	import type { HTMLAnchorAttributes } from 'svelte/elements';
