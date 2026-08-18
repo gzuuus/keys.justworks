@@ -38,6 +38,7 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 
 	let connectUri = $state('');
+	let bunkerName = $state('');
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	/** Which connection flow is revealed: null = the two-button chooser. */
@@ -70,12 +71,25 @@
 		connected: 'default',
 		stopped: 'outline'
 	} as const;
+	const SLOT_ACCENTS = ['#c45b13', '#9a6b09', '#6e731e', '#9a4b35', '#76506d', '#815b3e'] as const;
+
+	function slotIdentity(app: BunkerApp) {
+		let hash = 0;
+		for (const character of app.id) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+		const words = displayName(app).trim().split(/\s+/).filter(Boolean);
+		const monogram = (
+			words.length > 1 ? `${words[0][0]}${words.at(-1)?.[0]}` : words[0]?.slice(0, 2)
+		).toUpperCase();
+
+		return { accent: SLOT_ACCENTS[hash % SLOT_ACCENTS.length], monogram: monogram || 'BK' };
+	}
 
 	async function addBunker() {
 		busy = true;
 		error = null;
 		try {
-			await bunker.createBunker();
+			await bunker.createBunker(bunkerName);
+			bunkerName = '';
 			mode = null; // collapse back; the new slot card appears below
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'failed to start bunker';
@@ -110,16 +124,20 @@
 </script>
 
 <section class="flex flex-col gap-4">
-	<div class="flex items-center gap-2">
-		<Plug class="size-5 text-mint-deep" />
-		<h2 class="text-lg font-bold">Connected apps</h2>
-		<span class="text-sm text-muted-foreground">
+	<div class="flex flex-col gap-1.5">
+		<div class="flex items-center gap-2.5">
+			<span class="grid size-8 shrink-0 place-items-center bg-mint/12 text-mint-deep">
+				<Plug class="size-4" />
+			</span>
+			<h2 class="text-lg font-bold">Connected apps</h2>
+		</div>
+		<p class="m-0 pl-10.5 text-sm leading-relaxed text-muted-foreground">
 			Let other Nostr apps sign through this browser tab.
-		</span>
+		</p>
 	</div>
 
 	{#if bunker.autoApprove}
-		<Alert class="border-sun/40 bg-sun/10 text-[#8a5e10] dark:text-sun">
+		<Alert class="border-sun/40 bg-sun/10 text-sun-deep dark:text-sun">
 			<TriangleAlert class="size-4" />
 			<AlertTitle>Auto-approve is on</AlertTitle>
 			<AlertDescription>
@@ -140,7 +158,7 @@
 				<div class="grid gap-3 sm:grid-cols-2">
 					<button
 						type="button"
-						class="border-line flex items-start gap-3 rounded-xl border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
+						class="flex items-start gap-3 border border-border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
 						onclick={() => (mode = 'bunker')}
 					>
 						<Link class="mt-0.5 size-5 shrink-0 text-mint-deep" />
@@ -153,7 +171,7 @@
 					</button>
 					<button
 						type="button"
-						class="border-line flex items-start gap-3 rounded-xl border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
+						class="flex items-start gap-3 border border-border bg-paper-strong p-4 text-left transition-colors hover:border-mint/50"
 						onclick={() => (mode = 'nostrconnect')}
 					>
 						<Plug class="mt-0.5 size-5 shrink-0 text-mint-deep" />
@@ -178,10 +196,18 @@
 						<div class="flex flex-col gap-2">
 							<p class="text-sm font-medium">Create a connection link</p>
 							<p class="text-xs text-muted-foreground">
-								We'll generate a link you paste into your app's "remote signer" or "bunker" field.
-								The app then sends signing requests here for you to approve.
+								Name this connection for the app and device you will use. This makes future signing
+								requests easy to recognise.
 							</p>
-							<Button onclick={addBunker} disabled={busy} class="self-start">
+							<Label for="bunker-name">Connection name</Label>
+							<Input
+								id="bunker-name"
+								bind:value={bunkerName}
+								placeholder="e.g. Primal on my phone"
+								autocomplete="off"
+								onkeydown={(e) => e.key === 'Enter' && bunkerName.trim() && !busy && addBunker()}
+							/>
+							<Button onclick={addBunker} disabled={busy || !bunkerName.trim()} class="self-start">
 								{busy ? 'Starting…' : 'Create connection'}
 							</Button>
 						</div>
@@ -247,41 +273,66 @@
 	</Card>
 
 	{#each bunkerApps.apps as app (app.id)}
-		<Card>
+		{@const identity = slotIdentity(app)}
+		<Card class="relative overflow-hidden">
+			<span
+				class="absolute inset-y-0 left-0 w-1"
+				style:background-color={identity.accent}
+				aria-hidden="true"
+			></span>
 			<Collapsible
 				open={isOpen(app.id)}
 				onOpenChange={(o) => (cardOpen[app.id] = o)}
 				class="flex flex-col gap-(--card-spacing)"
 			>
-				<CardHeader>
-					<div class="flex flex-wrap items-center justify-between gap-2">
-						<div class="flex flex-wrap items-center gap-2">
-							{#if editingId === app.id}
-								<Input
-									bind:value={draftName}
-									class="h-8 max-w-[14rem]"
-									placeholder="App name"
-									onkeydown={(e) => {
-										if (e.key === 'Enter') saveEdit();
-										if (e.key === 'Escape') editingId = null;
-									}}
-									onblur={saveEdit}
-								/>
-							{:else}
-								<CardTitle
-									class="cursor-text text-base"
-									onclick={() => startEdit(app)}
-									title="Click to rename">{displayName(app)}</CardTitle
-								>
-							{/if}
-							<Badge variant={STATUS_VARIANT[status(app)]}>{status(app)}</Badge>
-							<Badge variant="outline">{app.mode}</Badge>
-							{#if app.trustApp}
-								<Badge variant="secondary">trusted</Badge>
-							{/if}
+				<CardHeader class="pl-[calc(var(--card-spacing)+0.25rem)]">
+					<div class="flex items-start justify-between gap-3">
+						<div class="flex min-w-0 items-start gap-3">
+							<span
+								class="grid size-10 shrink-0 place-items-center border text-xs font-extrabold tracking-[0.08em]"
+								style={`border-color: color-mix(in srgb, ${identity.accent} 30%, transparent); background: color-mix(in srgb, ${identity.accent} 12%, transparent); color: ${identity.accent}`}
+								aria-hidden="true"
+							>
+								{identity.monogram}
+							</span>
+							<div class="flex min-w-0 flex-1 flex-col gap-2">
+								<div class="flex flex-wrap items-center gap-2">
+									{#if editingId === app.id}
+										<Input
+											bind:value={draftName}
+											class="h-8 max-w-[14rem]"
+											placeholder="App name"
+											onkeydown={(e) => {
+												if (e.key === 'Enter') saveEdit();
+												if (e.key === 'Escape') editingId = null;
+											}}
+											onblur={saveEdit}
+										/>
+									{:else}
+										<CardTitle
+											class="cursor-text text-base"
+											onclick={() => startEdit(app)}
+											title="Click to rename">{displayName(app)}</CardTitle
+										>
+									{/if}
+									<Badge variant={STATUS_VARIANT[status(app)]}>{status(app)}</Badge>
+									<Badge variant="outline">{app.mode}</Badge>
+									{#if app.trustApp}
+										<Badge variant="secondary">trusted</Badge>
+									{/if}
+								</div>
+								<CardDescription class="flex min-w-0 flex-col gap-0.5">
+									<span class="truncate">{app.relays.join(', ')}</span>
+									{#if app.clientPubkey}
+										<span class="font-mono text-xs">app {short(app.clientPubkey)}</span>
+									{:else}
+										<span class="text-xs">no app connected yet</span>
+									{/if}
+								</CardDescription>
+							</div>
 						</div>
 						<CollapsibleTrigger
-							class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent"
+							class="p-1 text-muted-foreground transition-colors hover:bg-accent"
 							aria-label={isOpen(app.id) ? 'Collapse' : 'Expand'}
 						>
 							<ChevronDown
@@ -289,14 +340,6 @@
 							/>
 						</CollapsibleTrigger>
 					</div>
-					<CardDescription class="flex flex-col gap-0.5">
-						<span>{app.relays.join(', ')}</span>
-						{#if app.clientPubkey}
-							<span class="font-mono text-xs">app {short(app.clientPubkey)}</span>
-						{:else}
-							<span class="text-xs">no app connected yet</span>
-						{/if}
-					</CardDescription>
 				</CardHeader>
 				<CollapsibleContent>
 					<CardContent class="flex flex-col gap-4">
@@ -317,8 +360,7 @@
 						{#if bunker.slots[app.id]?.bunkerUri}
 							<div class="flex flex-col gap-2">
 								<Label>Connection link</Label>
-								<code
-									class="block max-h-32 overflow-auto rounded-md bg-muted p-2 font-mono text-xs break-all"
+								<code class="block max-h-32 overflow-auto bg-muted p-2 font-mono text-xs break-all"
 									>{bunker.slots[app.id]!.bunkerUri}</code
 								>
 								<div>
@@ -351,7 +393,7 @@
 										<Button
 											variant="ghost"
 											size="sm"
-											class="h-6 px-2 text-xs"
+											class="px-2 text-xs"
 											onclick={() => bunkerApps.revoke(app.id, key)}>Revoke</Button
 										>
 									</div>

@@ -5,6 +5,7 @@
 	import ProfileChip from '$lib/components/profile-chip.svelte';
 	import { accounts } from '$lib/keyholder/accounts.svelte';
 	import BunkerPanel from '$lib/components/bunker-panel.svelte';
+	import BunkerHelpDemo from '$lib/components/bunker-help-demo.svelte';
 	import SecretField from '$lib/components/secret-field.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -15,24 +16,29 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
-	import {
-		Collapsible,
-		CollapsibleContent,
-		CollapsibleTrigger
-	} from '$lib/components/ui/collapsible';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import LockOpen from '@lucide/svelte/icons/lock-open';
 	import Lock from '@lucide/svelte/icons/lock';
 	import KeyRound from '@lucide/svelte/icons/key-round';
+	import Plug from '@lucide/svelte/icons/plug';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import Download from '@lucide/svelte/icons/download';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Check from '@lucide/svelte/icons/check';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
-	let advancedOpen = $state(false);
 	let copiedNpub = $state(false);
+	let activeTab = $state('identity');
+	let previousTab = 'identity';
+
+	$effect(() => {
+		if (activeTab === previousTab) return;
+		previousTab = activeTab;
+		requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+	});
 
 	// Change-password form state.
 	let pwCurrent = $state('');
@@ -154,19 +160,22 @@
 			delBusy = false;
 		}
 	}
+
+	const tabTriggerClass =
+		'size-11 flex-none px-0 data-active:bg-paper data-active:text-ink data-active:[&_svg]:text-ink md:h-full md:flex-1 md:px-4';
 </script>
 
 <svelte:head>
 	<title>Dashboard · keys.justworks</title>
 </svelte:head>
 
-<div class="mx-auto max-w-3xl px-4 py-12">
+<div class="mx-auto max-w-3xl px-4 py-12 max-md:pb-32">
 	{#if keyholder.locked || !keyholder.npub}
 		<!-- Guard: nothing unlocked -->
 		<Card>
 			<CardContent class="flex flex-col items-center gap-4 py-14 text-center">
 				<span
-					class="inline-flex size-14 items-center justify-center rounded-2xl bg-accent text-muted-foreground"
+					class="inline-flex size-14 items-center justify-center bg-accent text-muted-foreground"
 				>
 					<Lock class="size-7" />
 				</span>
@@ -183,75 +192,121 @@
 			</CardContent>
 		</Card>
 	{:else}
-		<div class="flex items-center justify-between gap-4">
-			<div>
-				<p class="text-xs font-bold tracking-[0.2em] text-mint-deep uppercase">Dashboard</p>
-				<h1 class="mt-2 text-3xl font-black tracking-tight">Your key is ready</h1>
-			</div>
-			<Badge class="gap-1.5 bg-mint/15 text-mint-deep">
-				<span class="size-1.5 rounded-full bg-mint"></span> unlocked
-			</Badge>
+		<div>
+			<p class="eyebrow">Dashboard</p>
+			<h1 class="mt-2 text-3xl font-black tracking-tight">Your key is ready</h1>
 		</div>
 
-		<!-- Identity -->
-		<Card class="mt-6">
-			<CardHeader>
-				<CardTitle class="flex items-center gap-2">
-					<KeyRound class="size-5 text-mint-deep" /> Identity
-				</CardTitle>
-				<CardDescription
-					>Your public ID (npub). Share it freely — it can't sign anything.</CardDescription
+		<Tabs.Root bind:value={activeTab} class="mt-7 gap-0">
+			<Tabs.List
+				class="fixed bottom-5 left-4 z-40 h-14 w-auto gap-1 rounded-none border border-border bg-paper-strong/95 p-1.5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl md:static md:h-[var(--control-height)] md:w-full md:bg-surface-sunken md:p-1 md:shadow-none md:backdrop-blur-none"
+				aria-label="Dashboard sections"
+			>
+				<Tabs.Trigger
+					value="identity"
+					class={tabTriggerClass}
+					aria-label="Identity"
+					title="Identity"
 				>
-			</CardHeader>
-			<CardContent class="flex flex-col gap-3">
-				<ProfileChip npub={keyholder.npub} size="md" />
-				<div class="flex items-center gap-2">
-					<code
-						class="border-line flex-1 rounded-lg border bg-muted p-2.5 font-mono text-xs break-all"
-						>{keyholder.npub}</code
-					>
-					<Button variant="outline" size="icon" onclick={copyNpub} aria-label="Copy npub">
-						{#if copiedNpub}
-							<Check class="size-4 text-mint-deep" />
-						{:else}
-							<Copy class="size-4" />
-						{/if}
-					</Button>
-				</div>
-				<div class="flex flex-wrap gap-3">
-					<Button variant="destructive" onclick={lock}><Lock class="size-4" /> Lock key</Button>
-					<span class="self-center text-xs text-muted-foreground">
-						The key lives only in a sealed-off part of your browser and auto-locks after ~30 min
-						idle.
-					</span>
-				</div>
-			</CardContent>
-		</Card>
+					<KeyRound class="size-5" />
+					<span class="max-md:sr-only">Identity</span>
+				</Tabs.Trigger>
+				<Tabs.Trigger
+					value="apps"
+					class={tabTriggerClass}
+					aria-label="Connected apps"
+					title="Connected apps"
+				>
+					<Plug class="size-5" />
+					<span class="max-md:sr-only">Apps</span>
+				</Tabs.Trigger>
+				<Tabs.Trigger
+					value="security"
+					class={tabTriggerClass}
+					aria-label="Security"
+					title="Security"
+				>
+					<ShieldCheck class="size-5" />
+					<span class="max-md:sr-only">Security</span>
+				</Tabs.Trigger>
+				<Tabs.Trigger value="help" class={tabTriggerClass} aria-label="Help" title="Help">
+					<CircleHelp class="size-5" />
+					<span class="max-md:sr-only">Help</span>
+				</Tabs.Trigger>
+			</Tabs.List>
 
-		<!-- Connected apps (NIP-46 bunker) -->
-		<div class="mt-10">
-			<BunkerPanel />
-		</div>
+			<Tabs.Content value="identity" class="mt-6">
+				<Card>
+					<CardHeader>
+						<div
+							class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+						>
+							<CardTitle class="flex items-center gap-2">
+								<KeyRound class="size-5 text-mint-deep" /> Identity
+							</CardTitle>
+							<Badge
+								class="w-full justify-start gap-2 bg-mint/15 px-3 py-2 text-mint-deep sm:w-auto sm:rounded-full sm:py-1"
+							>
+								<span class="relative flex size-2.5 items-center justify-center">
+									<span class="absolute size-2.5 animate-ping rounded-full bg-mint/35"></span>
+									<span class="relative size-1.5 rounded-full bg-mint"></span>
+								</span>
+								Key unlocked
+							</Badge>
+						</div>
+						<CardDescription
+							>Your public ID (npub). Share it freely — it can't sign anything.</CardDescription
+						>
+					</CardHeader>
+					<CardContent class="flex flex-col gap-3">
+						<ProfileChip npub={keyholder.npub} size="md" />
+						<div class="flex items-stretch gap-2">
+							<code
+								class="flex min-h-[var(--control-height)] flex-1 items-center border border-border bg-muted p-2.5 font-mono text-xs break-all"
+								>{keyholder.npub}</code
+							>
+							<Button
+								variant="outline"
+								size="icon"
+								class="h-auto min-h-[var(--control-height)] self-stretch"
+								onclick={copyNpub}
+								aria-label="Copy npub"
+							>
+								{#if copiedNpub}
+									<Check class="size-4 text-mint-deep" />
+								{:else}
+									<Copy class="size-4" />
+								{/if}
+							</Button>
+						</div>
+						<div class="flex flex-col gap-2">
+							<Button
+								variant="outline"
+								class="w-full justify-center border-border bg-transparent text-foreground hover:bg-ink/[0.035] dark:hover:bg-ink/[0.06]"
+								onclick={lock}><Lock class="size-4" /> Lock key</Button
+							>
+							<span class="text-xs text-muted-foreground">
+								The key lives only in a sealed-off part of your browser and auto-locks after ~30 min
+								idle.
+							</span>
+						</div>
+					</CardContent>
+				</Card>
+			</Tabs.Content>
 
-		<!-- Advanced: dangerous / rare operations -->
-		<Collapsible bind:open={advancedOpen} class="mt-10">
-			<CollapsibleTrigger class="flex w-full items-center gap-2 text-left">
-				<h2 class="text-xs font-bold tracking-[0.2em] text-quiet uppercase">Advanced</h2>
-				<ChevronDown
-					class="size-4 text-muted-foreground transition-transform {advancedOpen
-						? 'rotate-180'
-						: ''}"
-				/>
-			</CollapsibleTrigger>
-			<CollapsibleContent>
-				<div class="mt-4 flex flex-col gap-4">
+			<Tabs.Content value="apps" class="mt-6">
+				<BunkerPanel />
+			</Tabs.Content>
+
+			<Tabs.Content value="security" class="mt-6">
+				<div class="flex flex-col gap-4">
 					<!-- Back up key -->
 					<Card>
 						<CardHeader>
 							<CardTitle class="flex items-center gap-2">
 								<Download class="size-5" /> Back up your key
 							</CardTitle>
-							<CardDescription>
+							<CardDescription class="text-foreground/58">
 								Re-show your private key (nsec) to copy somewhere safe. You can do this any time
 								while your key is unlocked.
 							</CardDescription>
@@ -382,7 +437,27 @@
 						</CardContent>
 					</Card>
 				</div>
-			</CollapsibleContent>
-		</Collapsible>
+			</Tabs.Content>
+
+			<Tabs.Content value="help" class="mt-6">
+				<div class="flex flex-col gap-4">
+					<Card>
+						<CardContent>
+							<BunkerHelpDemo />
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle class="text-base">A useful rule of thumb</CardTitle>
+							<CardDescription class="text-foreground/58">
+								Leave per-request approval on until you know and trust an app. Trusting an app
+								allows it to sign automatically while this key remains unlocked.
+							</CardDescription>
+						</CardHeader>
+					</Card>
+				</div>
+			</Tabs.Content>
+		</Tabs.Root>
 	{/if}
 </div>

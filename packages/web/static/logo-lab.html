@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark light" />
+		<title>keys.justworks — Double-sided N study</title>
+		<style>
+			:root { --ink:#0b0b0a; --paper:#f3f0e9; --surface:#11110f; --accent:#f07818; --line:rgb(11 11 10/.16); --muted:rgb(11 11 10/.56); font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace; background:var(--paper); color:var(--ink); }
+			* { box-sizing:border-box; }
+			body { margin:0; background:var(--paper); color:var(--ink); }
+			body.dark { --ink:#f4f1ea; --paper:#0b0b0a; --line:rgb(244 241 234/.16); --muted:rgb(244 241 234/.55); }
+			.shell { width:min(100% - 2rem,96rem); margin:auto; padding:1.25rem 0 5rem; }
+			header { min-height:33rem; display:grid; grid-template-columns:minmax(0,1.45fr) minmax(18rem,.55fr); align-items:end; gap:4rem; border-bottom:1px solid var(--line); padding:3rem 0 2rem; }
+			.issue { display:flex; align-items:center; gap:.8rem; margin:0 0 1rem; color:var(--accent); font-size:.64rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+			.issue::before { width:2.5rem; height:1px; background:currentColor; content:""; }
+			h1 { max-width:10ch; margin:0; font:800 clamp(4rem,9vw,9.5rem)/.78 Arial,sans-serif; letter-spacing:-.09em; }
+			.lede { max-width:46rem; margin:2rem 0 0; color:var(--muted); font:clamp(1rem,1.5vw,1.25rem)/1.55 Arial,sans-serif; }
+			.side { border-left:1px solid var(--line); padding-left:2rem; }
+			.side-label { margin:0 0 1rem; color:var(--muted); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; }
+			.principles { margin:0; padding:0; list-style:none; counter-reset:item; }
+			.principles li { display:grid; grid-template-columns:2rem 1fr; gap:.7rem; border-top:1px solid var(--line); padding:.85rem 0; font: .85rem Arial,sans-serif; }
+			.principles li::before { counter-increment:item; color:var(--accent); content:"0" counter(item); font:700 .62rem/1.4 "IBM Plex Mono",monospace; }
+			.controls { display:flex; gap:.5rem; margin-top:1.4rem; }
+			button { min-height:2.75rem; border:1px solid var(--line); border-radius:999px; background:transparent; color:inherit; padding:.65rem 1rem; font:700 .65rem/1 "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; }
+			button:hover { border-color:var(--accent); }
+			.section-head { display:flex; align-items:end; justify-content:space-between; gap:2rem; padding:2.8rem 0 1.3rem; }
+			.section-head h2 { margin:0; font:700 clamp(1.8rem,3vw,3rem)/1 Arial,sans-serif; letter-spacing:-.055em; }
+			.section-head p { max-width:36rem; margin:0; color:var(--muted); font:.85rem/1.5 Arial,sans-serif; }
+			.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line); }
+			.grid--single { grid-template-columns:1fr; }
+			.grid--single .preview { min-height:min(58rem,70vh); }
+			.grid--single .mark { width:clamp(14rem,26vw,23rem); }
+			.card { min-width:0; border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:clamp(.75rem,1.4vw,1.25rem); }
+			.preview { position:relative; min-height:clamp(20rem,35vw,34rem); display:grid; place-items:center; overflow:hidden; background:var(--surface); color:#f3f0e9; }
+			.preview::before { position:absolute; inset:1rem auto auto 1rem; color:rgb(243 240 233/.46); content:attr(data-axis); font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; }
+			.preview::after { position:absolute; right:1rem; bottom:.9rem; color:rgb(243 240 233/.3); content:"80 / 16"; font-size:.55rem; letter-spacing:.1em; }
+			.mark { width:clamp(11rem,20vw,18rem); height:auto; overflow:visible; }
+			.wordmark { position:absolute; left:1.2rem; bottom:1rem; display:flex; align-items:center; gap:.55rem; color:rgb(243 240 233/.86); font:700 .7rem/1 Arial,sans-serif; }
+			.wordmark svg { width:1.25rem; height:1.25rem; }
+			.meta { display:grid; grid-template-columns:2.2rem minmax(0,1fr) auto; align-items:start; gap:1rem; padding:1.15rem 0 .25rem; }
+			.number { padding-top:.14rem; color:var(--accent); font-size:.66rem; font-weight:800; }
+			.meta h3 { margin:0; font:700 1.05rem/1.1 Arial,sans-serif; letter-spacing:-.035em; }
+			.meta p { max-width:37rem; margin:.4rem 0 0; color:var(--muted); font:.79rem/1.48 Arial,sans-serif; }
+			.tag { display:inline-block; margin-bottom:.45rem; color:var(--accent); font-size:.56rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+			.tests { display:flex; align-items:center; gap:.7rem; min-height:2rem; }
+			.tests svg:first-child { width:2rem; height:2rem; }
+			.tests svg:last-child { width:1rem; height:1rem; }
+			.ink-fill { fill:currentColor; }
+			.accent-fill { fill:var(--accent); }
+			.accent-stroke { fill:none; stroke:var(--accent); stroke-linecap:round; }
+			body.mono .accent-fill { fill:currentColor; }
+			body.mono .accent-stroke { stroke:currentColor; }
+			@media(max-width:800px) { .shell{width:min(100% - 1rem,96rem);padding-top:.5rem} header{min-height:auto;grid-template-columns:1fr;align-items:start;gap:2.5rem;padding:4rem 0 1.5rem} h1{font-size:clamp(4rem,20vw,6.5rem)} .side{border-left:0;padding-left:0} .section-head{align-items:start;flex-direction:column;gap:.6rem} .grid{grid-template-columns:1fr} .preview{min-height:20rem} .meta{grid-template-columns:1.8rem minmax(0,1fr)} .tests{display:none} }
+		</style>
+	</head>
+	<body>
+		<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+			<defs>
+				<symbol id="mark-01" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h12v11h24v8H54v7h24v8H54v2H42L17 33v22Z"/><path class="accent-fill" d="M17 19h9l16 14v10L17 21Z"/></symbol>
+			</defs>
+		</svg>
+
+		<main class="shell">
+			<header>
+				<div><p class="issue">Selected direction / Double-sided</p><h1>One mark.<br/>Clean baseline.</h1><p class="lede">The original Double-sided concept you selected, restored unchanged and isolated from every later experiment. This is the only direction in the lab, ready for your exact refinement guidance.</p></div>
+				<aside class="side"><p class="side-label">Baseline status</p><ol class="principles"><li>Original selected geometry</li><li>No new balance experiments</li><li>Colour and mono previews retained</li><li>Awaiting exact art direction</li></ol><div class="controls"><button id="mono" type="button">One colour</button><button id="theme" type="button">Dark surface</button></div></aside>
+			</header>
+			<div class="section-head"><h2>Selected Double-sided</h2><p>The sole working mark. No alternatives remain on this page.</p></div>
+			<section class="grid grid--single" id="grid" aria-label="Selected Double-sided N key logo"></section>
+		</main>
+		<script>
+			const concepts = [['Double-sided','selected baseline','The original opposed-tooth key and Expanded N combination, preserved exactly as selected.']];
+			document.querySelector('#grid').innerHTML = concepts.map(([name,axis,copy],index) => {
+				const number = String(index + 1).padStart(2,'0');
+				const recommended = '<span class="tag">Selected direction</span>';
+				return `<article class="card"><div class="preview" data-axis="${number} / ${axis}"><svg class="mark" viewBox="0 0 80 80" role="img" aria-label="${name} Double-sided N key"><use href="#mark-${number}"/></svg><span class="wordmark"><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg>keys.justworks</span></div><div class="meta"><span class="number">${number}</span><div>${recommended}<h3>${name}</h3><p>${copy}</p></div><div class="tests"><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg></div></div></article>`;
+			}).join('');
+			document.querySelector('#theme').addEventListener('click', () => document.body.classList.toggle('dark'));
+			document.querySelector('#mono').addEventListener('click', () => document.body.classList.toggle('mono'));
+		</script>
+	</body>
+</html>

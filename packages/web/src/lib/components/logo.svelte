@@ -12,21 +12,21 @@
 	aria-label="keys.justworks — home"
 >
 	<svg
-		width={size}
+		width={size * 1.5}
 		height={size}
-		viewBox="0 0 32 32"
+		viewBox="0 0 84 50"
 		fill="none"
-		class="shrink-0 drop-shadow-sm"
+		class="shrink-0"
 		aria-hidden="true"
 	>
-		<rect width="32" height="32" rx="8" fill="#101413" />
-		<circle cx="10" cy="16" r="4.4" fill="none" stroke="#61cdbb" stroke-width="2.5" />
-		<path d="M14.5 16H26" stroke="#61cdbb" stroke-width="2.5" stroke-linecap="round" />
-		<path d="M20 16v4M24 16v3" stroke="#61cdbb" stroke-width="2.5" stroke-linecap="round" />
+		<path
+			fill="currentColor"
+			transform="translate(0 -12)"
+			d="M5 55V19h12l25 22V19h12v11h24v8H54v7h24v8H54v2H42L17 33v22Z"
+		/>
+		<path fill="var(--mint)" transform="translate(0 -12)" d="M17 19h9l16 14v10L17 21Z" />
 	</svg>
 	{#if wordmark}
-		<span class="text-lg font-black tracking-tight"
-			>keys<span class="text-mint-deep">.</span>justworks</span
-		>
+		<span class="font-display text-lg font-bold tracking-[-0.02em]">keys.justworks</span>
 	{/if}
 </a>

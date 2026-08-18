@@ -102,9 +102,7 @@ function persist(): void {
  * network). Unsubscribing does not abort an in-flight batch — the loader
  * deliberately keeps loading into the store.
  */
-export function ensureProfile(
-	hex: string
-): { unsubscribe: () => void } | null {
+export function ensureProfile(hex: string): { unsubscribe: () => void } | null {
 	if (isFresh(persisted.fetchedAt[hex])) return null;
 	return addressLoader({ kind: kinds.Metadata, pubkey: hex, relays: METADATA_RELAYS }).subscribe(
 		(event) => {
