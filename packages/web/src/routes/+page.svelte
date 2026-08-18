@@ -83,7 +83,51 @@
 		class="pointer-events-none absolute top-[-1px] bottom-0 left-[43%] z-20 hidden w-px bg-border lg:block"
 	></div>
 	<div
-		class="surface-noise order-2 flex flex-col justify-between px-6 py-10 sm:px-10 sm:py-14 lg:order-1 lg:px-[clamp(2.5rem,5vw,5.5rem)]"
+		class="relative flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden bg-paper px-6 py-16 text-ink sm:px-10 lg:order-2 lg:min-h-0 lg:px-[clamp(3rem,7vw,8rem)]"
+	>
+		<div
+			data-home-key
+			class="pointer-events-none absolute right-[-9.5rem] bottom-[-11rem] h-[min(82vh,42rem)] rotate-[5deg] sm:right-0 sm:bottom-[-8rem] sm:h-[min(62vh,32rem)] sm:rotate-[10deg] lg:right-[-2.5rem] lg:bottom-[-7rem] lg:h-[min(72vh,44rem)] 2xl:right-[1rem]"
+		>
+			<div class="h-full">
+				<HeroKey class="h-full w-auto" />
+			</div>
+		</div>
+		<div class="relative z-10 max-w-3xl">
+			<h1
+				data-home-right
+				class="font-display text-[clamp(2.8rem,5.2vw,6.2rem)] leading-[0.94] font-semibold tracking-[-0.045em] text-balance"
+			>
+				Your key,<br />everywhere.<br /><span class="text-ink/42">Held by no one.</span>
+			</h1>
+			<p
+				data-home-right
+				class="mt-8 max-w-[13.5rem] text-base leading-7 text-ink/62 sm:max-w-lg sm:text-lg"
+			>
+				Sign in to your accounts. Everywhere and anywhere. Only you control it.
+			</p>
+
+			<div data-home-right class="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+				{#if keyholder.locked}
+					<Button href="/get-started" size="lg" class="px-5 font-bold">
+						Take control today
+						<ArrowRight class="size-4" />
+					</Button>
+					<Button href="/login" variant="outline" size="lg" class="px-5 font-bold"
+						>Already have an account</Button
+					>
+				{:else}
+					<Button href="/app" size="lg" class="px-5 font-bold">
+						Go to dashboard
+						<ArrowRight class="size-4" />
+					</Button>
+				{/if}
+			</div>
+		</div>
+	</div>
+
+	<div
+		class="surface-noise flex flex-col justify-between px-6 py-10 sm:px-10 sm:py-14 lg:order-1 lg:px-[clamp(2.5rem,5vw,5.5rem)]"
 	>
 		<div data-home-left>
 			<p class="font-mono text-[0.68rem] font-bold tracking-[0.16em] uppercase">
@@ -129,50 +173,6 @@
 				</div>
 			</li>
 		</ol>
-	</div>
-
-	<div
-		class="relative order-1 flex min-h-[calc(100dvh-4rem)] flex-col justify-center overflow-hidden bg-paper px-6 py-16 text-ink sm:px-10 lg:order-2 lg:min-h-0 lg:px-[clamp(3rem,7vw,8rem)]"
-	>
-		<div
-			data-home-key
-			class="pointer-events-none absolute right-[-9.5rem] bottom-[-11rem] h-[min(82vh,42rem)] rotate-[5deg] sm:right-0 sm:bottom-[-8rem] sm:h-[min(62vh,32rem)] sm:rotate-[10deg] lg:right-[-2.5rem] lg:bottom-[-7rem] lg:h-[min(72vh,44rem)] 2xl:right-[1rem]"
-		>
-			<div class="h-full">
-				<HeroKey class="h-full w-auto" />
-			</div>
-		</div>
-		<div class="relative z-10 max-w-3xl">
-			<h1
-				data-home-right
-				class="font-display text-[clamp(2.8rem,5.2vw,6.2rem)] leading-[0.94] font-semibold tracking-[-0.045em] text-balance"
-			>
-				Your key,<br />everywhere.<br /><span class="text-ink/42">Held by no one.</span>
-			</h1>
-			<p
-				data-home-right
-				class="mt-8 max-w-[13.5rem] text-base leading-7 text-ink/62 sm:max-w-lg sm:text-lg"
-			>
-				Sign in to your accounts. Everywhere and anywhere. Only you control it.
-			</p>
-
-			<div data-home-right class="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-				{#if keyholder.locked}
-					<Button href="/get-started" size="lg" class="px-5 font-bold">
-						Take control today
-						<ArrowRight class="size-4" />
-					</Button>
-					<Button href="/login" variant="outline" size="lg" class="px-5 font-bold"
-						>Already have an account</Button
-					>
-				{:else}
-					<Button href="/app" size="lg" class="px-5 font-bold">
-						Go to dashboard
-						<ArrowRight class="size-4" />
-					</Button>
-				{/if}
-			</div>
-		</div>
 	</div>
 </section>
 

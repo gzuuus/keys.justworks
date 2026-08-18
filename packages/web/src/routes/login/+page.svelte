@@ -76,9 +76,9 @@
 			<ArrowLeft class="size-4" /> Back
 		</a>
 		<div class="flex items-center justify-between border-b border-border pb-5">
-			<p class="font-mono text-[0.68rem] font-bold tracking-[0.16em] uppercase">
+			<h1 class="font-mono text-[0.68rem] font-bold tracking-[0.16em] uppercase">
 				Returning keyholder
-			</p>
+			</h1>
 			<LockOpen class="size-5" />
 		</div>
 		{#if keyholder.autoLocked}
