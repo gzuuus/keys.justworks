@@ -8,7 +8,7 @@
  *
  * Reactive state (`npub`, `locked`, `autoLocked`) is driven only by the
  * lifecycle ops that hold the key (unlock/lock/auto-lock). The registration
- * helpers (`create`/`passwordSecret`) are one-shot offloads: they
+ * helpers (`create`/`import`/`passwordSecret`) are one-shot offloads: they
  * reuse the Worker but do NOT hold the key, so they leave the reactive state
  * untouched.
  *
@@ -51,6 +51,9 @@ class KeyholderStore {
 
 	create(identifier: string, password: string) {
 		return this.holder.create(identifier, password);
+	}
+	import(nsec: string, identifier: string, password: string) {
+		return this.holder.import(nsec, identifier, password);
 	}
 	passwordSecret(identifier: string, password: string) {
 		return this.holder.passwordSecret(identifier, password);

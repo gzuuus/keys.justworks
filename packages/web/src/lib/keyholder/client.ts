@@ -76,6 +76,10 @@ export class Keyholder {
 	create(identifier: string, password: string) {
 		return this.#send('create', { identifier, password });
 	}
+	/** One-shot: wrap an existing nsec into an ncryptsec inside the Worker. */
+	import(nsec: string, identifier: string, password: string) {
+		return this.#send('import', { nsec, identifier, password });
+	}
 
 	/** Lifecycle. */
 	unlock(ncryptsec: string, identifier: string, password: string) {
