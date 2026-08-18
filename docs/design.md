@@ -145,39 +145,19 @@ For users who already have a Nostr identity and will not switch if it means
 abandoning followers/reputation: they provide their `nsec`, the app wraps it into
 an `ncryptsec` with the passphrase, and uploads.
 
-**Trust boundary matters here.** Import puts the raw `nsec` in memory briefly
-before encryption. In the **extension** that memory is isolated — fine. On the
-**website** the `nsec` is in page JS during import, so an XSS / compromised
-dependency at that moment leaks an *established* key. Steer imports toward the
-extension; website import is convenience with acknowledged risk. This mirrors
-the signing trust boundary: the extension is the safer surface for any operation
-that touches a raw key.
+**Extension-only.** The website's import flow was removed — the website is
+generate-only, so no page-JS surface ever touches an established `nsec`.
+Import puts the raw `nsec` in memory briefly before encryption, and in the
+extension that memory is isolated from pages — fine. This mirrors the signing
+trust boundary: the extension is the safer surface for any operation that
+touches a raw key. The shared `import` signer op (`@kj/core` `SignerCore`,
+encrypting inside the Worker) stays for the extension; the web client exposes
+no wrapper for it.
 
-**Hardening website import against XSS (the highest-stakes page-JS exposure).**
-Import puts an *established, reputed* key in page JS — unlike generate (a
-brand-new unreputed key, low cost to leak). The complete defense is **input
-isolation** (extension / vault iframe / WebAuthn), which is deferred on the
-website; the mitigations below are **probability reduction**, and the residual
-is stated honestly:
-
-1. **Prefer the extension for import** — the only place the nsec is safe from
-   page JS. Website import carries a loud gate: *"importing an established key
-   here is the riskiest operation on this site; use the extension if you can."*
-2. **Strict CSP** (the load-bearing mitigation) — `script-src 'self'` with no
-   inline scripts; blocks injected scripts, which is what makes the brief
-   page-JS window safe.
-3. **Self-host everything** — no CDNs, no third-party scripts; no supply-chain
-   script vector.
-4. **Encrypt in the Worker, not page JS** — the Worker receives
-   `{nsec, identifier, password}`, runs the NIP-49 encrypt, returns the
-   `ncryptsec`, and wipes; page-JS exposure shrinks to the instant between
-   reading the input and `postMessage`.
-5. **Brief-window discipline** — read → post → clear the input and drop the
-   reference immediately; never persist the nsec in reactive state or logs.
-6. **Dependency hygiene** — the residual CSP cannot cover: a malicious
-   *trusted* dependency (compromised `nostr-tools`, malicious build plugin)
-   runs as `'self'`. Pin the lockfile, audit, minimize. Only input isolation
-   fixes this class.
+The supporting defenses the website kept when it still had an import flow
+remain in force for every page: **strict CSP** (`script-src 'self'`, no inline
+scripts), **self-hosting** (no CDNs or third-party scripts), and **Worker-side
+encryption** for every operation that handles key material.
 
 ### One-time export (consistent with "no recovery")
 
