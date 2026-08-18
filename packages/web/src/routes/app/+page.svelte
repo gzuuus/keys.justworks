@@ -199,7 +199,7 @@
 
 		<Tabs.Root bind:value={activeTab} class="mt-7 gap-0">
 			<Tabs.List
-				class="fixed bottom-5 left-4 z-40 h-14 w-auto gap-1 border border-border bg-paper-strong/95 p-1.5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl md:static md:h-[var(--control-height)] md:w-full md:bg-surface-sunken md:p-1 md:shadow-none md:backdrop-blur-none"
+				class="fixed bottom-5 left-4 z-40 h-14 w-auto gap-1 rounded-none border border-border bg-paper-strong/95 p-1.5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl md:static md:h-[var(--control-height)] md:w-full md:bg-surface-sunken md:p-1 md:shadow-none md:backdrop-blur-none"
 				aria-label="Dashboard sections"
 			>
 				<Tabs.Trigger
