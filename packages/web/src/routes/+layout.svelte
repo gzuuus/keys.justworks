@@ -213,7 +213,7 @@
 		<footer class="mt-20 border-t border-border bg-paper-strong/40">
 			<div class="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
 				<div class="sm:col-span-2 lg:col-span-2">
-					<Logo size={30} />
+					<Logo />
 					<p class="mt-3 max-w-sm text-sm text-muted-foreground">
 						A non-custodial Nostr key locker. The server stores only an encrypted key — it can't
 						decrypt your key and can't link it to your identity.

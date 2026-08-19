@@ -2,7 +2,7 @@
 	<title>keys.justworks — Nostr key identity study</title>
 	<meta
 		name="description"
-		content="The selected Double-sided N key logo direction for keys.justworks."
+		content="The keys.justworks logo study — Ward and Pixel Bit explorations, with the Checker Bow mark chosen as the production logo."
 	/>
 </svelte:head>
 

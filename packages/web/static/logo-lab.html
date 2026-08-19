@@ -4,17 +4,17 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="color-scheme" content="dark light" />
-		<title>keys.justworks — Double-sided N study</title>
+		<title>keys.justworks — Ward + Pixel variations</title>
 		<style>
 			:root { --ink:#0b0b0a; --paper:#f3f0e9; --surface:#11110f; --accent:#f07818; --line:rgb(11 11 10/.16); --muted:rgb(11 11 10/.56); font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace; background:var(--paper); color:var(--ink); }
 			* { box-sizing:border-box; }
 			body { margin:0; background:var(--paper); color:var(--ink); }
 			body.dark { --ink:#f4f1ea; --paper:#0b0b0a; --line:rgb(244 241 234/.16); --muted:rgb(244 241 234/.55); }
 			.shell { width:min(100% - 2rem,96rem); margin:auto; padding:1.25rem 0 5rem; }
-			header { min-height:33rem; display:grid; grid-template-columns:minmax(0,1.45fr) minmax(18rem,.55fr); align-items:end; gap:4rem; border-bottom:1px solid var(--line); padding:3rem 0 2rem; }
+			header { min-height:30rem; display:grid; grid-template-columns:minmax(0,1.45fr) minmax(18rem,.55fr); align-items:end; gap:4rem; border-bottom:1px solid var(--line); padding:3rem 0 2rem; }
 			.issue { display:flex; align-items:center; gap:.8rem; margin:0 0 1rem; color:var(--accent); font-size:.64rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
 			.issue::before { width:2.5rem; height:1px; background:currentColor; content:""; }
-			h1 { max-width:10ch; margin:0; font:800 clamp(4rem,9vw,9.5rem)/.78 Arial,sans-serif; letter-spacing:-.09em; }
+			h1 { max-width:12ch; margin:0; font:800 clamp(3.4rem,8vw,8.5rem)/.8 Arial,sans-serif; letter-spacing:-.09em; }
 			.lede { max-width:46rem; margin:2rem 0 0; color:var(--muted); font:clamp(1rem,1.5vw,1.25rem)/1.55 Arial,sans-serif; }
 			.side { border-left:1px solid var(--line); padding-left:2rem; }
 			.side-label { margin:0 0 1rem; color:var(--muted); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; }
@@ -28,14 +28,14 @@
 			.section-head h2 { margin:0; font:700 clamp(1.8rem,3vw,3rem)/1 Arial,sans-serif; letter-spacing:-.055em; }
 			.section-head p { max-width:36rem; margin:0; color:var(--muted); font:.85rem/1.5 Arial,sans-serif; }
 			.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line); }
-			.grid--single { grid-template-columns:1fr; }
-			.grid--single .preview { min-height:min(58rem,70vh); }
-			.grid--single .mark { width:clamp(14rem,26vw,23rem); }
+			.grid--reference { grid-template-columns:repeat(2,minmax(0,1fr)); }
+			.grid--reference .preview { min-height:22rem; }
+			.grid--reference .mark { width:clamp(9rem,14vw,12rem); }
 			.card { min-width:0; border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:clamp(.75rem,1.4vw,1.25rem); }
-			.preview { position:relative; min-height:clamp(20rem,35vw,34rem); display:grid; place-items:center; overflow:hidden; background:var(--surface); color:#f3f0e9; }
+			.preview { position:relative; min-height:clamp(18rem,26vw,26rem); display:grid; place-items:center; overflow:hidden; background:var(--surface); color:#f3f0e9; }
 			.preview::before { position:absolute; inset:1rem auto auto 1rem; color:rgb(243 240 233/.46); content:attr(data-axis); font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; }
 			.preview::after { position:absolute; right:1rem; bottom:.9rem; color:rgb(243 240 233/.3); content:"80 / 16"; font-size:.55rem; letter-spacing:.1em; }
-			.mark { width:clamp(11rem,20vw,18rem); height:auto; overflow:visible; }
+			.mark { width:clamp(9.5rem,15vw,13.5rem); height:auto; overflow:visible; }
 			.wordmark { position:absolute; left:1.2rem; bottom:1rem; display:flex; align-items:center; gap:.55rem; color:rgb(243 240 233/.86); font:700 .7rem/1 Arial,sans-serif; }
 			.wordmark svg { width:1.25rem; height:1.25rem; }
 			.meta { display:grid; grid-template-columns:2.2rem minmax(0,1fr) auto; align-items:start; gap:1rem; padding:1.15rem 0 .25rem; }
@@ -46,36 +46,616 @@
 			.tests { display:flex; align-items:center; gap:.7rem; min-height:2rem; }
 			.tests svg:first-child { width:2rem; height:2rem; }
 			.tests svg:last-child { width:1rem; height:1rem; }
+			/* Paints are routed through inherited custom properties: unlike class
+			   selectors, these reliably restyle content cloned into <use> shadow
+			   trees, so the one-colour toggle and the small test strips work. */
+			:root { --fill-accent:var(--accent); --paint-metal:url(#g-metal); --paint-bone:url(#g-bone); --paint-fx-dark:#000; --paint-fx-light:#fff; }
+			body.mono, .tests { --fill-accent:currentColor; --paint-metal:currentColor; --paint-bone:currentColor; --paint-fx-dark:transparent; --paint-fx-light:transparent; }
 			.ink-fill { fill:currentColor; }
-			.accent-fill { fill:var(--accent); }
-			.accent-stroke { fill:none; stroke:var(--accent); stroke-linecap:round; }
-			body.mono .accent-fill { fill:currentColor; }
-			body.mono .accent-stroke { stroke:currentColor; }
-			@media(max-width:800px) { .shell{width:min(100% - 1rem,96rem);padding-top:.5rem} header{min-height:auto;grid-template-columns:1fr;align-items:start;gap:2.5rem;padding:4rem 0 1.5rem} h1{font-size:clamp(4rem,20vw,6.5rem)} .side{border-left:0;padding-left:0} .section-head{align-items:start;flex-direction:column;gap:.6rem} .grid{grid-template-columns:1fr} .preview{min-height:20rem} .meta{grid-template-columns:1.8rem minmax(0,1fr)} .tests{display:none} }
+			.ink-stroke { fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; }
+			.accent-fill { fill:var(--fill-accent); }
+			.accent-stroke { fill:none; stroke:var(--fill-accent); stroke-linecap:round; stroke-linejoin:round; }
+			.metal { fill:var(--paint-metal); }
+			.metal-stroke { fill:none; stroke:var(--paint-metal); stroke-linecap:round; stroke-linejoin:round; }
+			.bone { fill:var(--paint-bone); }
+			.fx-dark-stroke { fill:none; stroke:var(--paint-fx-dark); stroke-linecap:round; }
+			.fx-light-stroke { fill:none; stroke:var(--paint-fx-light); stroke-linecap:round; }
+			@media(min-width:1280px) { .grid:not(.grid--reference) { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+			@media(max-width:800px) { .shell{width:min(100% - 1rem,96rem);padding-top:.5rem} header{min-height:auto;grid-template-columns:1fr;align-items:start;gap:2.5rem;padding:4rem 0 1.5rem} h1{font-size:clamp(3.4rem,17vw,6rem)} .side{border-left:0;padding-left:0} .section-head{align-items:start;flex-direction:column;gap:.6rem} .grid{grid-template-columns:1fr} .preview{min-height:20rem} .meta{grid-template-columns:1.8rem minmax(0,1fr)} .tests{display:none} }
 		</style>
 	</head>
 	<body>
 		<svg width="0" height="0" aria-hidden="true" style="position:absolute">
 			<defs>
-				<symbol id="mark-01" viewBox="0 0 80 80"><path class="ink-fill" d="M5 55V19h12l25 22V19h12v11h24v8H54v7h24v8H54v2H42L17 33v22Z"/><path class="accent-fill" d="M17 19h9l16 14v10L17 21Z"/></symbol>
+				<linearGradient id="g-metal" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stop-color="#ffc061"/><stop offset=".45" stop-color="#f07818"/><stop offset="1" stop-color="#8f3f04"/>
+				</linearGradient>
+				<linearGradient id="g-bone" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stop-color="#fbf8f1"/><stop offset="1" stop-color="#b3ada0"/>
+				</linearGradient>
+				<mask id="m09" maskUnits="userSpaceOnUse" x="0" y="0" width="80" height="80">
+					<rect fill="#fff" x="0" y="0" width="80" height="80"/>
+					<circle fill="#000" cx="40" cy="37" r="4.5"/>
+					<rect fill="#000" x="38.1" y="37" width="3.8" height="13"/>
+				</mask>
+
+				<symbol id="mark-00" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M64.4 31.1 A26 26 0 1 0 64.4 48.9" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M48.7 56.3 A18.5 18.5 0 1 0 31.3 56.3" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M31.6 32.9 A11 11 0 1 1 31.6 47.1" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4"/>
+					<path class="accent-stroke" d="M40 44 V52" stroke-width="3"/>
+					<path class="accent-stroke" d="M70 40 H61" stroke-width="3"/>
+				</symbol>
+
+				<symbol id="mark-01" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M65.2 46.5 A26 26 0 1 1 65.2 33.5" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M57.3 46.5 A18.5 18.5 0 1 1 57.3 33.5" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M48.9 46.5 A11 11 0 1 1 48.9 33.5" stroke-width="4.5"/>
+					<path class="accent-stroke" d="M68 40 H44" stroke-width="3.2"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4.2"/>
+				</symbol>
+
+				<symbol id="mark-02" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M66 40 A26 26 0 0 0 14 40 A22 22 0 0 0 58 40 A18 18 0 0 0 22 40 A14 14 0 0 0 50 40 A10 10 0 0 0 30 40" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4"/>
+				</symbol>
+
+				<symbol id="mark-03" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M66 47 V58 Q66 66 58 66 H22 Q14 66 14 58 V22 Q14 14 22 14 H58 Q66 14 66 22 V33" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M33 58.5 H26.5 Q21.5 58.5 21.5 53.5 V26.5 Q21.5 21.5 26.5 21.5 H53.5 Q58.5 21.5 58.5 26.5 V53.5 Q58.5 58.5 53.5 58.5 H47" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M29 34 V32 Q29 29 32 29 H48 Q51 29 51 32 V48 Q51 51 48 51 H32 Q29 51 29 48 V46" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4"/>
+					<path class="accent-stroke" d="M70 40 H62" stroke-width="3"/>
+				</symbol>
+
+				<symbol id="mark-04" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M65 47.2 A26 26 0 1 1 65 32.8" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M23.6 34 A17.5 17.5 0 1 1 23.6 46" stroke-width="4.5"/>
+					<path class="accent-fill" d="M34 32 H37 L43 44 V32 H46 V48 H43 L37 36 V48 H34 Z"/>
+				</symbol>
+
+				<symbol id="mark-05" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M31.1 64.4 A26 26 0 1 1 48.9 64.4" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M35.3 57.4 A18 18 0 1 1 44.7 57.4" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="40" cy="36" r="5.5"/>
+					<path class="accent-fill" d="M36.8 40 L34 51 H46 L43.2 40 Z"/>
+				</symbol>
+
+				<symbol id="mark-06" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M12 52 H68" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M16 52 A24 24 0 0 1 64 52" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M23 52 A17 17 0 0 1 34.2 36" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M45.8 36 A17 17 0 0 1 57 52" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M30 52 A10 10 0 0 1 50 52" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="40" cy="52" r="4"/>
+					<path class="accent-stroke" d="M40 56 V63" stroke-width="3"/>
+				</symbol>
+
+				<symbol id="mark-07" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M28 60.8 A24 24 0 1 1 52 60.8" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M48 26.1 A16 16 0 1 1 32 26.1" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M61.6 47.9 L55 45.5" stroke-width="4"/>
+					<path class="ink-stroke" d="M18.4 47.9 L25 45.5" stroke-width="4"/>
+					<path class="ink-stroke" d="M40 17 V24" stroke-width="4"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4.2"/>
+					<path class="accent-stroke" d="M40 44.2 V52" stroke-width="3"/>
+				</symbol>
+
+				<symbol id="mark-08" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M63.5 48.6 A25 25 0 1 1 63.5 31.4" stroke-width="4"/>
+					<path class="ink-stroke" d="M55.4 47.2 A17 17 0 1 1 55.4 32.8" stroke-width="4"/>
+					<circle class="accent-fill" cx="66" cy="40" r="2.2"/>
+					<circle class="accent-fill" cx="58" cy="40" r="1.9"/>
+					<circle class="accent-fill" cx="50" cy="40" r="1.6"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4.2"/>
+				</symbol>
+
+				<symbol id="mark-09" viewBox="0 0 80 80">
+					<g mask="url(#m09)"><circle class="bone" cx="40" cy="40" r="27"/></g>
+					<path class="fx-dark-stroke" d="M57.3 50 A20 20 0 1 1 57.3 30" stroke-width="3" opacity=".35"/>
+					<path class="fx-dark-stroke" d="M28.7 33.5 A13 13 0 1 1 28.7 46.5" stroke-width="3" opacity=".35"/>
+					<path class="accent-stroke" d="M64.5 28.6 A27 27 0 0 1 64.5 51.4" stroke-width="2.5"/>
+				</symbol>
+
+				<symbol id="mark-10" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M50.5 43.4 A11 11 0 1 1 50.5 36.6" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M55.7 49.8 A18.5 18.5 0 1 1 55.7 30.2" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M58.1 58.7 A26 26 0 1 1 58.1 21.3" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4"/>
+					<path class="accent-stroke" d="M40 44 V52" stroke-width="3"/>
+				</symbol>
+
+				<symbol id="mark-11" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M59.9 56.7 A26 26 0 0 1 15.6 31.1" stroke-width="3"/>
+					<path class="ink-stroke" d="M18.7 25.1 A26 26 0 0 1 64.4 48.9" stroke-width="3"/>
+					<path class="ink-stroke" d="M26.5 56.1 A21 21 0 1 1 36.4 60.7" stroke-width="3"/>
+					<path class="ink-stroke" d="M54.5 46.8 A16 16 0 0 1 24 40" stroke-width="3"/>
+					<path class="ink-stroke" d="M25 34.5 A16 16 0 0 1 56 40" stroke-width="3"/>
+					<path class="ink-stroke" d="M50.3 36.2 A11 11 0 1 1 45.5 30.5" stroke-width="3"/>
+					<circle class="accent-fill" cx="40" cy="40" r="3.2"/>
+				</symbol>
+
+				<symbol id="mark-12" viewBox="0 0 80 80">
+					<path class="metal-stroke" d="M64.1 49.7 A26 26 0 1 1 64.1 30.3" stroke-width="6"/>
+					<path class="metal-stroke" d="M24.2 33.6 A17 17 0 1 1 24.2 46.4" stroke-width="4.5"/>
+					<circle class="ink-fill" cx="40" cy="40" r="4.5"/>
+					<path class="ink-stroke" d="M40 44.5 V52" stroke-width="3"/>
+				</symbol>
+
+				<symbol id="mark-13" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M27.1 49.3 A20 20 0 1 1 52.9 49.3" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M30 42.4 A13 13 0 1 1 50 42.4" stroke-width="4.5"/>
+					<rect class="metal" x="26" y="50" width="28" height="18" rx="3"/>
+					<circle cx="40" cy="57" r="3.2" fill="#1a0d02" opacity=".9"/>
+					<path d="M37.8 59 L36 64.5 H44 L42.2 59 Z" fill="#1a0d02" opacity=".9"/>
+				</symbol>
+
+				<symbol id="mark-14" viewBox="0 0 80 80">
+					<path class="bone" d="M40 14 A26 26 0 0 0 40 66 Z"/>
+					<path class="ink-stroke" d="M40 14 A26 26 0 0 1 65.1 33.3" stroke-width="4"/>
+					<path class="ink-stroke" d="M65.1 46.7 A26 26 0 0 1 40 66" stroke-width="4"/>
+					<path class="ink-stroke" d="M40 21 A19 19 0 0 1 57.9 33.5" stroke-width="4"/>
+					<path class="ink-stroke" d="M57.9 46.5 A19 19 0 0 1 40 59" stroke-width="4"/>
+					<path class="ink-stroke" d="M40 28 A12 12 0 0 1 50.9 34.9" stroke-width="4"/>
+					<path class="ink-stroke" d="M50.9 45.1 A12 12 0 0 1 40 52" stroke-width="4"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4"/>
+				</symbol>
+
+				<symbol id="mark-15" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M42.5 46.8 A16 16 0 1 1 42.5 33.2" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M34.4 46.4 A9 9 0 1 1 34.4 33.6" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="28" cy="40" r="3"/>
+					<rect class="ink-fill" x="42" y="37.5" width="28" height="5"/>
+					<rect class="ink-fill" x="56" y="42.5" width="5" height="8"/>
+					<rect class="ink-fill" x="64" y="42.5" width="5" height="11"/>
+				</symbol>
+
+				<symbol id="mark-16" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M40 12 L64 20 V42 C64 56 54 63 40 68 C26 63 16 56 16 42 V20 Z" stroke-width="4"/>
+					<path class="ink-stroke" d="M36.6 52.6 A13 13 0 1 1 43.4 52.6" stroke-width="4"/>
+					<circle class="accent-fill" cx="40" cy="40" r="3.5"/>
+					<path class="accent-stroke" d="M40 43.5 V50" stroke-width="2.8"/>
+				</symbol>
+
+				<symbol id="mark-17" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M63.6 44.6 A24 24 0 1 1 63.6 35.4" stroke-width="7"/>
+					<path class="ink-stroke" d="M53.2 44.6 A14 14 0 1 1 53.2 35.4" stroke-width="7"/>
+					<circle class="accent-stroke" cx="69" cy="40" r="3.4" stroke-width="2.4"/>
+					<rect class="accent-fill" x="46" y="38.4" width="19.6" height="3.2"/>
+					<rect class="accent-fill" x="48" y="41.5" width="3" height="4"/>
+					<circle class="accent-fill" cx="40" cy="40" r="4"/>
+				</symbol>
+
+				<symbol id="mark-18" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M62.5 53 A26 26 0 1 1 62.5 27" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M24.4 49 A18 18 0 1 1 40 58" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M40 30 A10 10 0 1 1 31.3 35" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="40" cy="40" r="3.5"/>
+				</symbol>
+
+				<symbol id="mark-19" viewBox="0 0 80 80">
+					<path class="metal-stroke" d="M64.5 28.6 A27 27 0 1 0 64.5 51.4 A27 27 0 1 0 64.5 28.6" stroke-width="5.5"/>
+					<path class="fx-light-stroke" d="M55.4 47.2 A17 17 0 1 1 55.4 32.8" stroke-width="3" opacity=".3" transform="translate(-0.8 -0.9)"/>
+					<path class="fx-light-stroke" d="M30.9 34.8 A10.5 10.5 0 1 1 30.9 45.3" stroke-width="3" opacity=".3" transform="translate(-0.8 -0.9)"/>
+					<path class="ink-stroke" d="M55.4 47.2 A17 17 0 1 1 55.4 32.8" stroke-width="3" opacity=".55"/>
+					<path class="ink-stroke" d="M30.9 34.8 A10.5 10.5 0 1 1 30.9 45.3" stroke-width="3" opacity=".55"/>
+					<circle class="metal" cx="40" cy="40" r="4.5"/>
+				</symbol>
+
+				<symbol id="mark-20" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M61.7 50.2 A24 24 0 1 1 61.7 29.8" stroke-width="8"/>
+					<path class="ink-stroke" d="M29.1 34.9 A12 12 0 1 1 29.1 45.1" stroke-width="8"/>
+					<circle class="accent-fill" cx="40" cy="40" r="5.5"/>
+				</symbol>
+
+				<symbol id="mark-21" viewBox="0 0 80 80">
+					<path class="ink-stroke" d="M65.2 46.3 A26 26 0 1 1 65.2 33.7" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M35 59.9 A20.5 20.5 0 1 1 45 59.9" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M25.4 36.4 A15 15 0 1 1 25.4 43.6" stroke-width="4.5"/>
+					<path class="ink-stroke" d="M42.3 30.8 A9.5 9.5 0 1 1 37.7 30.8" stroke-width="4.5"/>
+					<circle class="accent-fill" cx="40" cy="40" r="3.4"/>
+				</symbol>
+				<symbol id="mark-22" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="13" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="61" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="61" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="61" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="61" y="55" width="5" height="5"/>
+					<rect class="accent-fill" x="37" y="37" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-23" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="13" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="61" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="61" y="25" width="5" height="5"/>
+					<rect class="accent-fill" x="61" y="31" width="5" height="5"/>
+					<rect class="accent-fill" x="61" y="37" width="5" height="5"/>
+					<rect class="accent-fill" x="61" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="61" y="49" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-24" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="31" y="7" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="7" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="7" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="31" width="5" height="5" opacity="0.85"/>
+					<rect class="ink-fill" x="37" y="37" width="5" height="5" opacity="0.7"/>
+					<rect class="ink-fill" x="37" y="43" width="5" height="5" opacity="0.55"/>
+					<rect class="ink-fill" x="37" y="49" width="5" height="5" opacity="0.45"/>
+					<rect class="accent-fill" x="43" y="31" width="5" height="5"/>
+					<rect class="accent-fill" x="49" y="31" width="5" height="5"/>
+					<rect class="accent-fill" x="43" y="43" width="5" height="5"/>
+					<rect class="accent-fill" x="49" y="43" width="5" height="5"/>
+					<rect class="accent-fill" x="55" y="43" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-25" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="19" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="25" width="5" height="5" opacity="0.9"/>
+					<rect class="ink-fill" x="31" y="31" width="5" height="5" opacity="0.75"/>
+					<rect class="ink-fill" x="37" y="37" width="5" height="5" opacity="0.6"/>
+					<rect class="ink-fill" x="43" y="43" width="5" height="5" opacity="0.45"/>
+					<rect class="ink-fill" x="49" y="49" width="5" height="5" opacity="0.35"/>
+					<rect class="ink-fill" x="55" y="19" width="5" height="5" opacity="0.5"/>
+					<rect class="ink-fill" x="55" y="31" width="5" height="5" opacity="0.5"/>
+					<rect class="ink-fill" x="55" y="43" width="5" height="5" opacity="0.5"/>
+					<rect class="accent-fill" x="55" y="55" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-26" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="25" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="13" width="5" height="5"/>
+					<rect class="accent-fill" x="49" y="19" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-27" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="7" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="7" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="61" y="37" width="5" height="5"/>
+					<rect class="accent-fill" x="49" y="43" width="5" height="5"/>
+					<rect class="accent-fill" x="61" y="43" width="5" height="5"/>
+					<rect class="accent-fill" x="61" y="49" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-28" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="8" y="21" width="12" height="12"/>
+					<rect class="ink-fill" x="8" y="34" width="12" height="12"/>
+					<rect class="ink-fill" x="8" y="47" width="12" height="12"/>
+					<rect class="ink-fill" x="21" y="21" width="12" height="12"/>
+					<rect class="ink-fill" x="21" y="47" width="12" height="12"/>
+					<rect class="ink-fill" x="34" y="21" width="12" height="12"/>
+					<rect class="ink-fill" x="34" y="34" width="12" height="12"/>
+					<rect class="ink-fill" x="34" y="47" width="12" height="12"/>
+					<rect class="ink-fill" x="47" y="34" width="12" height="12"/>
+					<rect class="ink-fill" x="60" y="34" width="12" height="12"/>
+					<rect class="accent-fill" x="60" y="47" width="12" height="12"/>
+				</symbol>
+				<symbol id="mark-29" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="7" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="7" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="7" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="43" width="5" height="5"/>
+					<rect class="accent-fill" x="55" y="31" width="5" height="5"/>
+					<rect class="accent-fill" x="55" y="37" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-30" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="7" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="7" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="7" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="55" width="5" height="5"/>
+					<rect class="accent-fill" x="49" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="13" width="5" height="5" opacity="0.25"/>
+					<rect class="ink-fill" x="31" y="25" width="5" height="5" opacity="0.45"/>
+					<rect class="ink-fill" x="31" y="37" width="5" height="5" opacity="0.7"/>
+					<rect class="ink-fill" x="43" y="19" width="5" height="5" opacity="0.3"/>
+					<rect class="ink-fill" x="43" y="31" width="5" height="5" opacity="0.55"/>
+					<rect class="ink-fill" x="55" y="13" width="5" height="5" opacity="0.2"/>
+					<rect class="ink-fill" x="55" y="25" width="5" height="5" opacity="0.4"/>
+					<rect class="ink-fill" x="55" y="37" width="5" height="5" opacity="0.65"/>
+				</symbol>
+				<symbol id="mark-31" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="31" y="7" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="7" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="7" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="13" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="55" width="5" height="5"/>
+					<rect class="accent-fill" x="31" y="61" width="5" height="5"/>
+					<rect class="accent-fill" x="37" y="61" width="5" height="5"/>
+					<rect class="accent-fill" x="43" y="61" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-32" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="13" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="13" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="52.6" y="20.8" width="5" height="5" opacity="0.35"/>
+					<rect class="ink-fill" x="62.2" y="31.6" width="5" height="5" opacity="0.45"/>
+					<rect class="ink-fill" x="57.4" y="47.8" width="5" height="5" opacity="0.4"/>
+					<rect class="ink-fill" x="49.6" y="56.2" width="5" height="5" opacity="0.3"/>
+					<rect class="ink-fill" x="61" y="52" width="5" height="5" opacity="0.25"/>
+					<rect class="ink-fill" x="46" y="15.4" width="5" height="5" opacity="0.25"/>
+					<rect class="ink-fill" x="49.9" y="36.4" width="5" height="5" opacity="0.7"/>
+					<rect class="ink-fill" x="48.4" y="43.9" width="5" height="5" opacity="0.7"/>
+					<rect class="accent-fill" x="56.2" y="38.2" width="5" height="5" opacity="0.9"/>
+				</symbol>
+				<symbol id="mark-33" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="19" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="19" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="25" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="31" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="31" width="5" height="5"/>
+					<rect class="accent-fill" x="37" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="37" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="37" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="43" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="49" y="55" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="19" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="25" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="31" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="43" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="49" width="5" height="5"/>
+					<rect class="ink-fill" x="55" y="55" width="5" height="5"/>
+				</symbol>
+				<symbol id="mark-px" viewBox="0 0 80 80">
+					<rect class="ink-fill" x="8" y="26" width="6" height="6"/><rect class="ink-fill" x="15" y="26" width="6" height="6"/><rect class="ink-fill" x="22" y="26" width="6" height="6"/>
+					<rect class="ink-fill" x="8" y="33" width="6" height="6"/><rect class="ink-fill" x="22" y="33" width="6" height="6"/>
+					<rect class="ink-fill" x="8" y="40" width="6" height="6"/><rect class="ink-fill" x="15" y="40" width="6" height="6"/><rect class="ink-fill" x="22" y="40" width="6" height="6"/>
+					<rect class="ink-fill" x="29" y="33" width="6" height="6" opacity=".92"/>
+					<rect class="ink-fill" x="36" y="33" width="6" height="6" opacity=".8"/>
+					<rect class="ink-fill" x="43" y="33" width="6" height="6" opacity=".68"/>
+					<rect class="ink-fill" x="50" y="33" width="6" height="6" opacity=".56"/>
+					<rect class="ink-fill" x="57" y="33" width="6" height="6" opacity=".46"/>
+					<rect class="ink-fill" x="64" y="33" width="6" height="6" opacity=".38"/>
+					<rect class="accent-fill" x="43" y="40" width="6" height="6"/>
+					<rect class="accent-fill" x="57" y="40" width="6" height="6"/>
+					<rect class="accent-fill" x="57" y="47" width="6" height="6"/>
+					<rect class="accent-fill" x="64" y="40" width="6" height="6"/>
+				</symbol>
 			</defs>
 		</svg>
 
 		<main class="shell">
 			<header>
-				<div><p class="issue">Selected direction / Double-sided</p><h1>One mark.<br/>Clean baseline.</h1><p class="lede">The original Double-sided concept you selected, restored unchanged and isolated from every later experiment. This is the only direction in the lab, ready for your exact refinement guidance.</p></div>
-				<aside class="side"><p class="side-label">Baseline status</p><ol class="principles"><li>Original selected geometry</li><li>No new balance experiments</li><li>Colour and mono previews retained</li><li>Awaiting exact art direction</li></ol><div class="controls"><button id="mono" type="button">One colour</button><button id="theme" type="button">Dark surface</button></div></aside>
+				<div><p class="issue">Exploration no. 3 / Ward + Pixel families</p><h1>Two picks, pushed far.</h1><p class="lede">The two chosen directions taken deep. Ward — concentric lock wards with an aligned way in and an orange key-pin — through twenty-one variations of gap choreography, spirals, engraving, and forged metal. Pixel Bit — the key rasterised on a coarse grid — through twelve, including the crossovers where the maze itself goes pixel. Every mark survives one colour and 16&nbsp;px.</p></div>
+				<aside class="side"><p class="side-label">Family rules</p><ol class="principles"><li>Wards keep concentric geometry and a way in</li><li>Pixel marks live on one fixed grid</li><li>One orange element per mark</li><li>Both selected marks kept below, unchanged</li></ol><div class="controls"><button id="mono" type="button">One colour</button><button id="theme" type="button">Dark surface</button></div></aside>
 			</header>
-			<div class="section-head"><h2>Selected Double-sided</h2><p>The sole working mark. No alternatives remain on this page.</p></div>
-			<section class="grid grid--single" id="grid" aria-label="Selected Double-sided N key logo"></section>
+			<div class="section-head"><h2>Ward variations</h2><p>Twenty-one takes on the primary pick, numbered for shortlist calls. The small strip beside each caption is the forced one-colour reduction.</p></div>
+			<section class="grid" id="grid" aria-label="Twenty-one Ward logo variations"></section>
+			<div class="section-head"><h2>Pixel variations</h2><p>Twelve takes on the second pick — same grid discipline, from sprite locks to the pixel ward crossover.</p></div>
+			<section class="grid" id="grid-pixel" aria-label="Twelve Pixel Bit logo variations"></section>
+			<div class="section-head"><h2>Selected directions</h2><p>The two picks from exploration no. 2, unchanged, for side-by-side judgement.</p></div>
+			<section class="grid grid--reference" id="reference" aria-label="Selected Ward and Pixel Bit logos"></section>
 		</main>
 		<script>
-			const concepts = [['Double-sided','selected baseline','The original opposed-tooth key and Expanded N combination, preserved exactly as selected.']];
+			const concepts = [
+				['Gate','aligned channel','All three gaps line up into one straight way in, and the channel itself is drawn in orange, running from the rim to the pin. The path is the promise.'],
+				['Spiral','one wall','The wards fuse into a single spiral wall that winds from the rim to the centre. One line, one way in, no fork in the path.'],
+				['Circuit','square wards','The same three-gap maze rebuilt on rounded squares. Reads as circuitry and sits naturally next to terminals, favicons, and app tiles.'],
+				['Ward N','letter at centre','Two outer wards guard a small solid N where the pin was. The maze protects the name itself.'],
+				['Keyway','what the maze guards','The centre pin grows into a full orange keyhole. The wards become the escutcheon around the way in.'],
+				['Dawn','half wards','The maze halved on a horizon line, the middle ward split, and the pin dropping its stem through the line. Custody as sunrise.'],
+				['Tumbler','pins in the works','Two wards with three radial tumbler stubs reaching inward — the mechanism, not just the maze. The orange pin sits where they would set.'],
+				['Trail','breadcrumbs in','Two quiet wards and a trail of orange dots shrinking toward the pin. The way in, told as motion.'],
+				['Engraved','die-cut plate','A solid gradient plate with the wards engraved into it and the pin punched clean through — plus one orange glint on the rim. In one colour it becomes a die-cut badge.'],
+				['Horn','opening outward','The gaps widen ring by ring, so the maze opens like a horn from the pin to the world. Sign once at the centre, heard at the rim.'],
+				['Whorl','fingerprint','Six finer arcs with scattered gaps until the wards read as a fingerprint. Identity and mechanism in one figure.'],
+				['Forged','machined metal','The original geometry recut in the intro\'s machined orange metal, heavier on the outside, with an ink pin. Material does the talking.'],
+				['Wardlock','maze shackle','The wards arc over a small metal body as a shackle would — the one padlock in the family, and even here the lock is a maze, not a cliché.'],
+				['Meridian','solid meets open','Left half a solid plate, right half open wards. Held by no one on one side, works everywhere on the other. The pin sits on the seam.'],
+				['Wardkey','bow of a key','The ward maze shrinks into the bow of an actual key — shaft and two teeth run out through the aligned gaps. The pick and a key, one object.'],
+				['Crest','guarded shield','A single ward and pin set inside a shield outline. The most institutional read of the family, for when trust needs a crest.'],
+				['Channel','key in the works','Two massive wards cut by one straight channel — and a small orange key already lying in it, tooth down, heading for the pin.'],
+				['Trinity','three turns','Three long arcs, each broken a third of a turn further round. The gaps spiral; the eye follows them into the pin.'],
+				['Coin','minted ward','A heavy metal rim with the wards embossed inside it and a metal pin. The mark as a minted object — press it into wax or an app icon.'],
+				['Core','two walls','The reduction test made the mark: two chunky wards, one big pin, nothing else. Built for 16 px and still unmistakably the maze.'],
+				['Turns','four quarter gaps','Four wards, each gap a quarter-turn on from the last — right, down, left, up. The most maze-like of the family; the route actually turns.']
+			];
+			const pixelConcepts = [
+				['Pixel Ward','the crossover','The ward maze rasterised: two octagonal rings of cells, gaps right and left, one orange pixel at centre. Both picks in a single mark.'],
+				['Pixel Keyhole','punched sprite','A pixel disc with the keyhole knocked out cell by cell and the ward entry echoed in three orange rim cells.'],
+				['Byte Key','vertical fade','The pixel key stood upright — solid bow, a shaft that fades bit by bit, and orange teeth reaching right.'],
+				['Fade N','letter dissolving','The N with its diagonal dissolving into transmission and its right bar half-arrived. One orange foot pixel grounds it.'],
+				['Sprite Lock','8-bit padlock','A padlock sprite with the shackle thrown open — the released tip is the one orange cell. Game-boot energy.'],
+				['Checker Bow','dither texture','The bow woven as a checkerboard dither, the shaft solid, the teeth orange. Texture and silhouette from the same grid.'],
+				['Big Bit','five-cell key','The whole key in a handful of giant cells, one of them orange. The most extreme reduction that still reads.'],
+				['Prompt','terminal cursor','A small pixel key typed at a prompt, an orange block cursor waiting after it. Login as a command line.'],
+				['Rain Key','the intro, frozen','Matrix cells falling straight into a waiting pixel key — the site\'s own intro compressed into one still mark.'],
+				['Column Cipher','punched credential','The pixel credential: a lanyard ring, two binary columns, and an orange base strip. Data you can pocket.'],
+				['Assembling','key from bits','Drifting off-grid cells converging into a solid key — the hot orange bit arriving last. Identity assembling from data.'],
+				['Finder','QR ward','A QR finder square opened like a ward — gap on the right, solid core, orange centre. Scannable-culture kin of the maze.']
+			];
+			const card = (name, axis, copy, number, id, tag = '') =>
+				`<article class="card"><div class="preview" data-axis="${number} / ${axis}"><svg class="mark" viewBox="0 0 80 80" role="img" aria-label="${name}"><use href="#mark-${id}"/></svg><span class="wordmark"><svg viewBox="0 0 80 80"><use href="#mark-${id}"/></svg>keys.justworks</span></div><div class="meta"><span class="number">${number}</span><div>${tag}<h3>${name}</h3><p>${copy}</p></div><div class="tests"><svg viewBox="0 0 80 80"><use href="#mark-${id}"/></svg><svg viewBox="0 0 80 80"><use href="#mark-${id}"/></svg></div></div></article>`;
 			document.querySelector('#grid').innerHTML = concepts.map(([name,axis,copy],index) => {
 				const number = String(index + 1).padStart(2,'0');
-				const recommended = '<span class="tag">Selected direction</span>';
-				return `<article class="card"><div class="preview" data-axis="${number} / ${axis}"><svg class="mark" viewBox="0 0 80 80" role="img" aria-label="${name} Double-sided N key"><use href="#mark-${number}"/></svg><span class="wordmark"><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg>keys.justworks</span></div><div class="meta"><span class="number">${number}</span><div>${recommended}<h3>${name}</h3><p>${copy}</p></div><div class="tests"><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg><svg viewBox="0 0 80 80"><use href="#mark-${number}"/></svg></div></div></article>`;
+				return card(name, axis, copy, number, number);
 			}).join('');
+			const selectedTag = '<span class="tag">Selected direction</span>';
+			document.querySelector('#grid-pixel').innerHTML = pixelConcepts.map(([name,axis,copy],index) => {
+				const number = String(index + 22).padStart(2,'0');
+				return card(name, axis, copy, number, number, number === '27' ? '<span class="tag">Chosen — production mark</span>' : '');
+			}).join('');
+			document.querySelector('#reference').innerHTML =
+				card('Ward','selected direction','Concentric lock wards with one aligned entry path and an orange key-pin at centre, exactly as picked from exploration no. 2.','00','00',selectedTag) +
+				card('Pixel Bit','selected direction','The key rasterised on a coarse grid, its shaft dithering out of existence pixel by pixel, exactly as picked from exploration no. 2.','0P','px',selectedTag);
 			document.querySelector('#theme').addEventListener('click', () => document.body.classList.toggle('dark'));
 			document.querySelector('#mono').addEventListener('click', () => document.body.classList.toggle('mono'));
 		</script>

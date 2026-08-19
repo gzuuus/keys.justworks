@@ -120,11 +120,14 @@
 	let dismissed = $state(false);
 	let introStarted = $state(false);
 	let activeLine = $state('');
+	// The scene stays CSS-hidden until GSAP has stamped every animation-start
+	// state; otherwise the fully-assembled key and copy flash before frame one.
+	let armed = $state(false);
 	let ready = $state(false);
 	let openingTimeline: Timeline | null = null;
-	let intake: Timeline | null = null;
+	let intakeTimeline: Timeline | null = null;
 	let copyTimeline: Timeline | null = null;
-	let stopIntroSounds: (() => void) | null = null;
+	let soundElements: HTMLAudioElement[] = [];
 	let ambientTweens: Array<{ kill(): void }> = [];
 	let splitInstances: Array<{ revert(): void }> = [];
 	let restoreOverflow: (() => void) | null = null;
@@ -189,19 +192,29 @@
 		return ((index + 0.5) * viewport.width) / rainStreamCount;
 	}
 
+	function killAnimations() {
+		autoplayTimer?.kill();
+		autoplayTimer = null;
+		openingTimeline?.kill();
+		openingTimeline = null;
+		intakeTimeline?.kill();
+		intakeTimeline = null;
+		copyTimeline?.kill();
+		copyTimeline = null;
+		for (const tween of ambientTweens) tween.kill();
+		ambientTweens = [];
+		for (const split of splitInstances) split.revert();
+		splitInstances = [];
+	}
+
 	function finish() {
 		try {
 			sessionStorage.setItem(INTRO_SESSION_KEY, '1');
 		} catch {
 			// Storage can be unavailable in hardened/private browser contexts.
 		}
-		autoplayTimer?.kill();
-		openingTimeline?.kill();
-		intake?.kill();
-		copyTimeline?.kill();
-		ambientTweens.forEach((tween) => tween.kill());
-		splitInstances.forEach((split) => split.revert());
-		stopIntroSounds?.();
+		killAnimations();
+		for (const sound of soundElements) sound.pause();
 		restoreOverflow?.();
 		dismissed = true;
 		if (!finishNotified) {
@@ -213,7 +226,7 @@
 	function startIntro() {
 		if (!ready || introStarted) return;
 		introStarted = true;
-		intake
+		intakeTimeline
 			?.eventCallback('onComplete', () => {
 				copyTimeline?.timeScale(introTimeScale).play(0);
 			})
@@ -256,17 +269,24 @@
 				// Autoplay can be blocked until the visitor has interacted with the page.
 			});
 		};
+		soundElements = Object.values(sounds);
 		playSound('intro');
-		stopIntroSounds = () => {
-			for (const sound of Object.values(sounds)) sound.pause();
-			stopIntroSounds = null;
-		};
 		restoreOverflow = () => {
 			document.documentElement.style.overflow = previousOverflow;
 			restoreOverflow = null;
 		};
 
 		void (async () => {
+			// Fetch the animation chunks while the measured viewport re-renders the scene.
+			const gsapModules = Promise.all([
+				import('gsap'),
+				import('gsap/MotionPathPlugin'),
+				import('gsap/DrawSVGPlugin'),
+				import('gsap/SplitText')
+			]);
+			gsapModules.catch(() => {
+				// Failures surface where the modules are awaited; this only covers the early-return path.
+			});
 			viewport = {
 				width: window.innerWidth,
 				height: window.innerHeight,
@@ -275,48 +295,42 @@
 			await tick();
 			if (!active || !root) return;
 
-			const [{ gsap }, { MotionPathPlugin }, { DrawSVGPlugin }, { SplitText }] = await Promise.all([
-				import('gsap'),
-				import('gsap/MotionPathPlugin'),
-				import('gsap/DrawSVGPlugin'),
-				import('gsap/SplitText')
-			]);
+			const [{ gsap }, { MotionPathPlugin }, { DrawSVGPlugin }, { SplitText }] = await gsapModules;
 			gsap.registerPlugin(MotionPathPlugin, DrawSVGPlugin, SplitText);
 
-			const key = root.querySelector<SVGGElement>('[data-key]');
-			const keyWireframe = root.querySelector<SVGGElement>('[data-key-wireframe]');
-			const keyWireReveal = root.querySelector<SVGRectElement>('[data-key-wire-reveal]');
-			const keyMotion = root.querySelector<SVGGElement>('[data-key-motion]');
-			const keyOverlayMotion = root.querySelector<SVGGElement>('[data-key-overlay-motion]');
-			const nostr = root.querySelector<SVGGElement>('[data-nostr]');
-			const fobOutline = root.querySelector<SVGPathElement>('[data-fob-outline]');
-			const fobFillReveal = root.querySelector<SVGGraphicsElement>('[data-fob-fill-reveal]');
-			const fobShadow = root.querySelector<SVGPathElement>('[data-fob-shadow]');
-			const network = root.querySelector<SVGGElement>('[data-network]');
-			const orbs = Array.from(root.querySelectorAll<SVGGElement>('[data-orb]'));
-			const orbFidelity = Array.from(root.querySelectorAll<SVGGElement>('[data-orb-fidelity]'));
-			const orbWires = Array.from(root.querySelectorAll<SVGCircleElement>('[data-orb-wire]'));
-			const serviceLogos = Array.from(root.querySelectorAll<SVGGElement>('[data-service-logo]'));
-			const serviceNostr = Array.from(root.querySelectorAll<SVGGElement>('[data-service-nostr]'));
-			const flowPaths = Array.from(root.querySelectorAll<SVGPathElement>('[data-flow]'));
-			const intakePaths = Array.from(root.querySelectorAll<SVGPathElement>('[data-intake-path]'));
-			const basePaths = Array.from(root.querySelectorAll<SVGPathElement>('[data-base]'));
-			const pulses = Array.from(root.querySelectorAll<SVGCircleElement>('[data-pulse]'));
-			const wordLines = Array.from(root.querySelectorAll<HTMLElement>('[data-copy-line]'));
-			const dataField = root.querySelector<SVGGElement>('[data-data-field]');
-			const rainStreams = Array.from(root.querySelectorAll<SVGGElement>('[data-rain-stream]'));
-			const breachRain = Array.from(
-				root.querySelectorAll<SVGGElement>('[data-rain-layer="breach"]')
-			);
-			const nostrRain = Array.from(root.querySelectorAll<SVGGElement>('[data-rain-layer="nostr"]'));
-			const glitchBands = Array.from(root.querySelectorAll<SVGGElement>('[data-glitch-band]'));
-			const circuitPaths = Array.from(root.querySelectorAll<SVGPathElement>('[data-key-circuit]'));
-			const circuitNodes = Array.from(
-				root.querySelectorAll<SVGCircleElement>('[data-key-circuit-node]')
-			);
-			const circuitPulses = Array.from(
-				root.querySelectorAll<SVGCircleElement>('[data-key-circuit-pulse]')
-			);
+			const stage = root;
+			const el = <T extends Element>(selector: string) => stage.querySelector<T>(selector);
+			const all = <T extends Element>(selector: string) =>
+				Array.from(stage.querySelectorAll<T>(selector));
+
+			const key = el<SVGGElement>('[data-key]');
+			const keyWireframe = el<SVGGElement>('[data-key-wireframe]');
+			const keyWireReveal = el<SVGRectElement>('[data-key-wire-reveal]');
+			const keyMotion = el<SVGGElement>('[data-key-motion]');
+			const keyOverlayMotion = el<SVGGElement>('[data-key-overlay-motion]');
+			const nostr = el<SVGGElement>('[data-nostr]');
+			const fobOutline = el<SVGPathElement>('[data-fob-outline]');
+			const fobFillReveal = el<SVGGraphicsElement>('[data-fob-fill-reveal]');
+			const fobShadow = el<SVGPathElement>('[data-fob-shadow]');
+			const network = el<SVGGElement>('[data-network]');
+			const dataField = el<SVGGElement>('[data-data-field]');
+			const orbs = all<SVGGElement>('[data-orb]');
+			const orbFidelity = all<SVGGElement>('[data-orb-fidelity]');
+			const orbWires = all<SVGCircleElement>('[data-orb-wire]');
+			const serviceLogos = all<SVGGElement>('[data-service-logo]');
+			const serviceNostr = all<SVGGElement>('[data-service-nostr]');
+			const flowPaths = all<SVGPathElement>('[data-flow]');
+			const intakePaths = all<SVGPathElement>('[data-intake-path]');
+			const basePaths = all<SVGPathElement>('[data-base]');
+			const pulses = all<SVGCircleElement>('[data-pulse]');
+			const wordLines = all<HTMLElement>('[data-copy-line]');
+			const rainStreams = all<SVGGElement>('[data-rain-stream]');
+			const breachRain = all<SVGGElement>('[data-rain-layer="breach"]');
+			const nostrRain = all<SVGGElement>('[data-rain-layer="nostr"]');
+			const glitchBands = all<SVGGElement>('[data-glitch-band]');
+			const circuitPaths = all<SVGPathElement>('[data-key-circuit]');
+			const circuitNodes = all<SVGCircleElement>('[data-key-circuit-node]');
+			const circuitPulses = all<SVGCircleElement>('[data-key-circuit-pulse]');
 			if (
 				!key ||
 				!keyWireframe ||
@@ -342,8 +356,11 @@
 				orbWires.length !== services.length ||
 				serviceLogos.length !== services.length ||
 				serviceNostr.length !== services.length
-			)
+			) {
+				// A missing element means the scene markup drifted; skip to the site instead of a dead screen.
+				finish();
 				return;
+			}
 
 			gsap.set(key, { opacity: 0 });
 			gsap.set(keyWireframe, { opacity: 0 });
@@ -377,6 +394,10 @@
 			gsap.set(circuitPaths, { drawSVG: '0% 100%', opacity: 0.3 });
 			gsap.set(circuitNodes, { opacity: 0.42, scale: 1, transformOrigin: '50% 50%' });
 			gsap.set(circuitPulses, { opacity: 0.72 });
+
+			// Every element now carries its animation-start inline state, so the
+			// CSS first-paint gate can lift within this same frame.
+			armed = true;
 
 			openingTimeline = gsap
 				.timeline()
@@ -448,7 +469,7 @@
 			});
 
 			const intakeSequence = gsap.timeline({ paused: true });
-			intake = intakeSequence;
+			intakeTimeline = intakeSequence;
 			const orderedServiceLogos = serviceSequence.map((index) => serviceLogos[index]);
 			const orderedServiceNostr = serviceSequence.map((index) => serviceNostr[index]);
 			intakeSequence
@@ -699,13 +720,8 @@
 
 		return () => {
 			active = false;
-			autoplayTimer?.kill();
-			openingTimeline?.kill();
-			intake?.kill();
-			copyTimeline?.kill();
-			ambientTweens.forEach((tween) => tween.kill());
-			splitInstances.forEach((split) => split.revert());
-			for (const sound of Object.values(sounds)) {
+			killAnimations();
+			for (const sound of soundElements) {
 				sound.pause();
 				sound.removeAttribute('src');
 				sound.load();
@@ -716,7 +732,7 @@
 </script>
 
 {#if !dismissed}
-	<div bind:this={root} class="key-intro" data-testid="key-intro">
+	<div bind:this={root} class="key-intro" class:key-intro--armed={armed} data-testid="key-intro">
 		<svg
 			class="key-intro__art"
 			viewBox={`0 0 ${viewport.width} ${viewport.height}`}
@@ -1097,6 +1113,12 @@
 		overflow: hidden;
 		background: #0a0a0a;
 		color: #fafafa;
+	}
+	/* Until GSAP stamps the animation-start states, only the black backdrop and
+	   the skip control may paint — never the fully-assembled scene. */
+	.key-intro:not(.key-intro--armed) .key-intro__art,
+	.key-intro:not(.key-intro--armed) .key-intro__copy {
+		visibility: hidden;
 	}
 	.key-intro__art {
 		position: absolute;
