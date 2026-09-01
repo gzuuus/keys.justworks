@@ -1,0 +1,49 @@
+/**
+ * keys.justworks — boot splash styles.
+ *
+ * Linked directly from app.html so the splash (static markup in the same
+ * file) is styled on its first paint — before SvelteKit's JS and CSS bundles
+ * exist in dev, and before the app CSS is fetched in prod. Kept tiny and
+ * self-contained on purpose: render-blocking by design, CSP-safe (style-src
+ * 'self'), no dependency on the app's font/CSS chunks. The app removes the
+ * splash via $lib/boot-splash once the intro reel / home hero can paint.
+ */
+#boot-splash {
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	display: grid;
+	place-content: center;
+	justify-items: center;
+	gap: 1.75rem;
+	background: #0a0a0a;
+	/* Safety net: if the app never dismisses it, get out of the way. */
+	animation: kj-boot-splash-out 0.35s ease-in 8s forwards;
+}
+#boot-splash img {
+	animation: kj-boot-splash-turn 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+#boot-splash p {
+	margin: 0;
+	font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	letter-spacing: 0.18em;
+	color: rgb(250 250 250 / 0.5);
+}
+@keyframes kj-boot-splash-turn {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@keyframes kj-boot-splash-out {
+	to {
+		opacity: 0;
+		visibility: hidden;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	#boot-splash img {
+		animation: none;
+	}
+}

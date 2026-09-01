@@ -7,18 +7,22 @@
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 		<link rel="manifest" href="/manifest.webmanifest" />
+		<!-- Splash styles ship as a static render-blocking stylesheet so the boot
+		     splash (at the end of <body>) is styled on its very first paint —
+		     before SvelteKit's JS/CSS arrive. -->
+		<link rel="stylesheet" href="/boot-splash.css" />
 		<meta
 			name="description"
 			content="Non-custodial Nostr key locker. Your encrypted key is stored on a server that can't decrypt it or link it to your identity. Retrieve and sign from any device."
 		/>
-		<link href="/_app/immutable/entry/start.DZ51Jz5-.js" rel="modulepreload">
-		<link href="/_app/immutable/chunks/BP9brT5F.js" rel="modulepreload">
+		<link href="/_app/immutable/entry/start.CzLRbxZH.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/BF8izc1g.js" rel="modulepreload">
 		<link href="/_app/immutable/chunks/BwMth62Z.js" rel="modulepreload">
-		<link href="/_app/immutable/entry/app.CDHBAUgh.js" rel="modulepreload">
+		<link href="/_app/immutable/entry/app.Bav_poM_.js" rel="modulepreload">
 		<link href="/_app/immutable/chunks/CtT0-S4g.js" rel="modulepreload">
 		<link href="/_app/immutable/chunks/xihTtKlq.js" rel="modulepreload">
-		<link href="/_app/immutable/nodes/0.D9PJiBWJ.js" rel="modulepreload">
-		<link href="/_app/immutable/chunks/Cyy-8HhO.js" rel="modulepreload">
+		<link href="/_app/immutable/nodes/0.EJi3yCvD.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/D0W-uPrY.js" rel="modulepreload">
 		<link href="/_app/immutable/chunks/DPh4Km53.js" rel="modulepreload">
 		<link href="/_app/immutable/chunks/CxDQHi7a.js" rel="modulepreload">
 		<link href="/_app/immutable/chunks/UdXgnq8S.js" rel="modulepreload">
@@ -31,21 +35,21 @@
 		<link href="/_app/immutable/chunks/COGYKgJl.js" rel="modulepreload">
 		<link href="/_app/immutable/chunks/Bgki8TxE.js" rel="modulepreload">
 		
-		<link href="/_app/immutable/assets/0.DNi-PVRt.css" rel="stylesheet">
+		<link href="/_app/immutable/assets/0.riU0DDyZ.css" rel="stylesheet">
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div class="contents">
 			<script>
 				{
-					__sveltekit_a1a9oc = {
+					__sveltekit_1pqi441 = {
 						base: ""
 					};
 
 					const element = document.currentScript.parentElement;
 
 					Promise.all([
-						import("/_app/immutable/entry/start.DZ51Jz5-.js"),
-						import("/_app/immutable/entry/app.CDHBAUgh.js")
+						import("/_app/immutable/entry/start.CzLRbxZH.js"),
+						import("/_app/immutable/entry/app.Bav_poM_.js")
 					]).then(([kit, app]) => {
 						kit.start(app, element);
 					});
