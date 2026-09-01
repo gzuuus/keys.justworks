@@ -15,10 +15,6 @@
 	let homeAnimation: { revert(): void } | null = null;
 	let heroSound: HTMLAudioElement | null = null;
 
-	// `?intro=1` (replay button / dev control) shows the reel even when the
-	// visitor has seen it — and even while a key is held (the intro overlays).
-	const forceIntro = new URLSearchParams(window.location.search).get('intro') === '1';
-
 	function replayIntro() {
 		window.location.assign('/?intro=1');
 	}
@@ -86,7 +82,10 @@
 	<title>keys.justworks — your Nostr key, everywhere, held by no one</title>
 </svelte:head>
 
-{#if keyholder.locked || forceIntro}
+{#if keyholder.locked}
+	<!-- `?intro=1` replay only ever arrives via a hard load (replayIntro), which
+	     always starts the session locked — the intro component itself reads the
+	     param and bypasses the seen flag. -->
 	<ParticleKeyIntro onfinish={() => (introFinished = true)} />
 {/if}
 
@@ -141,16 +140,20 @@
 				{/if}
 			</div>
 
-			<div data-home-right class="mt-6">
-				<button
-					type="button"
-					class="inline-flex items-center gap-1.5 text-sm text-ink/40 transition-colors hover:text-ink/70"
-					onclick={replayIntro}
-				>
-					<RotateCcw class="size-3.5" />
-					Replay intro
-				</button>
-			</div>
+			{#if keyholder.locked}
+				<!-- Replay hard-reloads, and a reload drops a held key by design —
+				     only offer it where it can't cost the visitor their session. -->
+				<div data-home-right class="mt-6">
+					<button
+						type="button"
+						class="inline-flex items-center gap-1.5 text-sm text-ink/40 transition-colors hover:text-ink/70"
+						onclick={replayIntro}
+					>
+						<RotateCcw class="size-3.5" />
+						Replay intro
+					</button>
+				</div>
+			{/if}
 		</div>
 	</div>
 
