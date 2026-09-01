@@ -1,17 +1,25 @@
 <script lang="ts" module>
-	/** Session flag marking the intro as seen; shared with the layout's dev replay control. */
-	export const INTRO_SESSION_KEY = 'keys.justworks:intro-seen';
+	/** Storage flag marking the intro as seen. localStorage (not sessionStorage):
+	 *  once per browser, not once per tab — subsequent visits skip the reel.
+	 *  The replay affordances force it via the `?intro=1` URL param. Bump the
+	 *  value (…:v2) to re-play it once for everyone after a material rework. */
+	const INTRO_SEEN_KEY = 'keys.justworks:intro-seen';
 </script>
 
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { dismissBootSplash } from '$lib/boot-splash';
 	import KeyBlade from '$lib/components/key-blade.svelte';
 	import RubberFob from '$lib/components/rubber-fob.svelte';
 	import SkipForward from '@lucide/svelte/icons/skip-forward';
 	import { siApple, siGoogle, siInstagram, siX, type SimpleIcon } from 'simple-icons';
 
 	let { onfinish }: { onfinish?: () => void } = $props();
+
+	// `?intro=1` forces the reel even when seen (replay button, dev control);
+	// finish() strips it so a refresh doesn't replay again.
+	const forceIntro = new URLSearchParams(window.location.search).get('intro') === '1';
 
 	type Gsap = (typeof import('gsap'))['gsap'];
 	type Timeline = ReturnType<Gsap['timeline']>;
@@ -209,7 +217,7 @@
 
 	function finish() {
 		try {
-			sessionStorage.setItem(INTRO_SESSION_KEY, '1');
+			localStorage.setItem(INTRO_SEEN_KEY, '1');
 		} catch {
 			// Storage can be unavailable in hardened/private browser contexts.
 		}
@@ -217,6 +225,10 @@
 		for (const sound of soundElements) sound.pause();
 		restoreOverflow?.();
 		dismissed = true;
+		if (forceIntro) {
+			// Drop the force-replay param so a refresh doesn't replay the reel.
+			history.replaceState(null, '', '/');
+		}
 		if (!finishNotified) {
 			finishNotified = true;
 			onfinish?.();
@@ -235,20 +247,30 @@
 	}
 
 	onMount(() => {
-		try {
-			if (sessionStorage.getItem(INTRO_SESSION_KEY) === '1') {
-				dismissed = true;
-				finishNotified = true;
-				onfinish?.();
-				return;
+		if (!forceIntro) {
+			try {
+				if (localStorage.getItem(INTRO_SEEN_KEY) === '1') {
+					dismissed = true;
+					finishNotified = true;
+					onfinish?.();
+					return;
+				}
+			} catch {
+				// Continue with the intro if storage is unavailable.
 			}
-		} catch {
-			// Continue with the intro if session storage is unavailable.
 		}
 
 		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 			finish();
 			return;
+		}
+
+		// Mark seen the moment the intro starts, not when it finishes: a visitor
+		// who closes the tab mid-reel doesn't sit through it again on return.
+		try {
+			localStorage.setItem(INTRO_SEEN_KEY, '1');
+		} catch {
+			// Storage can be unavailable in hardened/private browser contexts.
 		}
 
 		let active = true;
@@ -398,6 +420,8 @@
 			// Every element now carries its animation-start inline state, so the
 			// CSS first-paint gate can lift within this same frame.
 			armed = true;
+			// The first frame is stamped — trade the boot splash for the reel.
+			dismissBootSplash();
 
 			openingTimeline = gsap
 				.timeline()

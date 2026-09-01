@@ -1,5 +1,6 @@
 <script lang="ts">
 	import './layout.css';
+	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
 	import { page } from '$app/state';
 	import { keyholder } from '$lib/keyholder/store.svelte';
@@ -15,11 +16,9 @@
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
-	import { bunker } from '$lib/bunker/bunkers.svelte';
-	import { bunkerApps } from '$lib/bunker/apps.svelte';
-	import ApprovalDialog from '$lib/components/approval-dialog.svelte';
+	import BunkerRuntime from '$lib/components/bunker-runtime.svelte';
 	import ProfileChip from '$lib/components/profile-chip.svelte';
-	import { INTRO_SESSION_KEY } from '$lib/components/particle-key-intro.svelte';
+	import { dismissBootSplash } from '$lib/boot-splash';
 
 	let { children } = $props();
 
@@ -41,28 +40,18 @@
 	}
 
 	function replayIntro() {
-		sessionStorage.removeItem(INTRO_SESSION_KEY);
-		window.location.assign('/');
+		window.location.assign('/?intro=1');
 	}
 
-	// Drive the bunker runtime from the keyholder lifecycle: start (reconnect
-	// persisted slots) on unlock, stop everything on lock. Transition-guarded —
-	// `bunkerOwner` is a plain non-reactive var so the effect only acts on a real
-	// lock/unlock change and can never feed back into itself. The approval dialog
-	// renders globally below, so a connected client can be approved from any page.
-	let bunkerOwner: string | null | undefined = undefined;
-	$effect(() => {
-		const target: string | null = keyholder.locked || !keyholder.npub ? null : keyholder.npub;
-		if (target === bunkerOwner) return;
-		bunkerOwner = target;
-		if (target) {
-			bunkerApps.setOwner(target);
-			void bunker.startAll();
-		} else {
-			bunkerApps.setOwner(null);
-			void bunker.stopAll();
-		}
+	onMount(() => {
+		// `/` holds the boot splash until its hero reveal is armed (+page.svelte
+		// dismisses it); every other route paints as soon as it mounts.
+		if (page.url.pathname !== '/') dismissBootSplash();
 	});
+
+	// The bunker runtime is driven from the keyholder lifecycle inside
+	// bunker-runtime.svelte — which also owns the chunks that implement it, so
+	// locked visitors never download the bunker stack.
 </script>
 
 <svelte:head>
@@ -276,6 +265,7 @@
 		</footer>
 	{/if}
 
-	<!-- Global NIP-46 approval dialog (renders on any page when unlocked). -->
-	<ApprovalDialog />
+	<!-- Lazy NIP-46 bunker runtime: chunks load on first unlock, approval
+	     dialog included (renders on any page while unlocked). -->
+	<BunkerRuntime />
 </div>

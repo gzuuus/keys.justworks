@@ -1,13 +1,17 @@
 <script lang="ts">
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { ProfileModel } from 'applesauce-core/models';
-	import { ensureProfile, eventStore, hexColor, npubToHex, shortNpub } from '$lib/profiles';
+	import { hexColor, shortNpub } from '$lib/profiles';
 
 	/** Avatar + display name for a pubkey (npub), falling back to a colored
 	 *  initial + short npub until (or unless) a kind 0 arrives. */
 	let { npub, size = 'sm' }: { npub: string; size?: 'xs' | 'sm' | 'md' } = $props();
 
-	const hex = $derived(npubToHex(npub));
+	// The npub→hex decode and the EventStore + relay machinery (nostr-tools,
+	// applesauce) are imported on demand — this chip renders in the root
+	// layout's header, and nostr-tools' noble-hashes chain must stay out of
+	// the locked/marketing initial download. Until the chunk lands the short
+	// npub fallback below is shown; enrichment is cosmetic anyway.
+	let hex = $state<string | null>(null);
 	let profile = $state<{
 		name?: string;
 		display_name?: string;
@@ -16,14 +20,23 @@
 	} | null>(null);
 
 	$effect(() => {
-		if (!hex) return;
+		if (!npub) return;
+		hex = null;
 		profile = null;
-		const model = eventStore.model(ProfileModel, hex);
-		const sub = model.subscribe((p) => (profile = p ?? null));
-		const fetchSub = ensureProfile(hex);
+		let closed = false;
+		let unsubscribe: (() => void) | null = null;
+		void import('$lib/profiles-store')
+			.then(({ npubToHex, subscribeProfile }) => {
+				if (closed) return;
+				hex = npubToHex(npub);
+				if (hex) unsubscribe = subscribeProfile(hex, (p) => (profile = p ?? null));
+			})
+			.catch(() => {
+				// best-effort enrichment — the npub fallback stays
+			});
 		return () => {
-			sub.unsubscribe();
-			fetchSub?.unsubscribe();
+			closed = true;
+			unsubscribe?.();
 		};
 	});
 

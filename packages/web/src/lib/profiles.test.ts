@@ -4,7 +4,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { nip19 } from 'nostr-tools';
-import { capProfiles, hexColor, isFresh, npubToHex, shortNpub, type Persisted } from './profiles';
+import { capProfiles, hexColor, isFresh, shortNpub, type Persisted } from './profiles';
+import { npubToHex } from './profiles-store';
 
 const hex = 'ab'.repeat(32);
 const npub = nip19.npubEncode(hex);

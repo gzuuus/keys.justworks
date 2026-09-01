@@ -3,8 +3,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import { keyholder } from '$lib/keyholder/store.svelte';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import ParticleKeyIntro from '$lib/components/particle-key-intro.svelte';
 	import HeroKey from '$lib/components/hero-key.svelte';
+	import { dismissBootSplash } from '$lib/boot-splash';
 
 	let homeRoot = $state<HTMLElement>();
 	let introFinished = $state(!keyholder.locked);
@@ -12,6 +14,10 @@
 	let revealStarted = false;
 	let homeAnimation: { revert(): void } | null = null;
 	let heroSound: HTMLAudioElement | null = null;
+
+	function replayIntro() {
+		window.location.assign('/?intro=1');
+	}
 
 	async function revealHome() {
 		if (!homeRoot || revealStarted) return;
@@ -57,6 +63,13 @@
 		if (introFinished && homeRoot) void revealHome();
 	});
 
+	// The boot splash (static HTML in app.html) is traded for the hero reveal,
+	// not for the first client render — until the reveal is armed the page
+	// beneath is still blank.
+	$effect(() => {
+		if (homeRevealed) dismissBootSplash();
+	});
+
 	onDestroy(() => {
 		homeAnimation?.revert();
 		heroSound?.pause();
@@ -70,6 +83,9 @@
 </svelte:head>
 
 {#if keyholder.locked}
+	<!-- `?intro=1` replay only ever arrives via a hard load (replayIntro), which
+	     always starts the session locked — the intro component itself reads the
+	     param and bypasses the seen flag. -->
 	<ParticleKeyIntro onfinish={() => (introFinished = true)} />
 {/if}
 
@@ -123,6 +139,21 @@
 					</Button>
 				{/if}
 			</div>
+
+			{#if keyholder.locked}
+				<!-- Replay hard-reloads, and a reload drops a held key by design —
+				     only offer it where it can't cost the visitor their session. -->
+				<div data-home-right class="mt-6">
+					<button
+						type="button"
+						class="inline-flex items-center gap-1.5 text-sm text-ink/40 transition-colors hover:text-ink/70"
+						onclick={replayIntro}
+					>
+						<RotateCcw class="size-3.5" />
+						Replay intro
+					</button>
+				</div>
+			{/if}
 		</div>
 	</div>
 
