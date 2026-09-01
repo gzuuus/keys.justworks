@@ -3,7 +3,7 @@
 	 *  once per browser, not once per tab — subsequent visits skip the reel.
 	 *  The replay affordances force it via the `?intro=1` URL param. Bump the
 	 *  value (…:v2) to re-play it once for everyone after a material rework. */
-	export const INTRO_SEEN_KEY = 'keys.justworks:intro-seen';
+	const INTRO_SEEN_KEY = 'keys.justworks:intro-seen';
 </script>
 
 <script lang="ts">
