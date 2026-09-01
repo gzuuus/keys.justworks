@@ -3,8 +3,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import { keyholder } from '$lib/keyholder/store.svelte';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import ParticleKeyIntro from '$lib/components/particle-key-intro.svelte';
 	import HeroKey from '$lib/components/hero-key.svelte';
+	import { dismissBootSplash } from '$lib/boot-splash';
 
 	let homeRoot = $state<HTMLElement>();
 	let introFinished = $state(!keyholder.locked);
@@ -12,6 +14,14 @@
 	let revealStarted = false;
 	let homeAnimation: { revert(): void } | null = null;
 	let heroSound: HTMLAudioElement | null = null;
+
+	// `?intro=1` (replay button / dev control) shows the reel even when the
+	// visitor has seen it — and even while a key is held (the intro overlays).
+	const forceIntro = new URLSearchParams(window.location.search).get('intro') === '1';
+
+	function replayIntro() {
+		window.location.assign('/?intro=1');
+	}
 
 	async function revealHome() {
 		if (!homeRoot || revealStarted) return;
@@ -57,6 +67,13 @@
 		if (introFinished && homeRoot) void revealHome();
 	});
 
+	// The boot splash (static HTML in app.html) is traded for the hero reveal,
+	// not for the first client render — until the reveal is armed the page
+	// beneath is still blank.
+	$effect(() => {
+		if (homeRevealed) dismissBootSplash();
+	});
+
 	onDestroy(() => {
 		homeAnimation?.revert();
 		heroSound?.pause();
@@ -69,7 +86,7 @@
 	<title>keys.justworks — your Nostr key, everywhere, held by no one</title>
 </svelte:head>
 
-{#if keyholder.locked}
+{#if keyholder.locked || forceIntro}
 	<ParticleKeyIntro onfinish={() => (introFinished = true)} />
 {/if}
 
@@ -122,6 +139,17 @@
 						<ArrowRight class="size-4" />
 					</Button>
 				{/if}
+			</div>
+
+			<div data-home-right class="mt-6">
+				<button
+					type="button"
+					class="inline-flex items-center gap-1.5 text-sm text-ink/40 transition-colors hover:text-ink/70"
+					onclick={replayIntro}
+				>
+					<RotateCcw class="size-3.5" />
+					Replay intro
+				</button>
 			</div>
 		</div>
 	</div>

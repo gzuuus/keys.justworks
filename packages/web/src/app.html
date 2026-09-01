@@ -15,5 +15,13 @@
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div class="contents">%sveltekit.body%</div>
+		<!-- On-brand boot splash: painted from static HTML while the SPA boots,
+		     outside SvelteKit's mount container so it survives mounting. Styled
+		     from layout.css (CSP allows no inline styles); the app removes it via
+		     $lib/boot-splash once the intro / hero is ready to paint. -->
+		<div id="boot-splash" aria-hidden="true">
+			<img src="%sveltekit.assets%/key-mark.svg" alt="" width="177" height="87" />
+			<p>keys.justworks</p>
+		</div>
 	</body>
 </html>
